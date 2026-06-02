@@ -2,47 +2,78 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
-        'name',
+        'code',
+        'full_name',
         'email',
         'password',
+        'avatar',
+        'phone',
+        'role',
+        'status',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
+
+    protected static function booted(): void
+    {
+        static::creating(function ($user) {
+            if (empty($user->code)) {
+                $lastUser = self::orderByDesc('id')->first();
+
+                if (! $lastUser) {
+                    $user->code = 'USER000001';
+                } else {
+                    $number = (int) substr($lastUser->code, 4);
+                    $user->code = 'USER' . str_pad($number + 1, 6, '0', STR_PAD_LEFT);
+                }
+            }
+        });
+    }
+
+    /**
+     * Cho phép đăng nhập Filament.
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return true;
+
+        // Nếu chỉ admin được vào:
+        // return $this->role === 1;
+    }
+
+    /**
+     * Tên hiển thị trên Filament.
+     */
+    public function getFilamentName(): string
+    {
+        return $this->full_name ?: $this->email;
+    }
+
+    public function getNameAttribute(): string
+    {
+        return $this->full_name;
+    }
+
+  
 }
