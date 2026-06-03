@@ -19,7 +19,7 @@ class UserSeeder extends Seeder
                 'email'      => 'admin@shopnline.vn',
                 'password'   => Hash::make('Admin@123'),
                 'phone'      => '0901000001',
-                'role'       => 1, // admin
+                'role'       => 1,
                 'status'     => 1,
             ],
             [

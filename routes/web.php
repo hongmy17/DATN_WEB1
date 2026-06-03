@@ -1,59 +1,65 @@
 <?php
 
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Auth\SocialAuthController;
 use Illuminate\Support\Facades\Route;
 
-// Trang chủ
-Route::get('/', function () {
-    return view('pages.home');
-})->name('home');
+// ─── TRANG CHÍNH ────────────────────────────────────────────────────────────
+Route::get('/', fn() => view('pages.home'))->name('home');
 
-// Sản phẩm
-Route::get('/san-pham', function () {
-    return view('pages.product.index');
-})->name('products.index');
+// ─── SẢN PHẨM ───────────────────────────────────────────────────────────────
+Route::get('/san-pham', fn() => view('pages.product.index'))->name('products.index');
+Route::get('/chi-tiet', fn() => view('pages.product.show'))->name('products.show');
 
-Route::get('/chi-tiet', function () {
-    return view('pages.product.show');
-})->name('products.show');
+// ─── GIỎ HÀNG & THANH TOÁN ──────────────────────────────────────────────────
+Route::get('/gio-hang', fn() => view('pages.cart.index'))->name('cart.index');
+Route::get('/thanh-toan', fn() => view('pages.checkout.index'))->name('checkout.index');
 
-// Giỏ hàng & thanh toán
-Route::get('/gio-hang', function () {
-    return view('pages.cart.index');
-})->name('cart.index');
+// ─── ĐƠN HÀNG ───────────────────────────────────────────────────────────────
+Route::get('/don-hang', fn() => view('pages.order.index'))->name('orders.index');
 
-Route::get('/thanh-toan', function () {
-    return view('pages.checkout.index');
-})->name('checkout.index');
+// ─── KHUYẾN MÃI / LIÊN HỆ / YÊU THÍCH ──────────────────────────────────────
+Route::get('/khuyen-mai', fn() => view('pages.other.promotions'))->name('promotions');
+Route::get('/yeu-thich', fn() => view('pages.other.wishlist'))->name('wishlist');
+Route::get('/lien-he', fn() => view('pages.other.contact'))->name('contact');
 
-// Đơn hàng
-Route::get('/don-hang', function () {
-    return view('pages.order.index');
-})->name('orders.index');
+// ─── AUTH (chỉ cho guest) ───────────────────────────────────────────────────
+Route::middleware('guest')->group(function () {
+    // Đăng nhập
+    Route::get('/tai-khoan', [AuthenticatedSessionController::class, 'create'])
+        ->name('login');
+    Route::post('/tai-khoan', [AuthenticatedSessionController::class, 'store'])
+        ->name('login.store');
 
-// Tài khoản
-Route::get('/tai-khoan', function () {
-    return view('pages.auth.login');
-})->name('login');
+    // Đăng ký
+    Route::get('/dang-ky', [RegisteredUserController::class, 'create'])
+        ->name('register');
+    Route::post('/dang-ky', [RegisteredUserController::class, 'store'])
+        ->name('register.store');
 
-Route::get('/dang-ky', function () {
-    return view('pages.auth.register');
-})->name('register');
+    // Quên mật khẩu (giữ nguyên, có thể mở rộng sau)
+    Route::get('/quen-mat-khau', fn() => view('pages.auth.forgot'))
+        ->name('password.request');
 
-Route::get('/quen-mat-khau', function () {
-    return view('pages.auth.forgot');
-})->name('password.request');
+    // Social auth
+    Route::get('/auth/redirect/{provider}', [SocialAuthController::class, 'redirect'])
+        ->name('social.redirect');
+    Route::get('/auth/callback/{provider}', [SocialAuthController::class, 'callback'])
+        ->name('social.callback');
+});
 
-// Khuyến mãi
-Route::get('/khuyen-mai', function () {
-    return view('pages.other.promotions');
-})->name('promotions');
-
-
-// Yêu thích 
-Route::get('/yeu-thich', function () {
-    return view('pages.other.wishlist');
-})->name('wishlist');
-
-Route::get('/lien-he', function () {
-    return view('pages.other.contact');
-})->name('contact');
+// ─── ĐĂNG XUẤT (chỉ cho auth) ───────────────────────────────────────────────
+Route::middleware('auth')->group(function () {
+    Route::post('/dang-xuat', [AuthenticatedSessionController::class, 'destroy'])
+        ->name('logout');
+    
+    // Profile management
+    Route::get('/profile', [ProfileController::class, 'edit'])
+        ->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])
+        ->name('profile.destroy');
+});
