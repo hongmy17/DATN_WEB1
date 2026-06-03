@@ -30,7 +30,7 @@ class UsersTable
                     ->sortable()
                     ->copyable(),
 
-                TextColumn::make('full_name')
+                TextColumn::make('name')
                     ->label('Họ và tên')
                     ->searchable()
                     ->sortable(),

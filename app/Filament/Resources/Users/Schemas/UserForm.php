@@ -55,7 +55,7 @@ class UserForm
                         return 'USER' . str_pad($number + 1, 6, '0', STR_PAD_LEFT);
                     }),
 
-                TextInput::make('full_name')
+                TextInput::make('name')
                     ->label('Họ và tên')
                    
                     ->required()
