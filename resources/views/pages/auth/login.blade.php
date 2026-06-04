@@ -84,6 +84,18 @@
     align-items: center;
     gap: 4px;
 }
+.form-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.divider--text {
+    text-align: center;
+    margin: 20px 0 24px;
+    color: var(--ink-3);
+    font-size: 13px;
+}
 .form-control.is-invalid {
     border-color: #ef4444 !important;
 }
@@ -124,8 +136,8 @@
 @endpush
 
 @section('content')
-<div class="auth-wrap min-h-screen flex items-center justify-center py-12 bg-gray-100">
-    <div class="auth-card w-full max-w-md bg-white border border-gray-200 rounded-2xl p-8 shadow-lg">
+<div class="auth-wrap">
+    <div class="auth-card">
 
         {{-- Logo --}}
         <div class="auth-logo">
@@ -170,10 +182,10 @@
             <div class="form-group">
                 <label class="form-label" for="email">Email</label>
                 <div class="input-icon">
-                        <span class="input-icon__icon"></span>
+                    <span class="input-icon__icon"></span>
                     <input
                         type="email"
-                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2 @error('email') border-red-500 @enderror"
+                        class="form-control @error('email') is-invalid @enderror"
                         id="email"
                         name="email"
                         value="{{ old('email') }}"
@@ -185,7 +197,7 @@
                 </div>
                 @error('email')
                     @if (!str_contains($message, 'giây'))
-                            <div class="field-error">{{ $message }}</div>
+                        <div class="field-error">{{ $message }}</div>
                     @endif
                 @enderror
             </div>
@@ -194,10 +206,10 @@
             <div class="form-group">
                 <label class="form-label" for="password">Mật khẩu</label>
                 <div class="input-icon">
-                        <span class="input-icon__icon"></span>
+                    <span class="input-icon__icon"></span>
                     <input
                         type="password"
-                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2 @error('password') border-red-500 @enderror"
+                        class="form-control @error('password') is-invalid @enderror"
                         id="password"
                         name="password"
                         placeholder="••••••••"
@@ -206,12 +218,12 @@
                     >
                 </div>
                 @error('password')
-                        <div class="field-error">{{ $message }}</div>
+                    <div class="field-error">{{ $message }}</div>
                 @enderror
             </div>
 
             {{-- Ghi nhớ + quên mật khẩu --}}
-            <div class="flex justify-between items-center mb-4">
+            <div class="form-footer">
                 <label class="checkbox-wrap">
                     <input type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
                     <span>Ghi nhớ đăng nhập</span>

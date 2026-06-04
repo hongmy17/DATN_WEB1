@@ -63,11 +63,11 @@
     align-items: center;
     gap: 4px;
 }
-.form-control.is-invalid {
-    border-color: #ef4444 !important;
-}
-.form-control.is-valid {
-    border-color: #22c55e !important;
+.form-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
 }
 .password-strength {
     height: 4px;
@@ -109,8 +109,8 @@
 @endpush
 
 @section('content')
-<div class="auth-wrap min-h-screen flex items-center justify-center py-12 bg-gray-100">
-    <div class="auth-card w-full max-w-md bg-white border border-gray-200 rounded-2xl p-8 shadow-lg">
+<div class="auth-wrap">
+    <div class="auth-card">
 
         {{-- Logo --}}
         <div class="auth-logo">
@@ -140,7 +140,7 @@
                     <span class="input-icon__icon"></span>
                     <input
                         type="text"
-                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2 @error('name') border-red-500 @enderror"
+                        class="form-control @error('name') is-invalid @enderror"
                         id="name"
                         name="name"
                         value="{{ old('name') }}"
@@ -162,7 +162,7 @@
                     <span class="input-icon__icon"></span>
                     <input
                         type="email"
-                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2 @error('email') border-red-500 @enderror"
+                        class="form-control @error('email') is-invalid @enderror"
                         id="email"
                         name="email"
                         value="{{ old('email') }}"
@@ -183,7 +183,7 @@
                     <span class="input-icon__icon"></span>
                     <input
                         type="tel"
-                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2 @error('phone') border-red-500 @enderror"
+                        class="form-control @error('phone') is-invalid @enderror"
                         id="phone"
                         name="phone"
                         value="{{ old('phone') }}"
@@ -203,7 +203,7 @@
                     <span class="input-icon__icon"></span>
                     <input
                         type="password"
-                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2 @error('password') border-red-500 @enderror"
+                        class="form-control @error('password') is-invalid @enderror"
                         id="password"
                         name="password"
                         placeholder="Ít nhất 8 ký tự"
@@ -228,7 +228,7 @@
                     <span class="input-icon__icon"></span>
                     <input
                         type="password"
-                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2"
+                        class="form-control"
                         id="password_confirmation"
                         name="password_confirmation"
                         placeholder="Nhập lại mật khẩu"

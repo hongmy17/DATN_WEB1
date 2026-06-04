@@ -242,6 +242,36 @@ ul, ol { list-style: none; }
 .form-control.error { border-color: var(--red); box-shadow: 0 0 0 3px rgba(192,57,43,.1); }
 select.form-control { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6459' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
 textarea.form-control { resize: vertical; min-height: 100px; }
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--surface);
+  padding: 60px 0 40px;
+}
+.auth-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-md);
+  padding: 32px;
+}
+.auth-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.auth-logo {
+  display: inline-block;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+}
+.auth-logo:hover {
+  color: var(--accent);
+}
 .form-hint  { font-size: 12px; color: var(--ink-muted); margin-top: 5px; }
 .form-error { font-size: 12px; color: var(--red); margin-top: 5px; }
 
