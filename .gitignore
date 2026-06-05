@@ -33,3 +33,17 @@ auth.json
 public/css/filament/
 public/js/filament/
 public/fonts/filament/
+
+# Storage framework (tạo lại tự động)
+/storage/framework/cache/
+/storage/framework/sessions/
+/storage/framework/views/
+/storage/logs/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
