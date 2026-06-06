@@ -8,8 +8,10 @@ class Attribute extends Model
 {
     protected $fillable = ['name', 'display_type'];
 
+    protected $casts = ['display_type' => 'integer'];
+
     public function attributeValues()
     {
-        return $this->hasMany(AttributeValue::class);
+        return $this->hasMany(AttributeValue::class)->orderBy('sort_order');
     }
 }

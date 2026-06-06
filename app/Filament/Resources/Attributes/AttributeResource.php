@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Attributes;
 use App\Filament\Resources\Attributes\Pages\CreateAttribute;
 use App\Filament\Resources\Attributes\Pages\EditAttribute;
 use App\Filament\Resources\Attributes\Pages\ListAttributes;
-use App\Filament\Resources\Attributes\Schemas\AttributeForm;
+use App\Filament\Resources\Attributes\Schemas\AttributesForm;
 use App\Filament\Resources\Attributes\Tables\AttributesTable;
 use App\Models\Attribute;
 use BackedEnum;
@@ -24,18 +24,18 @@ class AttributeResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return AttributeForm::configure($schema);
+        return AttributesForm::configure($schema);
     }
 
     public static function table(Table $table): Table
     {
-        return AttributesTable::configure($table);
+       return AttributesTable::configure($table);
     }
 
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\AttributeValuesRelationManager::class,
         ];
     }
 
