@@ -11,9 +11,6 @@ use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
-    /**
-     * Hiển thị form đăng nhập.
-     */
     public function create(): View|RedirectResponse
     {
         if (Auth::check()) {
@@ -23,23 +20,21 @@ class AuthenticatedSessionController extends Controller
         return view('pages.auth.login');
     }
 
-    /**
-     * Xử lý đăng nhập.
-     * Rate limit được xử lý trong LoginRequest::authenticate().
-     */
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-
         $request->session()->regenerate();
 
+        $user = $request->user();
+
+        if ($user && (int) $user->role === 1) {
+            return redirect()->intended('/admin');
+        }
+
         return redirect()->intended(route('home'))
-            ->with('success', 'Chào mừng bạn trở lại! 👋');
+            ->with('success', 'Chao mung ban tro lai!');
     }
 
-    /**
-     * Đăng xuất.
-     */
     public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
@@ -48,6 +43,6 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login')
-            ->with('success', 'Bạn đã đăng xuất thành công.');
+            ->with('success', 'Ban da dang xuat thanh cong.');
     }
 }

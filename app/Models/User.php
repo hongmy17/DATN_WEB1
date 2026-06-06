@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasName;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, HasName
 {
     use HasFactory, Notifiable;
 
@@ -68,7 +69,7 @@ class User extends Authenticatable implements FilamentUser
      */
     public function getFilamentName(): string
     {
-        return $this->name ?: $this->email;
+        return trim((string) ($this->name ?: $this->email ?: $this->code ?: 'User'));
     }
 
 

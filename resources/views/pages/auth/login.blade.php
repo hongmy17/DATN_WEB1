@@ -169,7 +169,7 @@
         @endif
 
         {{-- Form đăng nhập --}}
-        <form method="POST" action="{{ route('login.store') }}" id="loginForm" novalidate>
+        <form method="POST" action="{{ route('login') }}" id="loginForm" novalidate>
             @csrf
 
             {{-- Đăng nhập mạng xã hội --}}
