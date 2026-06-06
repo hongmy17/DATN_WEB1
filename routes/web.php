@@ -5,7 +5,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use Illuminate\Support\Facades\Route;
-
+require __DIR__.'/auth.php';
 // ─── TRANG CHÍNH ────────────────────────────────────────────────────────────
 Route::get('/', fn() => view('pages.home'))->name('home');
 

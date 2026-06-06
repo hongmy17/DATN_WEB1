@@ -58,7 +58,9 @@ class UserSeeder extends Seeder
                 'role'       => 0,
                 'status'     => 0, // tài khoản bị khóa
             ],
-        ];
+            ]
+           
+        ;
 
         foreach ($users as $user) {
             DB::table('users')->insert(array_merge($user, [
