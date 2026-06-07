@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\UserAddress;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasName;
 use Filament\Panel;
@@ -52,14 +53,12 @@ class User extends Authenticatable implements FilamentUser, HasName
             }
         });
     }
-
     /**
      * Cho phép đăng nhập Filament.
      */
     public function canAccessPanel(Panel $panel): bool
     {
         return true;
-
         // Nếu chỉ admin được vào:
         // return $this->role === 1;
     }
@@ -72,6 +71,14 @@ class User extends Authenticatable implements FilamentUser, HasName
         return trim((string) ($this->name ?: $this->email ?: $this->code ?: 'User'));
     }
 
+    // ===== Địa chỉ =====
+    public function addresses()
+    {
+        return $this->hasMany(UserAddress::class);
+    }
 
-  
+    public function defaultAddress()
+    {
+        return $this->hasOne(UserAddress::class)->where('is_default', true);
+    }
 }

@@ -35,6 +35,10 @@
 .order-code{background:var(--surface);border:1.5px dashed var(--border);border-radius:var(--r-lg);padding:12px 20px;font-family:monospace;font-size:18px;font-weight:800;color:var(--ink);margin:18px 0;letter-spacing:2px}
 @media(max-width:1024px){.checkout-layout{grid-template-columns:1fr}.order-summary-sticky{position:static}}
 @media(max-width:640px){.form-row{grid-template-columns:1fr}}
+.addr-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center}
+.addr-modal-overlay.open{display:flex}
+.addr-modal{background:var(--bg-alt);border-radius:var(--r-xl);width:100%;max-width:540px;padding:32px;box-shadow:var(--shadow-xl)}
+.addr-modal-title{font-family:var(--font-display);font-size:18px;font-weight:800;margin-bottom:20px}
 </style>
 @endpush
 
@@ -57,20 +61,99 @@
     <div>
       <div class="checkout-card">
         <div class="checkout-card-title"><div class="step-dot">1</div>Thông tin giao hàng</div>
+
+        @auth
+          <div class="form-group" style="margin-bottom:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <label class="form-label" style="margin:0">Địa chỉ đã lưu</label>
+              <button type="button" onclick="openAddrModal('create')"
+  style="font-size:13px;color:var(--accent);font-weight:600;background:none;border:none;cursor:pointer;padding:0">
+  + Thêm địa chỉ mới
+</button>
+            </div>
+            @if($addresses->count() > 0)
+            <div style="display:flex;gap:8px;align-items:center">
+              <select class="form-control" id="savedAddress" onchange="fillAddress(this)" style="flex:1">
+                <option value="">-- Chọn địa chỉ --</option>
+                @foreach($addresses as $addr)
+                <option value="{{ $addr->id }}"
+                  data-name="{{ $addr->receiver_name }}"
+                  data-phone="{{ $addr->receiver_phone }}"
+                  data-province="{{ $addr->province }}"
+                  data-district="{{ $addr->district }}"
+                  data-ward="{{ $addr->ward }}"
+                  data-detail="{{ $addr->address_detail }}"
+                  {{ $addr->is_default ? 'selected' : '' }}>
+                  {{ $addr->receiver_name }} — {{ $addr->address_detail }}, {{ $addr->ward }}, {{ $addr->district }}, {{ $addr->province }}
+                  {{ $addr->is_default ? '(Mặc định)' : '' }}
+                </option>
+                @endforeach
+              </select>
+              <button type="button" onclick="openAddrModal('edit')"
+                style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap">
+                ✏️ Sửa
+              </button>
+              <button type="button" onclick="deleteSelected()"
+                style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);cursor:pointer;font-size:13px;font-weight:600;color:var(--red);white-space:nowrap">
+                🗑 Xóa
+              </button>
+            </div>
+            <form id="deleteForm" method="POST" style="display:none">
+              @csrf @method('DELETE')
+              
+            </form>
+            @else
+            <p style="font-size:13px;color:var(--ink-muted)">Bạn chưa có địa chỉ nào.</p>
+            @endif
+          </div>
+        @endauth
+
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Họ</label><input type="text" class="form-control" placeholder="Nguyễn"></div>
-          <div class="form-group"><label class="form-label">Tên</label><input type="text" class="form-control" placeholder="Văn A"></div>
+          <div class="form-group">
+            <label class="form-label">Họ và tên người nhận</label>
+            <input type="text" id="receiver_name" class="form-control"
+                   placeholder="Nguyễn Văn A"
+                   value="{{ $defaultAddress->receiver_name ?? '' }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Số điện thoại</label>
+            <input type="tel" id="receiver_phone" class="form-control"
+                   placeholder="0901 234 567"
+                   value="{{ $defaultAddress->receiver_phone ?? '' }}">
+          </div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Số điện thoại</label><input type="tel" class="form-control" placeholder="0901 234 567"></div>
-          <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-control" placeholder="email@gmail.com"></div>
+          <div class="form-group">
+            <label class="form-label">Tỉnh / Thành phố</label>
+            <input type="text" id="province" class="form-control"
+                   placeholder="TP. Hồ Chí Minh"
+                   value="{{ $defaultAddress->province ?? '' }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Quận / Huyện</label>
+            <input type="text" id="district" class="form-control"
+                   placeholder="Quận 1"
+                   value="{{ $defaultAddress->district ?? '' }}">
+          </div>
         </div>
-        <div class="form-group"><label class="form-label">Địa chỉ</label><input type="text" class="form-control" placeholder="Số nhà, tên đường, phường/xã"></div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Tỉnh / Thành phố</label><select class="form-control"><option>TP. Hồ Chí Minh</option><option>Hà Nội</option><option>Đà Nẵng</option><option>Cần Thơ</option></select></div>
-          <div class="form-group"><label class="form-label">Quận / Huyện</label><select class="form-control"><option>Quận 1</option><option>Quận 3</option><option>Bình Thạnh</option><option>Gò Vấp</option></select></div>
+          <div class="form-group">
+            <label class="form-label">Phường / Xã</label>
+            <input type="text" id="ward" class="form-control"
+                   placeholder="Phường Bến Nghé"
+                   value="{{ $defaultAddress->ward ?? '' }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Địa chỉ chi tiết</label>
+            <input type="text" id="address_detail" class="form-control"
+                   placeholder="Số nhà, tên đường..."
+                   value="{{ $defaultAddress->address_detail ?? '' }}">
+          </div>
         </div>
-        <div class="form-group"><label class="form-label">Ghi chú (tuỳ chọn)</label><textarea class="form-control" rows="2" placeholder="Giao sau 18h, gọi trước khi giao..."></textarea></div>
+        <div class="form-group">
+          <label class="form-label">Ghi chú (tùy chọn)</label>
+          <textarea class="form-control" rows="2" placeholder="Giao sau 18h, gọi trước khi giao..."></textarea>
+        </div>
       </div>
 
       <div class="checkout-card">
@@ -142,6 +225,7 @@
   </div>
 </div>
 
+{{-- Modal đặt hàng thành công --}}
 <div class="modal-overlay" id="successModal">
   <div class="modal-success">
     <div class="success-icon">🎉</div>
@@ -154,8 +238,66 @@
     </div>
   </div>
 </div>
-@endsection
 
+{{-- Modal thêm/sửa địa chỉ --}}
+<div class="addr-modal-overlay" id="addrModal">
+  <div class="addr-modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div class="addr-modal-title" id="addrModalTitle">Thêm địa chỉ mới</div>
+      <button onclick="closeAddrModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink-muted)">✕</button>
+    </div>
+    <form id="addrForm" method="POST">
+      @csrf
+      @csrf
+<input type="hidden" name="redirect_to" value="{{ url('/thanh-toan') }}">
+      <span id="addrMethodField"></span>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Họ và tên người nhận</label>
+          <input type="text" name="receiver_name" id="modal_receiver_name" class="form-control" placeholder="Nguyễn Văn A" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Số điện thoại</label>
+          <input type="text" name="receiver_phone" id="modal_receiver_phone" class="form-control" placeholder="0901 234 567" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Tỉnh / Thành phố</label>
+          <input type="text" name="province" id="modal_province" class="form-control" placeholder="TP. Hồ Chí Minh" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quận / Huyện</label>
+          <input type="text" name="district" id="modal_district" class="form-control" placeholder="Quận 1" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Phường / Xã</label>
+          <input type="text" name="ward" id="modal_ward" class="form-control" placeholder="Phường Bến Nghé" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Địa chỉ chi tiết</label>
+          <input type="text" name="address_detail" id="modal_address_detail" class="form-control" placeholder="Số nhà, tên đường..." required>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:8px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" name="is_default" value="1" id="modal_is_default">
+          <span style="font-size:14px">Đặt làm địa chỉ mặc định</span>
+        </label>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:20px">
+        <button type="submit" class="place-btn" style="margin-top:0;flex:1">Lưu địa chỉ</button>
+        <button type="button" onclick="closeAddrModal()"
+          style="padding:14px 20px;border:1px solid var(--border);border-radius:var(--r-xl);background:var(--surface);cursor:pointer;font-weight:600">
+          Hủy
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+@endsection
 @push('scripts')
 <script>
   function selectOpt(el) {
@@ -187,14 +329,84 @@
     Cart.updateUI();
   }
 
+  function fillAddress(select) {
+    const opt = select.options[select.selectedIndex];
+    if (!opt.value) return;
+    document.getElementById('receiver_name').value  = opt.dataset.name;
+    document.getElementById('receiver_phone').value = opt.dataset.phone;
+    document.getElementById('province').value       = opt.dataset.province;
+    document.getElementById('district').value       = opt.dataset.district;
+    document.getElementById('ward').value           = opt.dataset.ward;
+    document.getElementById('address_detail').value = opt.dataset.detail;
+  }
+
+  function editSelected() {
+    const select = document.getElementById('savedAddress');
+    const opt = select.options[select.selectedIndex];
+    if (!opt.value) return alert('Vui lòng chọn địa chỉ!');
+    window.location.href = opt.dataset.edit;
+  }
+
+  function deleteSelected() {
+    const select = document.getElementById('savedAddress');
+    const opt = select.options[select.selectedIndex];
+    if (!opt.value) return alert('Vui lòng chọn địa chỉ!');
+    if (!confirm('Xóa địa chỉ này?')) return;
+    const form = document.getElementById('deleteForm');
+    form.action = `/dia-chi/${opt.value}`;
+    form.submit();
+  }
+
   renderOrderItems();
   window.addEventListener('click', e => {
-    if (e.target.id === 'successModal') {
-      e.target.classList.remove('open');
-    }
+    if (e.target.id === 'successModal') e.target.classList.remove('open');
   });
+
+function openAddrModal(mode, id) {
+    const modal = document.getElementById('addrModal');
+    const form  = document.getElementById('addrForm');
+    const title = document.getElementById('addrModalTitle');
+    const methodField = document.getElementById('addrMethodField');
+
+    // Reset form
+    form.reset();
+
+    if (mode === 'create') {
+      title.textContent = 'Thêm địa chỉ mới';
+      form.action = '/dia-chi';
+      methodField.innerHTML = '';
+    } else {
+      // Edit mode
+      const select = document.getElementById('savedAddress');
+      const opt = select.options[select.selectedIndex];
+      if (!opt.value) return alert('Vui lòng chọn địa chỉ!');
+
+      title.textContent = 'Sửa địa chỉ';
+      form.action = `/dia-chi/${opt.value}`;
+      methodField.innerHTML = '<input type="hidden" name="_method" value="PUT">';
+
+      document.getElementById('modal_receiver_name').value   = opt.dataset.name;
+      document.getElementById('modal_receiver_phone').value  = opt.dataset.phone;
+      document.getElementById('modal_province').value        = opt.dataset.province;
+      document.getElementById('modal_district').value        = opt.dataset.district;
+      document.getElementById('modal_ward').value            = opt.dataset.ward;
+      document.getElementById('modal_address_detail').value  = opt.dataset.detail;
+    }
+
+    modal.classList.add('open');
+  }
+
+  function closeAddrModal() {
+    document.getElementById('addrModal').classList.remove('open');
+  }
+
+  window.openAddrModal = openAddrModal;
+  window.closeAddrModal = closeAddrModal;
 
   window.selectOpt = selectOpt;
   window.placeOrder = placeOrder;
+  window.fillAddress = fillAddress;
+  window.editSelected = editSelected;
+  window.deleteSelected = deleteSelected;
 </script>
 @endpush
