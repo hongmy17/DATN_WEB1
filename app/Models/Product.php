@@ -9,19 +9,12 @@ class Product extends Model
 {
     use SoftDeletes;
 
-    // Khớp với tên cột trong DB (delete_at thay vì deleted_at mặc định)
     protected const DELETED_AT = 'delete_at';
 
     protected $fillable = [
-        'code',
-        'category_id',
-        'name',
-        'slug',
-        'short_description',
-        'description',
-        'thumbnail',
-        'status',
-        'created_by',
+        'code', 'category_id', 'name', 'slug',
+        'short_description', 'description',
+        'thumbnail', 'status', 'created_by',
     ];
 
     protected $casts = [
@@ -50,15 +43,25 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class);
     }
 
+    /** Attributes toàn cục (dùng chung toàn hệ thống) */
+    public function attributes()
+    {
+        return $this->belongsToMany(Attribute::class, 'product_attributes');
+    }
+
+    /** Tính năng 2: Attributes riêng cho sản phẩm này */
+    public function customAttributes()
+    {
+        return $this->hasMany(ProductCustomAttribute::class)->orderBy('sort_order');
+    }
+
     // ─── Accessors ────────────────────────────────────────────
 
-    /** Giá thấp nhất trong các biến thể */
     public function getMinPriceAttribute(): float|null
     {
         return $this->variants->min('price');
     }
 
-    /** Giá cao nhất trong các biến thể */
     public function getMaxPriceAttribute(): float|null
     {
         return $this->variants->max('price');

@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
             [
                 'code'       => 'ADMIN00001',
                 'name'  => 'Quản Trị Viên',
-                'email'      => 'admin@shopnline.vn',
+                'email'      => 'admin@shopnline.com',
                 'password'   => Hash::make('Admin@123'),
                 'phone'      => '0901000001',
                 'role'       => 1,

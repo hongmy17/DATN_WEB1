@@ -13,14 +13,24 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class AttributeResource extends Resource
 {
     protected static ?string $model = Attribute::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
+    protected static ?string $navigationLabel = 'Thuộc tính';
+    protected static ?string $modelLabel = 'Thuộc tính';
+    protected static ?string $pluralModelLabel = 'Thuộc tính';
     protected static ?string $recordTitleAttribute = 'name';
+
+    protected static UnitEnum|string|null $navigationGroup = 'Quản lý thuộc tính';
+    // Sửa thành:
+    protected static ?int $navigationSort = 2;
+
+
+
 
     public static function form(Schema $schema): Schema
     {
@@ -29,14 +39,12 @@ class AttributeResource extends Resource
 
     public static function table(Table $table): Table
     {
-       return AttributesTable::configure($table);
+        return AttributesTable::configure($table);
     }
 
     public static function getRelations(): array
     {
-        return [
-            RelationManagers\AttributeValuesRelationManager::class,
-        ];
+        return [];
     }
 
     public static function getPages(): array

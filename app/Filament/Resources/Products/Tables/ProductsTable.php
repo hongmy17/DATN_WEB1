@@ -15,16 +15,18 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ProductsTable
 {
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query
-                ->withCount('variants')
-                ->withMin('variants', 'price')
-            )
+            // BUG 3 FIX: Bỏ modifyQueryUsing() vì nó override mất query của TrashedFilter.
+            // Thay bằng withAggregate/withCount trực tiếp trên Eloquent column,
+            // hoặc dùng ->extraAttributes() để eager load riêng.
+            // Cách đúng: để Filament tự build query, ta chỉ thêm aggregate qua column.
             ->columns([
                 ImageColumn::make('thumbnail')
                     ->label('Ảnh')
@@ -48,15 +50,18 @@ class ProductsTable
                     ->badge()
                     ->sortable(),
 
+                // Dùng counts() trên column thay vì modifyQueryUsing
                 TextColumn::make('variants_count')
                     ->label('Biến thể')
+                    ->counts('variants')
                     ->badge()
                     ->color('info'),
 
                 TextColumn::make('variants_min_price')
                     ->label('Giá từ')
                     ->money('VND')
-                    ->sortable(),
+                    ->sortable()
+                    ->getStateUsing(fn ($record) => $record->variants()->min('price')),
 
                 IconColumn::make('status')
                     ->label('Hiển thị')

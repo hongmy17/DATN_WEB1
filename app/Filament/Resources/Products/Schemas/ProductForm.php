@@ -45,6 +45,17 @@ class ProductsForm
                 ->searchable()
                 ->preload(),
 
+            // FIX: Đổi tên field từ 'attributes' → 'selectedAttributes'
+            // để tránh conflict với tên relation 'attributes' trên Model Product.
+            // Dùng ->relationship() để Filament tự sync pivot table product_attributes.
+            Select::make('selectedAttributes')
+                ->label('Thuộc tính sản phẩm')
+                ->relationship('attributes', 'name') // vẫn dùng relation đúng
+                ->multiple()
+                ->preload()
+                ->searchable()
+                ->helperText('Chọn các thuộc tính dùng để tạo biến thể (VD: Màu sắc, Dung lượng)'),
+
             Textarea::make('short_description')
                 ->label('Mô tả ngắn')
                 ->rows(2)

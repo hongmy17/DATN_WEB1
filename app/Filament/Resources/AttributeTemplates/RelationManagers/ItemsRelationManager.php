@@ -1,68 +1,59 @@
 <?php
 
-namespace App\Filament\Resources\Attributes\RelationManagers;
+namespace App\Filament\Resources\AttributeTemplates\RelationManagers;
 
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-class AttributeValuesRelationManager extends RelationManager
+class ItemsRelationManager extends RelationManager
 {
-    protected static string $relationship = 'attributeValues';
+    protected static string $relationship = 'items';
 
-    protected static ?string $recordTitleAttribute = 'value';
+    protected static ?string $title = 'Danh sách thuộc tính';
 
     public function form(Schema $schema): Schema
     {
         return $schema->components([
-            TextInput::make('value')
-                ->label('Giá trị')
+            TextInput::make('name')
+                ->label('Tên thuộc tính')
                 ->required()
                 ->maxLength(100)
-                ->placeholder('VD: Đỏ, Xanh, 512GB...'),
-
-            ColorPicker::make('color_code')
-                ->label('Mã màu')
-                ->helperText('Chỉ nhập khi thuộc tính là "Màu sắc"')
-                ->visible(fn () => $this->ownerRecord?->display_type == 1),
+                ->placeholder('VD: RAM, Màn hình, Pin...'),
 
             TextInput::make('sort_order')
                 ->label('Thứ tự')
                 ->numeric()
                 ->default(0)
-                ->helperText('Số càng nhỏ càng hiển thị lên trước'),
+                ->disabled()
+                ->dehydrated(),
         ]);
     }
 
     public function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('value')
+            ->reorderable('sort_order')
             ->defaultSort('sort_order')
             ->columns([
-                TextColumn::make('value')
-                    ->label('Giá trị')
-                    ->searchable(),
-
-                TextColumn::make('color_code')
-                    ->label('Mã màu')
-                    ->badge()
-                    ->visible(fn () => $this->ownerRecord?->display_type == 1),
-
                 TextColumn::make('sort_order')
-                    ->label('Thứ tự')
+                    ->label('STT')
                     ->sortable(),
+
+                TextColumn::make('name')
+                    ->label('Tên thuộc tính')
+                    ->searchable(),
             ])
             ->headerActions([
-                CreateAction::make()->label('Thêm giá trị'),
+                CreateAction::make()
+                    ->label('Thêm thuộc tính'),
             ])
             ->recordActions([
                 EditAction::make(),

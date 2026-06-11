@@ -38,21 +38,58 @@ class AttributesForm
                         ->required()
                         ->placeholder('VD: Đỏ, 512GB...'),
 
+                    // BUG FIX: Thêm ->live() để color_code phản ứng ngay khi display_type thay đổi.
+                    // Path '../../display_type' đúng: lên 1 cấp (Repeater item) → lên 1 cấp (Schema) → lấy display_type.
                     ColorPicker::make('color_code')
                         ->label('Mã màu')
-                        ->visible(fn (callable $get) => $get('../../display_type') == 1)
-                        ->dehydrated(fn (callable $get) => $get('../../display_type') == 1),
+                        ->live()
+                        ->visible(fn (callable $get) => (int) $get('../../display_type') === 1),
 
                     TextInput::make('sort_order')
                         ->label('Thứ tự')
                         ->numeric()
-                        ->default(0),
+                        ->default(0)
+                        ->disabled()
+                        ->dehydrated(),
                 ])
                 ->columns(3)
                 ->defaultItems(0)
                 ->addActionLabel('Thêm giá trị')
-                ->reorderable()
-                ->collapsible(),
+                ->reorderable('sort_order')
+                ->collapsible()
+                ->afterStateUpdated(function ($state, callable $set) {
+                    $sorted = collect($state)
+                        ->values()
+                        ->map(function ($item, $index) {
+                            $item['sort_order'] = $index + 1;
+                            return $item;
+                        })
+                        ->toArray();
+
+                    $set('attributeValues', $sorted);
+                })
+                ->afterStateHydrated(function ($component, $state) {
+                    if (!empty($state)) {
+                        $sorted = collect($state)
+                            ->sortBy('sort_order')
+                            ->values()
+                            ->map(function ($item, $index) {
+                                $item['sort_order'] = $index + 1;
+                                return $item;
+                            })
+                            ->toArray();
+                        $component->state($sorted);
+                    }
+                })
+                ->mutateDehydratedStateUsing(function (array $state): array {
+                    return collect($state)
+                        ->values()
+                        ->map(function ($item, $index) {
+                            $item['sort_order'] = $index + 1;
+                            return $item;
+                        })
+                        ->toArray();
+                }),
         ]);
     }
 }

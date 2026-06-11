@@ -15,12 +15,18 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use App\Filament\Resources\Products\RelationManagers\ImagesRelationManager;
 use App\Filament\Resources\Products\RelationManagers\VariantsRelationManager;
+use App\Filament\Resources\Products\RelationManagers\CustomAttributesRelationManager;
+
 class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
+    
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArchiveBox;
+    protected static ?string $navigationLabel = 'Sản phẩm';
+    protected static ?string $modelLabel = 'Sản phẩm';
+    protected static ?string $pluralModelLabel = 'Sản phẩm';
+   
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function form(Schema $schema): Schema
@@ -36,8 +42,9 @@ class ProductResource extends Resource
     public static function getRelations(): array
     {
         return [
-                ImagesRelationManager::class,
-                VariantsRelationManager::class,
+            ImagesRelationManager::class,
+            VariantsRelationManager::class,
+            CustomAttributesRelationManager::class,
         ];
     }
 
