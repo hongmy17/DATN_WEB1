@@ -39,6 +39,8 @@
 .addr-modal-overlay.open{display:flex}
 .addr-modal{background:var(--bg-alt);border-radius:var(--r-xl);width:100%;max-width:540px;padding:32px;box-shadow:var(--shadow-xl)}
 .addr-modal-title{font-family:var(--font-display);font-size:18px;font-weight:800;margin-bottom:20px}
+.coupon-tag{padding:8px 14px;border:1.5px dashed var(--border);border-radius:var(--r-lg);background:var(--surface);cursor:pointer;font-size:13px;font-weight:600;color:var(--ink);transition:all .2s}
+.coupon-tag:hover,.coupon-tag.active{border-color:var(--accent);color:var(--accent);background:var(--bg-alt)}
 </style>
 @endpush
 
@@ -67,9 +69,9 @@
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
               <label class="form-label" style="margin:0">Địa chỉ đã lưu</label>
               <button type="button" onclick="openAddrModal('create')"
-  style="font-size:13px;color:var(--accent);font-weight:600;background:none;border:none;cursor:pointer;padding:0">
-  + Thêm địa chỉ mới
-</button>
+                style="font-size:13px;color:var(--accent);font-weight:600;background:none;border:none;cursor:pointer;padding:0">
+                + Thêm địa chỉ mới
+              </button>
             </div>
             @if($addresses->count() > 0)
             <div style="display:flex;gap:8px;align-items:center">
@@ -100,7 +102,6 @@
             </div>
             <form id="deleteForm" method="POST" style="display:none">
               @csrf @method('DELETE')
-              
             </form>
             @else
             <p style="font-size:13px;color:var(--ink-muted)">Bạn chưa có địa chỉ nào.</p>
@@ -152,12 +153,74 @@
         </div>
         <div class="form-group">
           <label class="form-label">Ghi chú (tùy chọn)</label>
-          <textarea class="form-control" rows="2" placeholder="Giao sau 18h, gọi trước khi giao..."></textarea>
+          <textarea id="note" class="form-control" rows="2" placeholder="Giao sau 18h, gọi trước khi giao..."></textarea>
+        </div>
+      </div>
+
+      {{-- Mã giảm giá --}}
+      <div class="checkout-card">
+        <div class="checkout-card-title"><div class="step-dot">2</div>Mã giảm giá</div>
+
+        {{-- Danh sách mã có sẵn --}}
+@if(isset($coupons) && $coupons->count() > 0)
+<div style="margin-bottom:16px;position:relative">
+  <button type="button" onclick="toggleCouponList()"
+    style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:10px 16px;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink);width:100%;justify-content:space-between">
+    <span style="display:flex;align-items:center;gap:8px">
+      🏷 Xem mã giảm giá có sẵn
+      <span style="background:var(--accent);color:#fff;border-radius:99px;padding:1px 8px;font-size:11px">
+        {{ $coupons->count() }}
+      </span>
+    </span>
+    <span id="couponListArrow">▼</span>
+  </button>
+
+  <div id="couponListDropdown"
+    style="display:none;position:absolute;top:100%;left:0;right:0;z-index:100;background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--r-lg);margin-top:4px;max-height:220px;overflow-y:auto;box-shadow:var(--shadow-md)">
+    @foreach($coupons as $coupon)
+    <div id="coupon-btn-{{ $coupon->coupon_code }}"
+      onclick="selectCoupon('{{ $coupon->coupon_code }}')"
+      style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border-soft);transition:var(--transition)"
+      onmouseover="this.style.background='var(--surface)'"
+      onmouseout="this.style.background='transparent'">
+      <div>
+        <span style="font-weight:700;font-size:14px">🏷 {{ $coupon->coupon_code }}</span>
+        @if($coupon->min_order_value > 0)
+          <span style="font-size:12px;color:var(--ink-muted);margin-left:6px">
+            Đơn từ {{ number_format($coupon->min_order_value) }}₫
+          </span>
+        @endif
+      </div>
+      <span style="font-weight:700;font-size:14px;color:var(--accent)">
+        {{ $coupon->type == 0 ? '-'.$coupon->value.'%' : '-'.number_format($coupon->value).'₫' }}
+      </span>
+    </div>
+    @endforeach
+  </div>
+</div>
+@endif
+
+        {{-- Ô nhập tay --}}
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="flex:1">
+            <input type="text" id="couponInput" class="form-control"
+                   placeholder="Nhập hoặc chọn mã giảm giá..."
+                   style="text-transform:uppercase">
+            <p id="couponMsg" style="font-size:13px;margin-top:6px;display:none"></p>
+          </div>
+          <button type="button" onclick="applyCoupon()"
+            style="padding:10px 20px;background:var(--ink);color:#fff;border:none;border-radius:var(--r-lg);cursor:pointer;font-weight:600;white-space:nowrap">
+            Áp dụng
+          </button>
+          <button type="button" id="removeCouponBtn" onclick="removeCoupon()"
+            style="display:none;padding:10px 16px;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);cursor:pointer;font-weight:600;color:var(--red)">
+            Hủy
+          </button>
         </div>
       </div>
 
       <div class="checkout-card">
-        <div class="checkout-card-title"><div class="step-dot">2</div>Phương thức vận chuyển</div>
+        <div class="checkout-card-title"><div class="step-dot">3</div>Phương thức vận chuyển</div>
         <div class="payment-opts">
           <label class="payment-opt selected" onclick="selectOpt(this)">
             <input type="radio" name="ship" checked>
@@ -181,7 +244,7 @@
       </div>
 
       <div class="checkout-card">
-        <div class="checkout-card-title"><div class="step-dot">3</div>Phương thức thanh toán</div>
+        <div class="checkout-card-title"><div class="step-dot">4</div>Phương thức thanh toán</div>
         <div class="payment-opts">
           <label class="payment-opt selected" onclick="selectOpt(this)">
             <input type="radio" name="pay" checked>
@@ -214,7 +277,7 @@
         <div style="margin-top:8px">
           <div class="order-total-row"><span>Tạm tính</span><span id="subTotal">—</span></div>
           <div class="order-total-row"><span>Phí vận chuyển</span><span style="color:var(--green)">Miễn phí</span></div>
-          <div class="order-total-row"><span>Giảm giá</span><span style="color:var(--red)">-0₫</span></div>
+          <div class="order-total-row"><span>Giảm giá</span><span style="color:var(--red)" id="discountRow">-0₫</span></div>
           <div class="order-total-final"><span>Tổng cộng</span><span id="grandTotal">—</span></div>
         </div>
         <div style="background:var(--green-light);border-radius:var(--r-lg);padding:10px 14px;margin-top:14px;font-size:12px;color:var(--green);text-align:center;font-weight:600">🔒 Thanh toán bảo mật SSL 256-bit</div>
@@ -248,8 +311,7 @@
     </div>
     <form id="addrForm" method="POST">
       @csrf
-      @csrf
-<input type="hidden" name="redirect_to" value="{{ url('/thanh-toan') }}">
+      <input type="hidden" name="redirect_to" value="{{ url('/thanh-toan') }}">
       <span id="addrMethodField"></span>
       <div class="form-row">
         <div class="form-group">
@@ -298,6 +360,7 @@
   </div>
 </div>
 @endsection
+
 @push('scripts')
 <script>
   function selectOpt(el) {
@@ -318,6 +381,7 @@
       </div>`).join('');
     const sub = Cart.total();
     document.getElementById('subTotal').textContent = fmtPrice(sub);
+    document.getElementById('discountRow').textContent = '-0₫';
     document.getElementById('grandTotal').textContent = fmtPrice(sub);
   }
 
@@ -327,6 +391,83 @@
     document.getElementById('successModal').classList.add('open');
     localStorage.removeItem('nx_cart');
     Cart.updateUI();
+  }
+
+  let couponData = null;
+
+  function selectCoupon(code) {
+    document.getElementById('couponInput').value = code;
+    document.getElementById('couponInput').disabled = false;
+    document.querySelectorAll('[id^="coupon-btn-"]').forEach(btn => {
+      btn.style.background = 'transparent';
+      btn.style.fontWeight = '';
+    });
+    const btn = document.getElementById('coupon-btn-' + code);
+    if (btn) btn.style.background = 'var(--surface)';
+
+    // Đóng dropdown
+    document.getElementById('couponListDropdown').style.display = 'none';
+    document.getElementById('couponListArrow').textContent = '▼';
+
+    applyCoupon();
+  }
+
+  function applyCoupon() {
+    const code = document.getElementById('couponInput').value.trim();
+    if (!code) return alert('Vui lòng nhập mã giảm giá!');
+    const subTotal = Cart.total();
+    fetch('{{ route("coupon.apply") }}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+      },
+      body: JSON.stringify({ coupon_code: code, sub_total: subTotal })
+    })
+    .then(r => r.json())
+    .then(data => {
+      const msg = document.getElementById('couponMsg');
+      msg.style.display = 'block';
+      if (data.success) {
+        couponData = data;
+        msg.style.color = 'var(--green)';
+        msg.textContent = data.message;
+        document.getElementById('removeCouponBtn').style.display = 'block';
+        document.getElementById('couponInput').disabled = true;
+        updateTotals();
+      } else {
+        msg.style.color = 'var(--red)';
+        msg.textContent = data.message;
+        couponData = null;
+        document.querySelectorAll('.coupon-tag').forEach(btn => btn.classList.remove('active'));
+      }
+    });
+  }
+
+  function removeCoupon() {
+    fetch('{{ route("coupon.remove") }}', {
+      method: 'POST',
+      headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+    })
+    .then(r => r.json())
+    .then(() => {
+      couponData = null;
+      document.getElementById('couponInput').value = '';
+      document.getElementById('couponInput').disabled = false;
+      document.getElementById('removeCouponBtn').style.display = 'none';
+      document.getElementById('couponMsg').style.display = 'none';
+      document.querySelectorAll('.coupon-tag').forEach(btn => btn.classList.remove('active'));
+      updateTotals();
+    });
+  }
+
+  function updateTotals() {
+    const sub = Cart.total();
+    const discount = couponData ? couponData.discount_amount : 0;
+    const total = sub - discount;
+    document.getElementById('subTotal').textContent = fmtPrice(sub);
+    document.getElementById('discountRow').textContent = discount > 0 ? '-' + fmtPrice(discount) : '-0₫';
+    document.getElementById('grandTotal').textContent = fmtPrice(total);
   }
 
   function fillAddress(select) {
@@ -340,13 +481,6 @@
     document.getElementById('address_detail').value = opt.dataset.detail;
   }
 
-  function editSelected() {
-    const select = document.getElementById('savedAddress');
-    const opt = select.options[select.selectedIndex];
-    if (!opt.value) return alert('Vui lòng chọn địa chỉ!');
-    window.location.href = opt.dataset.edit;
-  }
-
   function deleteSelected() {
     const select = document.getElementById('savedAddress');
     const opt = select.options[select.selectedIndex];
@@ -357,42 +491,30 @@
     form.submit();
   }
 
-  renderOrderItems();
-  window.addEventListener('click', e => {
-    if (e.target.id === 'successModal') e.target.classList.remove('open');
-  });
-
-function openAddrModal(mode, id) {
+  function openAddrModal(mode) {
     const modal = document.getElementById('addrModal');
     const form  = document.getElementById('addrForm');
     const title = document.getElementById('addrModalTitle');
     const methodField = document.getElementById('addrMethodField');
-
-    // Reset form
     form.reset();
-
     if (mode === 'create') {
       title.textContent = 'Thêm địa chỉ mới';
       form.action = '/dia-chi';
       methodField.innerHTML = '';
     } else {
-      // Edit mode
       const select = document.getElementById('savedAddress');
       const opt = select.options[select.selectedIndex];
       if (!opt.value) return alert('Vui lòng chọn địa chỉ!');
-
       title.textContent = 'Sửa địa chỉ';
       form.action = `/dia-chi/${opt.value}`;
       methodField.innerHTML = '<input type="hidden" name="_method" value="PUT">';
-
-      document.getElementById('modal_receiver_name').value   = opt.dataset.name;
-      document.getElementById('modal_receiver_phone').value  = opt.dataset.phone;
-      document.getElementById('modal_province').value        = opt.dataset.province;
-      document.getElementById('modal_district').value        = opt.dataset.district;
-      document.getElementById('modal_ward').value            = opt.dataset.ward;
-      document.getElementById('modal_address_detail').value  = opt.dataset.detail;
+      document.getElementById('modal_receiver_name').value  = opt.dataset.name;
+      document.getElementById('modal_receiver_phone').value = opt.dataset.phone;
+      document.getElementById('modal_province').value       = opt.dataset.province;
+      document.getElementById('modal_district').value       = opt.dataset.district;
+      document.getElementById('modal_ward').value           = opt.dataset.ward;
+      document.getElementById('modal_address_detail').value = opt.dataset.detail;
     }
-
     modal.classList.add('open');
   }
 
@@ -400,13 +522,39 @@ function openAddrModal(mode, id) {
     document.getElementById('addrModal').classList.remove('open');
   }
 
-  window.openAddrModal = openAddrModal;
-  window.closeAddrModal = closeAddrModal;
+  renderOrderItems();
+  window.addEventListener('click', e => {
+    if (e.target.id === 'successModal') e.target.classList.remove('open');
+  });
 
   window.selectOpt = selectOpt;
   window.placeOrder = placeOrder;
   window.fillAddress = fillAddress;
-  window.editSelected = editSelected;
   window.deleteSelected = deleteSelected;
+  window.openAddrModal = openAddrModal;
+  window.closeAddrModal = closeAddrModal;
+  window.applyCoupon = applyCoupon;
+  window.removeCoupon = removeCoupon;
+
+  function toggleCouponList() {
+    const dropdown = document.getElementById('couponListDropdown');
+    const arrow = document.getElementById('couponListArrow');
+    const isOpen = dropdown.style.display !== 'none';
+    dropdown.style.display = isOpen ? 'none' : 'block';
+    arrow.textContent = isOpen ? '▼' : '▲';
+  }
+
+  // Đóng dropdown khi click ra ngoài
+  document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('couponListDropdown');
+    if (dropdown && !dropdown.contains(e.target) && !e.target.closest('[onclick="toggleCouponList()"]')) {
+      dropdown.style.display = 'none';
+      const arrow = document.getElementById('couponListArrow');
+      if (arrow) arrow.textContent = '▼';
+    }
+  });
+
+  window.toggleCouponList = toggleCouponList;
+  window.selectCoupon = selectCoupon;
 </script>
 @endpush

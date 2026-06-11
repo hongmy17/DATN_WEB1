@@ -23,8 +23,6 @@
 .summary-row:last-of-type{border-bottom:none}
 .summary-total{display:flex;justify-content:space-between;font-size:20px;font-weight:800;padding:16px 0 0;margin-top:8px;border-top:2px solid var(--border)}
 .summary-total span:last-child{color:var(--accent)}
-.coupon-row{display:flex;gap:8px;margin:16px 0}
-.coupon-row input{flex:1}
 .checkout-btn{width:100%;padding:16px;background:var(--ink);color:#fff;border:none;border-radius:var(--r-xl);font-size:16px;font-weight:800;cursor:pointer;transition:var(--transition);margin-top:16px;display:flex;align-items:center;justify-content:center;gap:8px}
 .checkout-btn:hover{background:var(--ink-2);transform:translateY(-2px);box-shadow:var(--shadow-md)}
 .empty-cart{text-align:center;padding:80px 24px;background:var(--bg-alt);border:1px solid var(--border-soft);border-radius:var(--r-2xl)}
@@ -80,10 +78,6 @@
           <div class="summary-row"><span class="text-ink3">Tạm tính</span><span>${fmtPrice(sub)}</span></div>
           <div class="summary-row"><span class="text-ink3">Phí vận chuyển</span><span style="color:${ship===0?'var(--green)':'inherit'}">${ship===0?'Miễn phí':fmtPrice(ship)}</span></div>
           <div class="summary-total"><span>Tổng cộng</span><span>${fmtPrice(total)}</span></div>
-          <div class="coupon-row">
-            <input type="text" class="form-control" placeholder="Mã giảm giá..." id="couponInput">
-            <button class="btn btn-outline btn-sm" onclick="applyCoupon()">Áp dụng</button>
-          </div>
           <a href="{{ url('thanh-toan') }}"><button class="checkout-btn">Tiến hành thanh toán →</button></a>
           <div style="margin-top:14px;text-align:center;font-size:12px;color:var(--ink-muted)">🔒 Thanh toán bảo mật SSL 256-bit</div>
         </div>
@@ -96,14 +90,7 @@
     renderCart();
   }
 
-  function applyCoupon() {
-    const v = document.getElementById('couponInput')?.value.trim().toUpperCase();
-    if (v === 'NEXUS10') Toast.show('Áp dụng giảm 10% thành công! 🎉','success');
-    else Toast.show('Mã giảm giá không hợp lệ','error');
-  }
-
   renderCart();
   window.changeQty = changeQty;
-  window.applyCoupon = applyCoupon;
 </script>
 @endpush

@@ -5,8 +5,10 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CouponController;
 
 require __DIR__ . '/auth.php';
+
 use App\Http\Controllers\UserAddressController;
 use App\Http\Controllers\CheckoutController;
 
@@ -15,9 +17,9 @@ require __DIR__ . '/auth.php';
 // ─── TRANG CHÍNH ────────────────────────────────────────────────────────────
 Route::get('/', fn() => view('pages.home'))->name('home');
 
-Route::get('/', fn () => view('pages.home'))->name('home');
+Route::get('/', fn() => view('pages.home'))->name('home');
 
-Route::get('/san-pham', fn () => view('pages.product.index'))->name('products.index');
+Route::get('/san-pham', fn() => view('pages.product.index'))->name('products.index');
 Route::get('/chi-tiet', fn() => view('pages.product.show'))->name('products.show');
 
 Route::get('/gio-hang', fn() => view('pages.cart.index'))->name('cart.index');
@@ -44,7 +46,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/dang-ky', [RegisteredUserController::class, 'store'])
         ->name('register.store');
 
-    Route::get('/quen-mat-khau', fn () => view('pages.auth.forgot'))
+    Route::get('/quen-mat-khau', fn() => view('pages.auth.forgot'))
         ->name('password.request');
 
     Route::get('/auth/redirect/{provider}', [SocialAuthController::class, 'redirect'])
@@ -64,6 +66,10 @@ Route::middleware('auth')->group(function () {
         ->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])
         ->name('profile.destroy');
+
+    // ─── COUPON ─────────────────────────────────────────────────────────────
+    Route::post('/coupon/apply', [CouponController::class, 'apply'])->name('coupon.apply');
+    Route::post('/coupon/remove', [CouponController::class, 'remove'])->name('coupon.remove');
 
     // ─── ĐỊA CHỈ ────────────────────────────────────────────────────────────
     Route::prefix('dia-chi')->name('addresses.')->group(function () {
