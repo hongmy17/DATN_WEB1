@@ -11,27 +11,32 @@ class OrderSeeder extends Seeder
     {
         $now = now();
 
-        $users    = DB::table('users')->where('role', 0)->get()->keyBy('id');
-        $userId1  = DB::table('users')->where('email', 'an.nguyen@gmail.com')->value('id');
-        $userId2  = DB::table('users')->where('email', 'binh.tran@gmail.com')->value('id');
-        $userId3  = DB::table('users')->where('email', 'cuong.le@gmail.com')->value('id');
+        $userId1 = DB::table('users')->where('email', 'an.nguyen@gmail.com')->value('id');
+        $userId2 = DB::table('users')->where('email', 'binh.tran@gmail.com')->value('id');
+        $userId3 = DB::table('users')->where('email', 'cuong.le@gmail.com')->value('id');
 
-        $addr1    = DB::table('user_addresses')->where('user_id', $userId1)->where('is_default', true)->first();
-        $addr2    = DB::table('user_addresses')->where('user_id', $userId2)->where('is_default', true)->first();
+        $addr1 = DB::table('user_addresses')->where('user_id', $userId1)->where('is_default', true)->first();
+        $addr2 = DB::table('user_addresses')->where('user_id', $userId2)->where('is_default', true)->first();
+        $addr3 = DB::table('user_addresses')->where('user_id', $userId3)->first();
 
-        $coupon   = DB::table('coupons')->where('coupon_code', 'WELCOME10')->first();
+        $coupon = DB::table('coupons')->where('coupon_code', 'WELCOME10')->first();
 
-        // Lấy variant IDs
-        $vPolRedM   = DB::table('product_variants')->where('sku', 'POL-RED-M')->first();
-        $vPolBluL   = DB::table('product_variants')->where('sku', 'POL-BLU-L')->first();
-        $vThnBlkM   = DB::table('product_variants')->where('sku', 'THN-BLK-M')->first();
-        $vSamBlk    = DB::table('product_variants')->where('sku', 'SAM-A55-BLK')->first();
+        // Lấy variant bằng đúng SKU đã tạo trong ProductSeeder (MacBook Pro 14" M3 Pro)
+        $vBlk512 = DB::table('product_variants')->where('sku', 'MBP14-BLK-512')->first(); // 42,990,000
+        $vBlk1TB = DB::table('product_variants')->where('sku', 'MBP14-BLK-1TB')->first(); // 52,990,000
+        $vSlv512 = DB::table('product_variants')->where('sku', 'MBP14-SLV-512')->first(); // 42,990,000
+
+        // Dừng sớm nếu thiếu dữ liệu bắt buộc
+        if (! $vBlk512 || ! $vBlk1TB || ! $vSlv512) {
+            $this->command->warn('OrderSeeder: Không tìm thấy product_variants. Hãy chạy ProductSeeder trước.');
+            return;
+        }
 
         // =====================================================================
-        // Đơn hàng 1: Nguyễn Văn An – đã hoàn tất, có coupon
+        // Đơn hàng 1: Nguyễn Văn An – đã hoàn tất, có coupon WELCOME10 (-10%)
         // =====================================================================
-        $subtotal1       = ($vPolRedM->price * 2) + ($vThnBlkM->price * 1);
-        $discountAmount1 = round($subtotal1 * 0.10); // WELCOME10 giảm 10%
+        $subtotal1       = ($vBlk512->price * 1) + ($vBlk1TB->price * 1);
+        $discountAmount1 = round($subtotal1 * 0.10);
         $total1          = $subtotal1 - $discountAmount1;
 
         $orderId1 = DB::table('orders')->insertGetId([
@@ -53,22 +58,22 @@ class OrderSeeder extends Seeder
         DB::table('order_items')->insert([
             [
                 'order_id'            => $orderId1,
-                'variant_id'          => $vPolRedM->id,
-                'product_name'        => 'Áo Polo Nam Classic',
-                'variant_description' => 'Màu: Đỏ / Size: M',
-                'quantity'            => 2,
-                'unit_price'          => $vPolRedM->price,
-                'total_price'         => $vPolRedM->price * 2,
+                'variant_id'          => $vBlk512->id,
+                'product_name'        => 'MacBook Pro 14" M3 Pro',
+                'variant_description' => 'Màu: Space Black / SSD: 512GB',
+                'quantity'            => 1,
+                'unit_price'          => $vBlk512->price,
+                'total_price'         => $vBlk512->price,
                 'created_at'          => $now->copy()->subDays(10),
             ],
             [
                 'order_id'            => $orderId1,
-                'variant_id'          => $vThnBlkM->id,
-                'product_name'        => 'Áo Thun Nữ Oversize',
-                'variant_description' => 'Màu: Đen / Size: M',
+                'variant_id'          => $vBlk1TB->id,
+                'product_name'        => 'MacBook Pro 14" M3 Pro',
+                'variant_description' => 'Màu: Space Black / SSD: 1TB',
                 'quantity'            => 1,
-                'unit_price'          => $vThnBlkM->price,
-                'total_price'         => $vThnBlkM->price * 1,
+                'unit_price'          => $vBlk1TB->price,
+                'total_price'         => $vBlk1TB->price,
                 'created_at'          => $now->copy()->subDays(10),
             ],
         ]);
@@ -78,7 +83,7 @@ class OrderSeeder extends Seeder
             'payment_gateway'  => 'VNPay',
             'transaction_code' => 'VNP202401100001',
             'amount'           => $total1,
-            'status'           => 1, // thành công
+            'status'           => 1,
             'gateway_response' => json_encode(['responseCode' => '00', 'message' => 'Giao dịch thành công']),
             'paid_at'          => $now->copy()->subDays(10)->addMinutes(5),
             'created_at'       => $now->copy()->subDays(10),
@@ -88,7 +93,7 @@ class OrderSeeder extends Seeder
         // =====================================================================
         // Đơn hàng 2: Trần Thị Bình – đang giao, COD, không coupon
         // =====================================================================
-        $subtotal2 = $vSamBlk->price * 1;
+        $subtotal2 = $vSlv512->price * 1;
 
         $orderId2 = DB::table('orders')->insertGetId([
             'user_id'          => $userId2,
@@ -108,12 +113,12 @@ class OrderSeeder extends Seeder
 
         DB::table('order_items')->insert([
             'order_id'            => $orderId2,
-            'variant_id'          => $vSamBlk->id,
-            'product_name'        => 'Samsung Galaxy A55',
-            'variant_description' => 'Màu: Đen',
+            'variant_id'          => $vSlv512->id,
+            'product_name'        => 'MacBook Pro 14" M3 Pro',
+            'variant_description' => 'Màu: Silver / SSD: 512GB',
             'quantity'            => 1,
-            'unit_price'          => $vSamBlk->price,
-            'total_price'         => $vSamBlk->price,
+            'unit_price'          => $vSlv512->price,
+            'total_price'         => $vSlv512->price,
             'created_at'          => $now->copy()->subDays(2),
         ]);
 
@@ -132,9 +137,7 @@ class OrderSeeder extends Seeder
         // =====================================================================
         // Đơn hàng 3: Lê Minh Cường – chờ xác nhận, Momo
         // =====================================================================
-        $subtotal3 = $vPolBluL->price * 3;
-
-        $addr3 = DB::table('user_addresses')->where('user_id', $userId3)->first();
+        $subtotal3 = $vBlk1TB->price * 2;
 
         $orderId3 = DB::table('orders')->insertGetId([
             'user_id'          => $userId3,
@@ -154,12 +157,12 @@ class OrderSeeder extends Seeder
 
         DB::table('order_items')->insert([
             'order_id'            => $orderId3,
-            'variant_id'          => $vPolBluL->id,
-            'product_name'        => 'Áo Polo Nam Classic',
-            'variant_description' => 'Màu: Xanh Dương / Size: L',
-            'quantity'            => 3,
-            'unit_price'          => $vPolBluL->price,
-            'total_price'         => $vPolBluL->price * 3,
+            'variant_id'          => $vBlk1TB->id,
+            'product_name'        => 'MacBook Pro 14" M3 Pro',
+            'variant_description' => 'Màu: Space Black / SSD: 1TB',
+            'quantity'            => 2,
+            'unit_price'          => $vBlk1TB->price,
+            'total_price'         => $vBlk1TB->price * 2,
             'created_at'          => $now,
         ]);
 
@@ -168,7 +171,7 @@ class OrderSeeder extends Seeder
             'payment_gateway'  => 'Momo',
             'transaction_code' => 'MOMO' . now()->format('YmdHis'),
             'amount'           => $subtotal3,
-            'status'           => 1, // đã thanh toán
+            'status'           => 1,
             'gateway_response' => json_encode(['resultCode' => 0, 'message' => 'Thành công']),
             'paid_at'          => $now,
             'created_at'       => $now,
