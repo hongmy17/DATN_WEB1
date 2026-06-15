@@ -15,6 +15,7 @@ class OrderItem extends Model
         'variant_description',
         'quantity',
         'unit_price',
+        'total_price',
     ];
 
     // Relationships

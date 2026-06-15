@@ -16,9 +16,10 @@ class Order extends Model
         'district',
         'ward',
         'address_detail',
+        'shipping_address',
         'order_status',
         'coupon_code',
-        'sub_total',
+        'subtotal',
         'discount_amount',
         'total_amount',
         'note',
@@ -33,7 +34,7 @@ class Order extends Model
 
     public function statusLabel(): string
     {
-        return match($this->order_status) {
+        return match ($this->order_status) {
             0 => 'Chờ xác nhận',
             1 => 'Đã xác nhận',
             2 => 'Đang giao',

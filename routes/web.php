@@ -71,6 +71,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/coupon/apply', [CouponController::class, 'apply'])->name('coupon.apply');
     Route::post('/coupon/remove', [CouponController::class, 'remove'])->name('coupon.remove');
 
+    //cart
+    Route::post('thanh-toan/dat-hang', [CheckoutController::class, 'store'])
+        ->name('checkout.store');
+
     // ─── ĐỊA CHỈ ────────────────────────────────────────────────────────────
     Route::prefix('dia-chi')->name('addresses.')->group(function () {
         Route::get('/', [UserAddressController::class, 'index'])->name('index');
