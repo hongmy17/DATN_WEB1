@@ -13,14 +13,33 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class CouponResource extends Resource
 {
     protected static ?string $model = Coupon::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTicket;
 
+    protected static ?string $navigationLabel = 'Mã giảm giá';
+    protected static ?string $modelLabel = 'Mã giảm giá';
+    protected static ?string $pluralModelLabel = 'Mã giảm giá';
     protected static ?string $recordTitleAttribute = 'coupon_code';
+
+    protected static UnitEnum|string|null $navigationGroup = 'Khuyến mãi';
+    protected static ?int $navigationSort = 1;
+
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getModel()::where('status', 1)
+            ->where('end_date', '>=', now())
+            ->count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'success';
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -34,17 +53,15 @@ class CouponResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => ListCoupons::route('/'),
+            'index'  => ListCoupons::route('/'),
             'create' => CreateCoupon::route('/create'),
-            'edit' => EditCoupon::route('/{record}/edit'),
+            'edit'   => EditCoupon::route('/{record}/edit'),
         ];
     }
 }

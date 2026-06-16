@@ -7,59 +7,71 @@ use Illuminate\Http\Request;
 
 class CouponController extends Controller
 {
-    // Kiểm tra và áp mã giảm giá
     public function apply(Request $request)
     {
         $request->validate([
-            'coupon_code' => 'required|string',
+            'coupon_code' => 'required|string|max:50',
             'sub_total'   => 'required|numeric|min:0',
+        ], [
+            'coupon_code.required' => 'Vui lòng nhập mã giảm giá.',
+            'sub_total.required'   => 'Thiếu thông tin tổng đơn hàng.',
         ]);
 
         $coupon = Coupon::where('coupon_code', $request->coupon_code)->first();
 
-        if (!$coupon) {
+        if (! $coupon) {
             return response()->json([
                 'success' => false,
-                'message' => 'Mã giảm giá không tồn tại!',
+                'message' => 'Mã giảm giá không tồn tại.',
             ]);
         }
 
-        if (!$coupon->isValid($request->sub_total)) {
+        $errorMessage = $coupon->validate((float) $request->sub_total);
+        if ($errorMessage !== null) {
             return response()->json([
                 'success' => false,
-                'message' => 'Mã giảm giá không hợp lệ hoặc đã hết hạn!',
+                'message' => $errorMessage,
             ]);
         }
 
-        $discount = $coupon->calcDiscount($request->sub_total);
+        $discount = $coupon->calcDiscount((float) $request->sub_total);
         $total    = $request->sub_total - $discount;
 
-        // Lưu vào session
         session([
             'coupon_code'     => $coupon->coupon_code,
             'coupon_id'       => $coupon->id,
             'discount_amount' => $discount,
         ]);
 
-        return response()->json([
+        $discountLabel = $coupon->type === Coupon::TYPE_PERCENT
+            ? $coupon->value . '%'
+            : number_format($coupon->value, 0, ',', '.') . '₫';
+
+        $responseData = [
             'success'         => true,
-            'message'         => 'Áp mã thành công!',
+            'message'         => 'Áp mã thành công! Bạn được giảm ' . number_format($discount, 0, ',', '.') . '₫.',
             'coupon_code'     => $coupon->coupon_code,
             'discount_amount' => $discount,
+            'discount_label'  => $discountLabel,
             'total'           => $total,
             'type'            => $coupon->type,
             'value'           => $coupon->value,
-        ]);
+        ];
+
+        if ($coupon->type === Coupon::TYPE_PERCENT && $coupon->max_discount) {
+            $responseData['max_discount'] = $coupon->max_discount;
+        }
+
+        return response()->json($responseData);
     }
 
-    // Hủy mã giảm giá
     public function remove()
     {
         session()->forget(['coupon_code', 'coupon_id', 'discount_amount']);
 
         return response()->json([
             'success' => true,
-            'message' => 'Đã hủy mã giảm giá!',
+            'message' => 'Đã hủy mã giảm giá.',
         ]);
     }
 }
