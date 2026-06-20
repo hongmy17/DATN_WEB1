@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -12,7 +13,7 @@ class Product extends Model
     protected const DELETED_AT = 'delete_at';
 
     protected $fillable = [
-        'code', 'category_id', 'name', 'slug',
+        'code', 'base_sku', 'category_id', 'name', 'slug',
         'short_description', 'description',
         'thumbnail', 'status', 'created_by',
     ];
@@ -49,21 +50,57 @@ class Product extends Model
         return $this->belongsToMany(Attribute::class, 'product_attributes');
     }
 
-    /** Tính năng 2: Attributes riêng cho sản phẩm này */
+    /** Attributes riêng cho sản phẩm này */
     public function customAttributes()
     {
         return $this->hasMany(ProductCustomAttribute::class)->orderBy('sort_order');
     }
 
-    // ─── Accessors ────────────────────────────────────────────
+    // ─── Scopes ───────────────────────────────────────────────
 
-    public function getMinPriceAttribute(): float|null
+    /**
+     * Chỉ lấy sản phẩm đang publish — dùng cho client.
+     * Admin KHÔNG dùng scope này (admin cần xem cả sản phẩm đang ẩn).
+     */
+    public function scopeVisible(Builder $query): Builder
     {
-        return $this->variants->min('price');
+        return $query->where('status', true);
     }
 
-    public function getMaxPriceAttribute(): float|null
+    /**
+     * Sản phẩm "sẵn sàng publish": có status=true VÀ có ít nhất 1 variant
+     * VÀ có ít nhất 1 ảnh. Dùng để admin tự kiểm tra trước khi public.
+     */
+    public function scopeReadyToPublish(Builder $query): Builder
     {
-        return $this->variants->max('price');
+        return $query->where('status', true)
+            ->whereHas('variants')
+            ->whereHas('images');
+    }
+
+    // ─── Accessors ────────────────────────────────────────────
+
+    public function getMinPriceAttribute(): ?float
+    {
+        return $this->variants_min_price ?? $this->variants()->min('price');
+    }
+
+    public function getMaxPriceAttribute(): ?float
+    {
+        return $this->variants_max_price ?? $this->variants()->max('price');
+    }
+
+    public function getThumbnailUrlAttribute(): ?string
+    {
+        return $this->thumbnail ? asset('storage/' . $this->thumbnail) : null;
+    }
+
+    /**
+     * Sản phẩm có đủ điều kiện publish hay không.
+     * Dùng để cảnh báo admin trong form trước khi lưu status=true.
+     */
+    public function getIsReadyToPublishAttribute(): bool
+    {
+        return $this->variants()->exists() && $this->images()->exists();
     }
 }

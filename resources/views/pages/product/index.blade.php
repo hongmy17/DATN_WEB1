@@ -47,12 +47,7 @@
           <div class="filter-check"><label><input type="radio" name="cat"> Điện thoại</label><span class="filter-check-count">2</span></div>
           <div class="filter-check"><label><input type="radio" name="cat"> Tablet</label><span class="filter-check-count">2</span></div>
         </div>
-        <div class="filter-section">
-          <div class="filter-title">Thương hiệu</div>
-          <div class="filter-check"><label><input type="checkbox"> Apple</label><span class="filter-check-count">6</span></div>
-          <div class="filter-check"><label><input type="checkbox"> Samsung</label><span class="filter-check-count">1</span></div>
-          <div class="filter-check"><label><input type="checkbox"> Sony</label><span class="filter-check-count">2</span></div>
-        </div>
+       
       </div>
     </aside>
 

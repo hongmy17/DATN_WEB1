@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\Products\Schemas;
 
+use App\Models\Product;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -22,6 +24,13 @@ class ProductsForm
                 ->maxLength(10)
                 ->unique(ignoreRecord: true)
                 ->placeholder('VD: PRD0000001'),
+
+            // Thêm: base_sku để variant kế thừa khi tạo thủ công không nhập SKU riêng
+            TextInput::make('base_sku')
+                ->label('SKU gốc')
+                ->maxLength(50)
+                ->placeholder('VD: MACBOOK-PRO-14')
+                ->helperText('Biến thể sẽ tự ghép SKU này + thuộc tính nếu không nhập SKU riêng'),
 
             TextInput::make('name')
                 ->label('Tên sản phẩm')
@@ -45,12 +54,9 @@ class ProductsForm
                 ->searchable()
                 ->preload(),
 
-            // FIX: Đổi tên field từ 'attributes' → 'selectedAttributes'
-            // để tránh conflict với tên relation 'attributes' trên Model Product.
-            // Dùng ->relationship() để Filament tự sync pivot table product_attributes.
             Select::make('selectedAttributes')
                 ->label('Thuộc tính sản phẩm')
-                ->relationship('attributes', 'name') // vẫn dùng relation đúng
+                ->relationship('attributes', 'name')
                 ->multiple()
                 ->preload()
                 ->searchable()
@@ -70,12 +76,67 @@ class ProductsForm
                 ->image()
                 ->directory('products/thumbnails')
                 ->imagePreviewHeight('200')
-                ->nullable(),
+                ->nullable()
+                ->helperText('Nếu để trống, hệ thống sẽ dùng ảnh chính trong Thư viện ảnh khi hiển thị ra client'),
 
+            // FIX QUAN TRỌNG: validate không cho publish nếu chưa đủ điều kiện
             Toggle::make('status')
                 ->label('Hiển thị sản phẩm')
-                ->default(true)
-                ->helperText('Tắt để ẩn sản phẩm khỏi trang khách hàng'),
+                ->default(false) // mặc định OFF — admin phải chủ động bật sau khi đủ điều kiện
+                ->live()
+                ->helperText('Tắt để ẩn sản phẩm khỏi trang khách hàng')
+                ->rules([
+                    function ($get, $record) {
+                        return function (string $attribute, $value, $fail) use ($record) {
+                            if (! $value) {
+                                return; // tắt hiển thị luôn được phép
+                            }
+
+                            // record null = đang tạo mới, chưa thể có variant/ảnh
+                            // → chặn bật status khi tạo mới, bắt buộc lưu trước rồi mới publish
+                            if (! $record) {
+                                $fail('Hãy lưu sản phẩm và thêm ảnh + biến thể trước khi bật hiển thị.');
+                                return;
+                            }
+
+                            if (! $record->images()->exists()) {
+                                $fail('Sản phẩm chưa có ảnh nào. Vào tab "Thư viện ảnh" để thêm trước khi hiển thị.');
+                                return;
+                            }
+
+                            if (! $record->variants()->exists()) {
+                                $fail('Sản phẩm chưa có biến thể nào. Vào tab "Biến thể sản phẩm" để generate trước khi hiển thị.');
+                            }
+                        };
+                    },
+                ]),
+
+            // Hiện trạng thái sẵn sàng ngay trong form để admin biết thiếu gì
+            Placeholder::make('publish_readiness')
+                ->label('')
+                ->content(function ($record) {
+                    if (! $record) {
+                        return '💡 Lưu sản phẩm trước, sau đó thêm ảnh và biến thể để có thể bật hiển thị.';
+                    }
+
+                    $hasImages   = $record->images()->exists();
+                    $hasVariants = $record->variants()->exists();
+
+                    if ($hasImages && $hasVariants) {
+                        return '✅ Sản phẩm đã đủ ảnh và biến thể, có thể hiển thị cho khách.';
+                    }
+
+                    $missing = [];
+                    if (! $hasImages) {
+                        $missing[] = 'ảnh';
+                    }
+                    if (! $hasVariants) {
+                        $missing[] = 'biến thể';
+                    }
+
+                    return '⚠️ Sản phẩm còn thiếu: ' . implode(', ', $missing) . '. Chưa nên bật hiển thị.';
+                })
+                ->visible(fn ($record) => true),
         ]);
     }
 }

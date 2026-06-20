@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class ProductVariant extends Model
@@ -23,7 +24,6 @@ class ProductVariant extends Model
         'status'         => 'boolean',
     ];
 
-    // Ngưỡng "sắp hết hàng" — đổi tùy ý
     const LOW_STOCK_THRESHOLD = 5;
 
     // ─── Relations ────────────────────────────────────────────
@@ -43,29 +43,33 @@ class ProductVariant extends Model
         );
     }
 
-    // ─── Tính năng 1: Stock status accessor ───────────────────
+    // ─── Scopes ───────────────────────────────────────────────
 
-    /**
-     * Trả về stock status dạng key: 'in_stock' | 'low_stock' | 'out_of_stock'
-     * Dùng cho frontend: if ($variant->stock_status === 'out_of_stock') ...
-     */
+    /** Chỉ lấy variant đang bán (status=true) — dùng cho client */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('status', true);
+    }
+
+    /** Chỉ lấy variant còn hàng */
+    public function scopeInStock(Builder $query): Builder
+    {
+        return $query->where('stock_quantity', '>', 0);
+    }
+
+    // ─── Stock status accessors ────────────────────────────────
+
     public function getStockStatusAttribute(): string
     {
         if ($this->stock_quantity <= 0) {
             return 'out_of_stock';
         }
-
         if ($this->stock_quantity <= self::LOW_STOCK_THRESHOLD) {
             return 'low_stock';
         }
-
         return 'in_stock';
     }
 
-    /**
-     * Trả về label tiếng Việt để hiển thị UI
-     * Dùng: $variant->stock_status_label → "Còn hàng"
-     */
     public function getStockStatusLabelAttribute(): string
     {
         return match ($this->stock_status) {
@@ -75,10 +79,6 @@ class ProductVariant extends Model
         };
     }
 
-    /**
-     * Màu badge cho Filament / frontend
-     * Dùng: $variant->stock_status_color → "danger"
-     */
     public function getStockStatusColorAttribute(): string
     {
         return match ($this->stock_status) {
@@ -86,5 +86,38 @@ class ProductVariant extends Model
             'low_stock'    => 'warning',
             default        => 'success',
         };
+    }
+
+    // ─── Price / image accessors ───────────────────────────────
+
+    /** % giảm giá, null nếu không có compare_price hoặc không giảm */
+    public function getDiscountPercentAttribute(): ?int
+    {
+        if (! $this->compare_price || $this->compare_price <= $this->price) {
+            return null;
+        }
+
+        return (int) round((($this->compare_price - $this->price) / $this->compare_price) * 100);
+    }
+
+    /** Ảnh hiển thị: ưu tiên ảnh riêng variant, fallback về ảnh đại diện sản phẩm */
+    public function getDisplayImageAttribute(): ?string
+    {
+        if ($this->image) {
+            return asset('storage/' . $this->image);
+        }
+
+        return $this->product?->thumbnail_url;
+    }
+
+    /**
+     * Nhãn hiển thị tổ hợp thuộc tính, dùng cho admin và client.
+     * VD: "Màu sắc: Đen / Dung lượng: 512GB"
+     */
+    public function getAttributeLabelAttribute(): string
+    {
+        return $this->attributeValues
+            ->map(fn ($v) => $v->attribute->name . ': ' . $v->value)
+            ->join(' / ');
     }
 }
