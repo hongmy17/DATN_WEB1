@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Nexus Store — Công Nghệ Đỉnh Cao')</title>
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     @stack('styles')
 </head>
 
@@ -15,21 +16,31 @@
     <nav class="navbar">
         <div class="navbar__inner">
             <a href="{{ url('/') }}" class="navbar__logo">
-                <em class="navbar__logo-icon">N</em>
-                Nexus<span style="color:var(--accent)">.</span>
+                <span class="navbar__logo-main">Nexus</span>
+                <span class="navbar__logo-accent">Store</span>
             </a>
             <nav class="navbar__nav">
                 <a href="{{ url('/') }}" class="navbar__nav-link">Trang Chủ</a>
                 <div class="navbar__dropdown">
                     <a href="{{ url('san-pham') }}" class="navbar__nav-link">Sản Phẩm ▾</a>
                     <div class="navbar__dropdown-menu">
-                        <a href="{{ url('san-pham?cat=laptop') }}" class="navbar__dropdown-link"><i>💻</i> Laptop</a>
-                        <a href="{{ url('san-pham?cat=phone') }}" class="navbar__dropdown-link"><i>📱</i> Điện Thoại</a>
-                        <a href="{{ url('san-pham?cat=tablet') }}" class="navbar__dropdown-link"><i>📟</i> Máy Tính
+                        <a href="{{ url('san-pham?cat=laptop') }}" class="navbar__dropdown-link"> <i
+                                class="fa-solid fa-laptop"></i> Laptop
+                            Laptop</a>
+                        <a href="{{ url('san-pham?cat=phone') }}" class="navbar__dropdown-link"> <i
+                                class="fa-solid fa-mobile-screen-button"></i> Điện Thoại
+                            Thoại</a>
+                        <a href="{{ url('san-pham?cat=tablet') }}" class="navbar__dropdown-link"> <i
+                                class="fa-solid fa-tablet-screen-button"></i> Máy Tính Bảng
                             Bảng</a>
-                        <a href="{{ url('san-pham?cat=audio') }}" class="navbar__dropdown-link"><i>🎧</i> Tai Nghe</a>
-                        <a href="{{ url('san-pham?cat=watch') }}" class="navbar__dropdown-link"><i>⌚</i> Smartwatch</a>
-                        <a href="{{ url('san-pham?cat=accessory') }}" class="navbar__dropdown-link"><i>🖱️</i> Phụ
+                        <a href="{{ url('san-pham?cat=audio') }}" class="navbar__dropdown-link"> <i
+                                class="fa-solid fa-headphones"></i> Tai Nghe
+                            Nghe</a>
+                        <a href="{{ url('san-pham?cat=watch') }}" class="navbar__dropdown-link"> <i
+                                class="fa-solid fa-clock"></i> Smartwatch
+                            Smartwatch</a>
+                        <a href="{{ url('san-pham?cat=accessory') }}" class="navbar__dropdown-link"> <i
+                                class="fa-solid fa-plug"></i> Phụ Kiện
                             Kiện</a>
                     </div>
                 </div>
@@ -37,15 +48,19 @@
                 <a href="{{ url('lien-he') }}" class="navbar__nav-link">Liên Hệ</a>
             </nav>
             <div class="navbar__search-wrap">
-                <button class="navbar__search-btn">🔍</button>
+                <button class="navbar__search-btn">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
                 <input type="text" class="navbar__search-input" placeholder="Tìm kiếm sản phẩm...">
             </div>
             <div class="navbar__actions">
                 <a href="{{ url('yeu-thich') }}" class="navbar__action-btn" title="Yêu thích">
-                    ♥<span class="navbar__badge js-wish-count" style="display:none">0</span>
+                    <i class="fa-solid fa-heart"></i>
+                    <span class="navbar__badge js-wish-count" style="display:none">0</span>
                 </a>
                 <a href="{{ url('gio-hang') }}" class="navbar__action-btn" title="Giỏ hàng">
-                    🛒<span class="navbar__badge js-cart-count" style="display:none">0</span>
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span class="navbar__badge js-cart-count" style="display:none">0</span>
                 </a>
 
                 @guest
@@ -88,9 +103,9 @@
                     <p class="footer__desc">Chuyên cung cấp thiết bị công nghệ chính hãng. Bảo hành 12 tháng, giao hàng
                         toàn quốc, hỗ trợ 24/7.</p>
                     <div class="footer__socials">
-                        <a href="#" class="footer__social">📘</a>
-                        <a href="#" class="footer__social">📸</a>
-                        <a href="#" class="footer__social">▶️</a>
+                        <a href="#" class="footer__social"><i class="fa-brands fa-facebook"></i></a>
+                        <a href="#" class="footer__social"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="#" class="footer__social"><i class="fa-brands fa-youtube"></i></a>
                     </div>
                 </div>
                 <div>
@@ -118,14 +133,15 @@
                     <div class="footer__newsletter-form">
                         <input type="email" class="footer__newsletter-input" placeholder="Email của bạn">
                         <button class="btn btn-accent btn-sm"
-                            onclick="Toast.show('Đăng ký thành công! 🎉','success')">Đăng ký</button>
+                            onclick="Toast.show('Đăng ký thành công!','success')">Đăng ký</button>
                     </div>
                     <div style="margin-top:16px">
                         <div class="footer__col-title" style="margin-bottom:10px">Liên hệ</div>
                         <div class="footer__links">
-                            <span class="footer__link">📞 1900 1234</span>
-                            <span class="footer__link">✉ support@nexus.vn</span>
-                            <span class="footer__link">📍 123 Lê Lợi, Q.1, TP.HCM</span>
+                            <span class="footer__link"><i class="fa-solid fa-phone"></i> 1900 1234</span>
+                            <span class="footer__link"><i class="fa-solid fa-envelope"></i> support@nexus.vn</span>
+                            <span class="footer__link"><i class="fa-solid fa-location-dot"></i> 123 Lê Lợi, Q.1,
+                                TP.HCM</span>
                         </div>
                     </div>
                 </div>

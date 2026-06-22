@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class CategorySeeder extends Seeder
 {
@@ -14,50 +13,100 @@ class CategorySeeder extends Seeder
 
         // Danh mục cha
         $parents = [
-            ['name' => 'Thời Trang Nam',   'slug' => 'thoi-trang-nam'],
-            ['name' => 'Thời Trang Nữ',    'slug' => 'thoi-trang-nu'],
-            ['name' => 'Điện Tử',          'slug' => 'dien-tu'],
-            ['name' => 'Gia Dụng',         'slug' => 'gia-dung'],
-            ['name' => 'Mỹ Phẩm',          'slug' => 'my-pham'],
+            [
+                'name' => 'Thiết Bị Ngoại Vi',
+                'slug' => 'thiet-bi-ngoai-vi',
+                'description' => 'Chuột, bàn phím, tai nghe và các thiết bị ngoại vi máy tính',
+            ],
+            [
+                'name' => 'Thiết Bị Crypto',
+                'slug' => 'thiet-bi-crypto',
+                'description' => 'Ví lạnh, khóa bảo mật và thiết bị lưu trữ tài sản số',
+            ],
+            [
+                'name' => 'Phụ Kiện Công Nghệ',
+                'slug' => 'phu-kien-cong-nghe',
+                'description' => 'Cáp, túi đựng, phụ kiện bảo vệ thiết bị',
+            ],
         ];
 
         foreach ($parents as $parent) {
             DB::table('categories')->insert([
-                'name'        => $parent['name'],
-                'slug'        => $parent['slug'],
-                'parent_id'   => null,
-                'description' => 'Danh mục ' . $parent['name'],
-                'created_at'  => $now,
-                'updated_at'  => $now,
+                'name' => $parent['name'],
+                'slug' => $parent['slug'],
+                'parent_id' => null,
+                'description' => $parent['description'],
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
 
-        // Lấy ID các danh mục cha vừa tạo
-        $namId  = DB::table('categories')->where('slug', 'thoi-trang-nam')->value('id');
-        $nuId   = DB::table('categories')->where('slug', 'thoi-trang-nu')->value('id');
-        $dienId = DB::table('categories')->where('slug', 'dien-tu')->value('id');
+        $ngoaiViId = DB::table('categories')
+            ->where('slug', 'thiet-bi-ngoai-vi')
+            ->value('id');
+
+        $cryptoId = DB::table('categories')
+            ->where('slug', 'thiet-bi-crypto')
+            ->value('id');
+
+        $phuKienId = DB::table('categories')
+            ->where('slug', 'phu-kien-cong-nghe')
+            ->value('id');
 
         // Danh mục con
         $children = [
-            ['name' => 'Áo Nam',        'slug' => 'ao-nam',         'parent_id' => $namId],
-            ['name' => 'Quần Nam',       'slug' => 'quan-nam',       'parent_id' => $namId],
-            ['name' => 'Giày Nam',       'slug' => 'giay-nam',       'parent_id' => $namId],
-            ['name' => 'Áo Nữ',         'slug' => 'ao-nu',          'parent_id' => $nuId],
-            ['name' => 'Đầm Váy',        'slug' => 'dam-vay',        'parent_id' => $nuId],
-            ['name' => 'Giày Nữ',        'slug' => 'giay-nu',        'parent_id' => $nuId],
-            ['name' => 'Điện Thoại',     'slug' => 'dien-thoai',     'parent_id' => $dienId],
-            ['name' => 'Laptop',         'slug' => 'laptop',         'parent_id' => $dienId],
-            ['name' => 'Phụ Kiện Điện Tử', 'slug' => 'phu-kien-dien-tu', 'parent_id' => $dienId],
+            [
+                'name' => 'Chuột',
+                'slug' => 'chuot',
+                'parent_id' => $ngoaiViId,
+                'description' => 'Chuột văn phòng, chuột gaming, chuột không dây',
+            ],
+            [
+                'name' => 'Tai Nghe',
+                'slug' => 'tai-nghe',
+                'parent_id' => $ngoaiViId,
+                'description' => 'Tai nghe gaming, tai nghe không dây, tai nghe chống ồn',
+            ],
+            [
+                'name' => 'Bàn Phím',
+                'slug' => 'ban-phim',
+                'parent_id' => $ngoaiViId,
+                'description' => 'Bàn phím cơ, bàn phím không dây, bàn phím gaming',
+            ],
+            [
+                'name' => 'Ví Lạnh',
+                'slug' => 'vi-lanh',
+                'parent_id' => $cryptoId,
+                'description' => 'Ví lạnh Ledger, Trezor, SafePal dùng lưu trữ tiền điện tử',
+            ],
+            [
+                'name' => 'Seed Backup',
+                'slug' => 'seed-backup',
+                'parent_id' => $cryptoId,
+                'description' => 'Thiết bị lưu trữ seed phrase bằng kim loại',
+            ],
+            [
+                'name' => 'Security Key',
+                'slug' => 'security-key',
+                'parent_id' => $cryptoId,
+                'description' => 'Khóa bảo mật đăng nhập hai lớp như YubiKey',
+            ],
+            [
+                'name' => 'Cáp Kết Nối',
+                'slug' => 'cap-ket-noi',
+                'parent_id' => $phuKienId,
+                'description' => 'Cáp USB-A, USB-C, cáp sạc và truyền dữ liệu',
+            ],
         ];
 
         foreach ($children as $child) {
             DB::table('categories')->insert([
-                'name'        => $child['name'],
-                'slug'        => $child['slug'],
-                'parent_id'   => $child['parent_id'],
-                'description' => 'Danh mục ' . $child['name'],
-                'created_at'  => $now,
-                'updated_at'  => $now,
+                'name' => $child['name'],
+                'slug' => $child['slug'],
+                'parent_id' => $child['parent_id'],
+                'description' => $child['description'],
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
     }

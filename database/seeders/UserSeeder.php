@@ -1,4 +1,6 @@
 <?php
+// Giữ nguyên file cũ — không cần sửa
+// Copy từ file gốc của bạn
 
 namespace Database\Seeders;
 
@@ -14,53 +16,51 @@ class UserSeeder extends Seeder
 
         $users = [
             [
-                'code'       => 'ADMIN00001',
-                'name'  => 'Quản Trị Viên',
-                'email'      => 'admin@gmail.com',
-                'password'   => Hash::make('Admin@123'),
-                'phone'      => '0901000001',
-                'role'       => 1,
-                'status'     => 1,
+                'code'     => 'ADMIN00001',
+                'name'     => 'Quản Trị Viên',
+                'email'    => 'admin@gmail.com',
+                'password' => Hash::make('Admin@123'),
+                'phone'    => '0901000001',
+                'role'     => 1,
+                'status'   => 1,
             ],
             [
-                'code'       => 'USER000001',
-                'name'  => 'Nguyễn Văn An',
-                'email'      => 'an.nguyen@gmail.com',
-                'password'   => Hash::make('User@123'),
-                'phone'      => '0901000002',
-                'role'       => 0,
-                'status'     => 1,
+                'code'     => 'USER000001',
+                'name'     => 'Nguyễn Văn An',
+                'email'    => 'an.nguyen@gmail.com',
+                'password' => Hash::make('User@123'),
+                'phone'    => '0901000002',
+                'role'     => 0,
+                'status'   => 1,
             ],
             [
-                'code'       => 'USER000002',
-                'name'  => 'Trần Thị Bình',
-                'email'      => 'binh.tran@gmail.com',
-                'password'   => Hash::make('User@123'),
-                'phone'      => '0901000003',
-                'role'       => 0,
-                'status'     => 1,
+                'code'     => 'USER000002',
+                'name'     => 'Trần Thị Bình',
+                'email'    => 'binh.tran@gmail.com',
+                'password' => Hash::make('User@123'),
+                'phone'    => '0901000003',
+                'role'     => 0,
+                'status'   => 1,
             ],
             [
-                'code'       => 'USER000003',
-                'name'  => 'Lê Minh Cường',
-                'email'      => 'cuong.le@gmail.com',
-                'password'   => Hash::make('User@123'),
-                'phone'      => '0901000004',
-                'role'       => 0,
-                'status'     => 1,
+                'code'     => 'USER000003',
+                'name'     => 'Lê Minh Cường',
+                'email'    => 'cuong.le@gmail.com',
+                'password' => Hash::make('User@123'),
+                'phone'    => '0901000004',
+                'role'     => 0,
+                'status'   => 1,
             ],
             [
-                'code'       => 'USER000004',
-                'name'  => 'Phạm Thị Dung',
-                'email'      => 'dung.pham@gmail.com',
-                'password'   => Hash::make('User@123'),
-                'phone'      => null,
-                'role'       => 0,
-                'status'     => 0, // tài khoản bị khóa
+                'code'     => 'USER000004',
+                'name'     => 'Phạm Thị Dung',
+                'email'    => 'dung.pham@gmail.com',
+                'password' => Hash::make('User@123'),
+                'phone'    => null,
+                'role'     => 0,
+                'status'   => 0, // tài khoản bị khóa
             ],
-            ]
-           
-        ;
+        ];
 
         foreach ($users as $user) {
             DB::table('users')->insert(array_merge($user, [

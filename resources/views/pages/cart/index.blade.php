@@ -79,7 +79,7 @@
           <div class="summary-row"><span class="text-ink3">Phí vận chuyển</span><span style="color:${ship===0?'var(--green)':'inherit'}">${ship===0?'Miễn phí':fmtPrice(ship)}</span></div>
           <div class="summary-total"><span>Tổng cộng</span><span>${fmtPrice(total)}</span></div>
           <a href="{{ url('thanh-toan') }}"><button class="checkout-btn">Tiến hành thanh toán →</button></a>
-          <div style="margin-top:14px;text-align:center;font-size:12px;color:var(--ink-muted)">🔒 Thanh toán bảo mật SSL 256-bit</div>
+          <div style="margin-top:14px;text-align:center;font-size:12px;color:var(--ink-muted)"><i class="fa-solid fa-lock"></i> Thanh toán bảo mật SSL 256-bit</div>
         </div>
       </div>
     </div>`;

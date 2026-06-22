@@ -112,11 +112,23 @@ ul, ol { list-style: none; }
   font-family: var(--font-display); font-size: 22px; font-weight: 800;
   color: var(--ink); white-space: nowrap;
 }
-.navbar__logo-icon {
-  width: 36px; height: 36px; border-radius: 10px;
-  background: var(--ink); color: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 17px; font-style: normal;
+.navbar__logo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.navbar__logo-main {
+  color: var(--ink);
+}
+
+.navbar__logo-accent {
+  color: var(--accent);
 }
 .navbar__nav { display: flex; align-items: center; gap: 2px; flex: 1; justify-content: center; }
 .navbar__nav-link {
@@ -699,3 +711,17 @@ body.nav-open .navbar__nav {
   animation: fadeIn .2s ease;
 }
 body.nav-open .navbar__nav .navbar__nav-link { font-size: 18px; padding: 12px 16px; width: 100%; }
+
+.navbar i,
+.navbar__dropdown-link i,
+.navbar__action-btn i,
+.navbar__search-btn i {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.navbar__dropdown-link i {
+  width: 22px;
+  text-align: center;
+  color: var(--accent);
+}
