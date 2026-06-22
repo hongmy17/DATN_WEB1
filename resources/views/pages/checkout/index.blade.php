@@ -706,7 +706,7 @@
                 return;
             }
 
-            fetch('{{ route('checkout.store') }}', {
+            fetch('{{ route("checkout.store") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -766,7 +766,7 @@
             const code = document.getElementById('couponInput').value.trim();
             if (!code) return alert('Vui lòng nhập mã giảm giá!');
             const subTotal = Cart.total();
-            fetch('{{ route('coupon.apply') }}', {
+            fetch('{{ route("coupon.apply") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -798,7 +798,7 @@
         }
 
         function removeCoupon() {
-            fetch('{{ route('coupon.remove') }}', {
+            fetch('{{ route("coupon.remove") }}', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
