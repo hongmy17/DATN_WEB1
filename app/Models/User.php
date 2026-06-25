@@ -81,4 +81,9 @@ class User extends Authenticatable implements FilamentUser, HasName
     {
         return $this->hasOne(UserAddress::class)->where('is_default', true);
     }
+
+    public function Orders()
+        {
+            return $this->hasMany(\App\Models\Order::class);
+        }
 }

@@ -1,312 +1,147 @@
 @extends('layouts.app')
-
-@section('title', 'Đăng ký - Nexus Store')
-
+@section('title', 'Đăng ký — Nexus Store')
 @push('styles')
-<style>
-.auth-wrap {
-    min-height: calc(100vh - 200px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 16px;
-}
-.auth-card {
-    width: 100%;
-    max-width: 500px;
-    background: var(--bg-alt);
-    border: 1px solid var(--border-soft);
-    border-radius: var(--r-2xl);
-    padding: 40px;
-    box-shadow: var(--shadow-lg);
-}
-.auth-logo {
-    text-align: center;
-    margin-bottom: 28px;
-    font-family: var(--font-display);
-    font-size: 26px;
-    font-weight: 800;
-}
-.auth-tabs {
-    display: flex;
-    background: var(--surface);
-    border-radius: var(--r-lg);
-    padding: 4px;
-    margin-bottom: 28px;
-    gap: 4px;
-}
-.auth-tab {
-    flex: 1;
-    padding: 10px;
-    text-align: center;
-    border-radius: var(--r-md);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition);
-    color: var(--ink-3);
-    background: transparent;
-    border: none;
-    text-decoration: none;
-    display: inline-block;
-}
-.auth-tab.active {
-    background: var(--bg-alt);
-    color: var(--ink);
-    box-shadow: var(--shadow-xs);
-}
-.field-error {
-    color: #ef4444;
-    font-size: 12px;
-    margin-top: 5px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-.form-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-.password-strength {
-    height: 4px;
-    border-radius: 2px;
-    margin-top: 8px;
-    background: var(--border);
-    overflow: hidden;
-}
-.password-strength__bar {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.3s, background 0.3s;
-    width: 0%;
-}
-.password-hint {
-    font-size: 11px;
-    color: var(--ink-3);
-    margin-top: 4px;
-}
-.alert-error {
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: var(--r-lg);
-    padding: 12px 16px;
-    margin-bottom: 20px;
-    color: #dc2626;
-    font-size: 14px;
-}
-.form-row-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-}
-@media (max-width: 480px) {
-    .form-row-2 { grid-template-columns: 1fr; }
-    .auth-card { padding: 28px 20px; }
-}
-</style>
+    <link rel="stylesheet" href="{{ asset('assets/css/pages/auth.css') }}">
 @endpush
-
 @section('content')
-<div class="auth-wrap">
-    <div class="auth-card">
-
-        {{-- Logo --}}
-        <div class="auth-logo">
-            <em style="font-style:normal;background:var(--ink);color:var(--bg);width:38px;height:38px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:18px;margin-right:8px">N</em>
-            Nexus Store
+    <div class="auth-wrap">
+        <div class="auth-side">
+            <div class="auth-side__orb" style="width:500px;height:500px;top:-120px;right:-160px;"></div>
+            <div class="auth-side__content">
+                <div class="auth-side__logo">Nexus<span>.</span></div>
+                @php $features = [['icon' => 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', 'title' => 'Mua hàng bảo mật', 'sub' => 'Mọi giao dịch đều được mã hóa SSL'], ['icon' => 'M4.5 12.5l3 3 7-7', 'title' => 'Hàng chính hãng 100%', 'sub' => 'Cam kết hoàn tiền nếu hàng giả'], ['icon' => 'M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z M12 10v4M8 10v4M16 10v4', 'title' => 'Thanh toán linh hoạt', 'sub' => 'Thẻ tín dụng, MoMo, ZaloPay, COD']]; @endphp
+                @foreach ($features as $f)
+                    <div class="auth-side__feature">
+                        <div class="auth-side__feature-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.8" stroke-linecap="round">
+                                <path d="{{ $f['icon'] }}" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="auth-side__feature-title">{{ $f['title'] }}</div>
+                            <div class="auth-side__feature-sub">{{ $f['sub'] }}</div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
         </div>
 
-        {{-- Tabs --}}
-            <div class="auth-tabs">
-            <a href="{{ route('login') }}" class="auth-tab">Đăng Nhập</a>
-            <a href="{{ route('register') }}" class="auth-tab active">Đăng Ký</a>
+        <div class="auth-main">
+            <div class="auth-form-box">
+                <h1 class="auth-form-title">Tạo tài khoản</h1>
+                <p class="auth-form-sub">Tham gia ngay để nhận ưu đãi độc quyền</p>
+
+                <form method="POST" action="{{ route('register.store') }}">
+                    @csrf
+                    @if ($errors->any())
+                        <div style="background:#fee2e2;color:#991b1b;padding:12px;border-radius:8px;margin-bottom:16px">
+                            <ul style="margin:0;padding-left:18px">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                    <div class="form-group">
+                        <label class="form-label">Họ và tên</label>
+                        <div class="input-with-icon">
+                            <svg class="input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                <circle cx="12" cy="7" r="4" />
+                            </svg>
+                            <input type="text" name="name" value="{{ old('name') }}"
+                                class="form-control {{ $errors->has('name') ? 'is-error' : '' }}" placeholder="Nguyễn Văn A"
+                                required autofocus>
+                        </div>
+                        @error('name')
+                            <p class="form-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <div class="input-with-icon">
+                            <svg class="input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                <polyline points="22,6 12,13 2,6" />
+                            </svg>
+                            <input type="email" name="email" value="{{ old('email') }}"
+                                class="form-control {{ $errors->has('email') ? 'is-error' : '' }}"
+                                placeholder="email@example.com" required>
+                        </div>
+                        @error('email')
+                            <p class="form-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Số điện thoại</label>
+                        <div class="input-with-icon">
+                            <svg class="input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                                <path
+                                    d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3 5.18 2 2 0 0 1 5 3h3a2 2 0 0 1 2 1.72c.12.9.32 1.77.59 2.61a2 2 0 0 1-.45 2.11L9 10.59a16 16 0 0 0 4.41 4.41l1.15-1.15a2 2 0 0 1 2.11-.45c.84.27 1.71.47 2.61.59A2 2 0 0 1 22 16.92z" />
+                            </svg>
+
+                            <input type="text" name="phone" value="{{ old('phone') }}"
+                                class="form-control {{ $errors->has('phone') ? 'is-error' : '' }}"
+                                placeholder="0901234567">
+                        </div>
+
+                        @error('phone')
+                            <p class="form-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Mật khẩu</label>
+                        <div class="input-with-icon">
+                            <svg class="input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                            <input type="password" name="password"
+                                class="form-control {{ $errors->has('password') ? 'is-error' : '' }}"
+                                placeholder="Tối thiểu 8 ký tự" required>
+                        </div>
+                        @error('password')
+                            <p class="form-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Xác nhận mật khẩu</label>
+                        <div class="input-with-icon">
+                            <svg class="input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                            <input type="password" name="password_confirmation" class="form-control"
+                                placeholder="Nhập lại mật khẩu" required>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:24px">
+                        <input type="checkbox" id="agree" name="terms" value="1" required
+                            style="width:15px;height:15px;margin-top:2px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
+                        <label for="agree" style="font-size:13px;color:var(--ink-2);cursor:pointer;line-height:1.5">
+                            Tôi đồng ý với <a href="#" style="color:var(--accent)">Điều khoản dịch vụ</a> và <a
+                                href="#" style="color:var(--accent)">Chính sách bảo mật</a> của Nexus Store.
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full btn-lg">Tạo tài khoản</button>
+                </form>
+                <p style="text-align:center;font-size:13.5px;color:var(--ink-3);margin-top:24px">
+                    Đã có tài khoản? <a href="{{ route('login') }}" style="color:var(--accent);font-weight:600">Đăng
+                        nhập</a>
+                </p>
+            </div>
         </div>
-
-        {{-- Lỗi chung --}}
-        @if ($errors->any())
-            <div class="alert-error">Vui lòng kiểm tra lại thông tin bên dưới.</div>
-        @endif
-
-        {{-- Form đăng ký --}}
-        <form method="POST" action="{{ route('register.store') }}" id="registerForm" novalidate>
-            @csrf
-
-            {{-- Họ tên --}}
-            <div class="form-group">
-                <label class="form-label" for="name">Họ và tên <span style="color:#ef4444">*</span></label>
-                <div class="input-icon">
-                    <span class="input-icon__icon"></span>
-                    <input
-                        type="text"
-                        class="form-control @error('name') is-invalid @enderror"
-                        id="name"
-                        name="name"
-                        value="{{ old('name') }}"
-                        placeholder="Nguyễn Văn A"
-                        autocomplete="name"
-                        autofocus
-                        required
-                    >
-                </div>
-                @error('name')
-                    <div class="field-error">{{ $message }}</div>
-                @enderror
-            </div>
-
-            {{-- Email --}}
-            <div class="form-group">
-                <label class="form-label" for="email">Email <span style="color:#ef4444">*</span></label>
-                <div class="input-icon">
-                    <span class="input-icon__icon"></span>
-                    <input
-                        type="email"
-                        class="form-control @error('email') is-invalid @enderror"
-                        id="email"
-                        name="email"
-                        value="{{ old('email') }}"
-                        placeholder="email@gmail.com"
-                        autocomplete="email"
-                        required
-                    >
-                </div>
-                @error('email')
-                    <div class="field-error">{{ $message }}</div>
-                @enderror
-            </div>
-
-            {{-- Số điện thoại --}}
-            <div class="form-group">
-                <label class="form-label" for="phone">Số điện thoại</label>
-                <div class="input-icon">
-                    <span class="input-icon__icon"></span>
-                    <input
-                        type="tel"
-                        class="form-control @error('phone') is-invalid @enderror"
-                        id="phone"
-                        name="phone"
-                        value="{{ old('phone') }}"
-                        placeholder="0901 234 567"
-                        autocomplete="tel"
-                    >
-                </div>
-                @error('phone')
-                    <div class="field-error">{{ $message }}</div>
-                @enderror
-            </div>
-
-            {{-- Mật khẩu --}}
-            <div class="form-group">
-                <label class="form-label" for="password">Mật khẩu <span style="color:#ef4444">*</span></label>
-                <div class="input-icon">
-                    <span class="input-icon__icon"></span>
-                    <input
-                        type="password"
-                        class="form-control @error('password') is-invalid @enderror"
-                        id="password"
-                        name="password"
-                        placeholder="Ít nhất 8 ký tự"
-                        autocomplete="new-password"
-                        required
-                        oninput="checkStrength(this.value)"
-                    >
-                </div>
-                <div class="password-strength">
-                    <div class="password-strength__bar" id="strengthBar"></div>
-                </div>
-                <div class="password-hint" id="strengthText">Nhập mật khẩu để kiểm tra độ mạnh</div>
-                @error('password')
-                    <div class="field-error">{{ $message }}</div>
-                @enderror
-            </div>
-
-            {{-- Xác nhận mật khẩu --}}
-            <div class="form-group">
-                <label class="form-label" for="password_confirmation">Xác nhận mật khẩu <span style="color:#ef4444">*</span></label>
-                <div class="input-icon">
-                    <span class="input-icon__icon"></span>
-                    <input
-                        type="password"
-                        class="form-control"
-                        id="password_confirmation"
-                        name="password_confirmation"
-                        placeholder="Nhập lại mật khẩu"
-                        autocomplete="new-password"
-                        required
-                    >
-                </div>
-            </div>
-
-            {{-- Điều khoản --}}
-            <div class="form-group mb-16">
-                <label class="checkbox-wrap" style="align-items:flex-start;gap:10px">
-                    <input
-                        type="checkbox"
-                        name="terms"
-                        id="terms"
-                        value="1"
-                        {{ old('terms') ? 'checked' : '' }}
-                        required
-                    >
-                    <span style="font-size:13px">
-                        Tôi đồng ý với
-                        <a href="#" style="color:var(--accent)">điều khoản dịch vụ</a>
-                        và
-                        <a href="#" style="color:var(--accent)">chính sách bảo mật</a>
-                    </span>
-                </label>
-                @error('terms')
-                    <div class="field-error" style="margin-left:24px">{{ $message }}</div>
-                @enderror
-            </div>
-
-            {{-- Nút đăng ký --}}
-            <button type="submit" class="btn btn-primary btn-full btn-lg" id="registerBtn">
-                Tạo Tài Khoản
-            </button>
-
-            <p class="text-center mt-16" style="font-size:13px;color:var(--ink-muted)">
-                Đã có tài khoản?
-                <a href="{{ route('login') }}" style="color:var(--accent);font-weight:600">Đăng nhập</a>
-            </p>
-        </form>
-
     </div>
-</div>
 @endsection
-
-@push('scripts')
-<script>
-function checkStrength(value) {
-    const bar = document.getElementById('strengthBar');
-    const text = document.getElementById('strengthText');
-    let score = 0;
-    if (value.length >= 8)  score++;
-    if (/[A-Z]/.test(value)) score++;
-    if (/[a-z]/.test(value)) score++;
-    if (/[0-9]/.test(value)) score++;
-    if (/[^A-Za-z0-9]/.test(value)) score++;
-
-    const levels = [
-        { pct: '0%',   color: '#e5e7eb', label: 'Nhập mật khẩu để kiểm tra độ mạnh' },
-        { pct: '25%',  color: '#ef4444', label: 'Rất yếu — quá ngắn' },
-        { pct: '50%',  color: '#f97316', label: 'Yếu — thêm chữ hoa / số' },
-        { pct: '75%',  color: '#eab308', label: 'Trung bình — thêm ký tự đặc biệt' },
-        { pct: '90%',  color: '#22c55e', label: 'Mạnh' },
-        { pct: '100%', color: '#16a34a', label: 'Rất mạnh' },
-    ];
-
-    const lvl = value.length === 0 ? levels[0] : levels[Math.min(score, 5)];
-    bar.style.width  = lvl.pct;
-    bar.style.background = lvl.color;
-    text.textContent = lvl.label;
-}
-
-document.getElementById('registerForm').addEventListener('submit', function(e) {
-    const btn = document.getElementById('registerBtn');
-    btn.disabled = true;
-    btn.textContent = 'Đang tạo tài khoản...';
-});
-</script>
-@endpush

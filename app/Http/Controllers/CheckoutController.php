@@ -41,16 +41,33 @@ class CheckoutController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'receiver_name' => 'required|string|max:100',
-            'receiver_phone' => 'required|string|max:15',
-            'province' => 'required|string|max:100',
-            'district' => 'required|string|max:100',
-            'ward' => 'required|string|max:100',
-            'address_detail' => 'required|string|max:255',
-            'cart' => 'required|array|min:1',
-            'cart.*.id' => 'required|integer',
-            'cart.*.qty' => 'required|integer|min:1',
+            // Nếu có address_id thì không cần nhập tay, ngược lại bắt buộc
+            'receiver_name'  => 'required_without:address_id|nullable|string|max:100',
+            'receiver_phone' => 'required_without:address_id|nullable|string|max:15',
+            'province'       => 'required_without:address_id|nullable|string|max:100',
+            'district'       => 'required_without:address_id|nullable|string|max:100',
+            'ward'           => 'required_without:address_id|nullable|string|max:100',
+            'address_detail' => 'required_without:address_id|nullable|string|max:255',
+            'address_id'     => 'nullable|integer|exists:user_addresses,id',
+            'cart'           => 'required|array|min:1',
+            'cart.*.id'      => 'required|integer',
+            'cart.*.qty'     => 'required|integer|min:1',
         ]);
+
+        // Nếu chọn địa chỉ đã lưu → tự lấy thông tin từ DB
+        if ($request->address_id) {
+            $savedAddr = \App\Models\UserAddress::find($request->address_id);
+            if ($savedAddr && $savedAddr->user_id === Auth::id()) {
+                $request->merge([
+                    'receiver_name'  => $savedAddr->receiver_name,
+                    'receiver_phone' => $savedAddr->receiver_phone,
+                    'province'       => $savedAddr->province,
+                    'district'       => $savedAddr->district,
+                    'ward'           => $savedAddr->ward,
+                    'address_detail' => $savedAddr->address_detail,
+                ]);
+            }
+        }
 
         try {
             $order = DB::transaction(function () use ($request) {

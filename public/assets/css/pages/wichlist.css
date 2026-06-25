@@ -1,0 +1,30 @@
+.wish-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+        }
+
+        .wish-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+        }
+
+        .wish-empty {
+            text-align: center;
+            padding: 80px 24px;
+            color: var(--ink-3);
+        }
+
+        @media(max-width:900px) {
+            .wish-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media(max-width:640px) {
+            .wish-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }

@@ -1,1027 +1,362 @@
 @extends('layouts.app')
-
-@section('title', 'Trang chủ - Nexus Store')
+@section('title', 'Nexus Store — Công nghệ đỉnh cao')
+@push('styles')
+<link rel="stylesheet" href="{{ asset('assets/css/pages/home.css') }}">
+@endpush
 
 @section('content')
 
-    @push('styles')
-        <style>
-            /* ── HERO ─────────────────────────────── */
-            .hero {
-                min-height: calc(100vh - 68px);
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                align-items: center;
-                gap: 60px;
-                padding: 80px 0;
-            }
-
-            .hero__eyebrow {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                padding: 6px 16px;
-                border-radius: var(--r-full);
-                border: 1.5px solid var(--border);
-                background: var(--bg-alt);
-                font-size: 12px;
-                font-weight: 700;
-                color: var(--ink-3);
-                letter-spacing: 1px;
-                text-transform: uppercase;
-                margin-bottom: 24px;
-            }
-
-            .hero__eyebrow span {
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                background: var(--accent);
-                animation: pulse 1.8s infinite;
-            }
-
-            @keyframes pulse {
-
-                0%,
-                100% {
-                    transform: scale(1);
-                    opacity: 1
-                }
-
-                50% {
-                    transform: scale(1.4);
-                    opacity: .6
-                }
-            }
-
-            .hero__title {
-                margin-bottom: 24px;
-                color: var(--ink);
-            }
-
-            .hero__title em {
-                font-style: normal;
-                color: var(--accent);
-            }
-
-            .hero__desc {
-                font-size: 17px;
-                color: var(--ink-3);
-                line-height: 1.8;
-                margin-bottom: 36px;
-                max-width: 480px;
-            }
-
-            .hero__cta {
-                display: flex;
-                gap: 14px;
-                flex-wrap: wrap;
-                align-items: center;
-            }
-
-            .hero__stats {
-                display: flex;
-                gap: 40px;
-                margin-top: 48px;
-                padding-top: 40px;
-                border-top: 1px solid var(--border-soft);
-            }
-
-            .hero__stat-num {
-                font-family: var(--font-display);
-                font-size: 30px;
-                font-weight: 800;
-                color: var(--ink);
-                line-height: 1;
-            }
-
-            .hero__stat-label {
-                font-size: 13px;
-                color: var(--ink-muted);
-                margin-top: 4px;
-            }
-
-            .hero__visual {
-                position: relative;
-            }
-
-            .hero__grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 14px;
-            }
-
-            .hero__card {
-                background: var(--bg-alt);
-                border: 1px solid var(--border-soft);
-                border-radius: var(--r-xl);
-                padding: 24px 18px;
-                text-align: center;
-                transition: all .3s var(--ease-out);
-                cursor: pointer;
-            }
-
-            .hero__card:hover {
-                box-shadow: var(--shadow-md);
-                transform: translateY(-3px);
-                border-color: var(--accent);
-            }
-
-            .hero__card.featured {
-                grid-column: 1/-1;
-                background: linear-gradient(135deg, #FBF0EB, #FFF7F3);
-                border-color: rgba(200, 82, 42, .2);
-            }
-
-            .hero__card-emoji {
-                font-size: 52px;
-                line-height: 1;
-                margin-bottom: 10px;
-            }
-
-            .hero__card-name {
-                font-size: 13px;
-                font-weight: 700;
-                color: var(--ink);
-                margin-bottom: 3px;
-            }
-
-            .hero__card-price {
-                font-size: 12px;
-                color: var(--accent);
-                font-weight: 600;
-            }
-
-            .hero__float {
-                position: absolute;
-                background: var(--bg-alt);
-                border: 1px solid var(--border);
-                border-radius: var(--r-lg);
-                padding: 10px 14px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                box-shadow: var(--shadow-md);
-                font-size: 12px;
-                font-weight: 600;
-                color: var(--ink);
-                animation: bob 3s ease-in-out infinite;
-            }
-
-            .hero__float--1 {
-                top: -16px;
-                right: 24px;
-                animation-delay: 0s;
-            }
-
-            .hero__float--2 {
-                bottom: 8px;
-                left: -20px;
-                animation-delay: 1.2s;
-            }
-
-            @keyframes bob {
-
-                0%,
-                100% {
-                    transform: translateY(0)
-                }
-
-                50% {
-                    transform: translateY(-8px)
-                }
-            }
-
-            /* ── BRANDS ──────────────────────────────── */
-            .brands {
-                overflow: hidden;
-                padding: 28px 0;
-                border-top: 1px solid var(--border-soft);
-                border-bottom: 1px solid var(--border-soft);
-                background: var(--bg-alt);
-            }
-
-            .brands__track {
-                display: flex;
-                gap: 56px;
-                align-items: center;
-                width: max-content;
-                animation: scroll 22s linear infinite;
-            }
-
-            .brands__track:hover {
-                animation-play-state: paused;
-            }
-
-            .brands__item {
-                font-family: var(--font-display);
-                font-size: 17px;
-                font-weight: 700;
-                color: var(--ink-muted);
-                white-space: nowrap;
-                transition: var(--transition);
-            }
-
-            .brands__item:hover {
-                color: var(--accent);
-            }
-
-            @keyframes scroll {
-                to {
-                    transform: translateX(-50%);
-                }
-            }
-
-            /* ── CATEGORIES ─────────────────────────── */
-            .cat-grid {
-                display: grid;
-                grid-template-columns: repeat(6, 1fr);
-                gap: 14px;
-            }
-
-            .cat-card {
-                background: var(--bg-alt);
-                border: 1px solid var(--border-soft);
-                border-radius: var(--r-xl);
-                padding: 22px 14px;
-                text-align: center;
-                transition: all .3s var(--ease-out);
-                cursor: pointer;
-                text-decoration: none;
-            }
-
-            .cat-card:hover {
-                background: var(--ink);
-                border-color: var(--ink);
-                transform: translateY(-3px);
-                box-shadow: var(--shadow-md);
-            }
-
-            .cat-card:hover .cat-card__name,
-            .cat-card:hover .cat-card__count {
-                color: #fff;
-            }
-
-            .cat-card__icon {
-                font-size: 36px;
-                line-height: 1;
-                margin-bottom: 10px;
-            }
-
-            .cat-card__name {
-                font-size: 13px;
-                font-weight: 700;
-                color: var(--ink);
-                margin-bottom: 3px;
-                transition: var(--transition);
-            }
-
-            .cat-card__count {
-                font-size: 11px;
-                color: var(--ink-muted);
-                transition: var(--transition);
-            }
-
-            /* ── FLASH SALE BAR ─────────────────────── */
-            .flash-bar {
-                background: var(--ink);
-                border-radius: var(--r-xl);
-                padding: 20px 28px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                flex-wrap: wrap;
-                gap: 16px;
-                margin-bottom: 32px;
-            }
-
-            .flash-bar__title {
-                font-family: var(--font-display);
-                font-size: 20px;
-                font-weight: 800;
-                color: #fff;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-
-            #flashCountdown {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-
-            .cd__unit {
-                background: rgba(255, 255, 255, .12);
-                border-radius: var(--r-md);
-                padding: 8px 12px;
-                text-align: center;
-                min-width: 52px;
-            }
-
-            .cd__unit b {
-                display: block;
-                font-family: var(--font-display);
-                font-size: 22px;
-                font-weight: 800;
-                color: #fff;
-                line-height: 1;
-            }
-
-            .cd__unit small {
-                font-size: 9px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-                color: rgba(255, 255, 255, .6);
-            }
-
-            .cd__sep {
-                font-size: 20px;
-                font-weight: 800;
-                color: rgba(255, 255, 255, .4);
-            }
-
-            /* ── BANNERS ─────────────────────────────── */
-            .banner-grid {
-                display: grid;
-                grid-template-columns: 3fr 2fr;
-                gap: 18px;
-            }
-
-            .banner {
-                border-radius: var(--r-2xl);
-                padding: 40px;
-                position: relative;
-                overflow: hidden;
-                cursor: pointer;
-                min-height: 240px;
-                display: flex;
-                flex-direction: column;
-                justify-content: flex-end;
-                transition: var(--transition);
-            }
-
-            .banner:hover {
-                transform: translateY(-3px);
-                box-shadow: var(--shadow-lg);
-            }
-
-            .banner__bg-emoji {
-                position: absolute;
-                right: 24px;
-                top: 50%;
-                transform: translateY(-50%);
-                font-size: 110px;
-                opacity: .5;
-                transition: var(--transition);
-            }
-
-            .banner:hover .banner__bg-emoji {
-                transform: translateY(-55%) scale(1.1);
-                opacity: .7;
-            }
-
-            .banner--1 {
-                background: linear-gradient(135deg, #0F1923 0%, #1A3A5C 100%);
-            }
-
-            .banner--2 {
-                background: linear-gradient(135deg, #2D1515 0%, #6B2020 100%);
-            }
-
-            .banner__tag {
-                display: inline-block;
-                padding: 4px 12px;
-                border-radius: var(--r-full);
-                font-size: 11px;
-                font-weight: 700;
-                letter-spacing: 1px;
-                text-transform: uppercase;
-                margin-bottom: 10px;
-            }
-
-            .banner--1 .banner__tag {
-                background: rgba(79, 130, 247, .2);
-                color: #93c5fd;
-            }
-
-            .banner--2 .banner__tag {
-                background: rgba(200, 82, 42, .25);
-                color: #fca97e;
-            }
-
-            .banner__title {
-                font-family: var(--font-display);
-                font-size: 26px;
-                font-weight: 800;
-                color: #fff;
-                line-height: 1.2;
-                margin-bottom: 8px;
-            }
-
-            .banner__sub {
-                font-size: 14px;
-                color: rgba(255, 255, 255, .6);
-                margin-bottom: 18px;
-            }
-
-            .banner__cta {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                font-size: 14px;
-                font-weight: 700;
-                color: #fff;
-                transition: var(--transition);
-            }
-
-            .banner__cta:hover {
-                gap: 10px;
-            }
-
-            /* ── WHY US ─────────────────────────────── */
-            .why-grid {
-                display: grid;
-                grid-template-columns: repeat(4, 1fr);
-                gap: 20px;
-            }
-
-            .why-card {
-                padding: 28px;
-                border-radius: var(--r-xl);
-                border: 1px solid var(--border-soft);
-                background: var(--bg-alt);
-                transition: var(--transition);
-            }
-
-            .why-card:hover {
-                border-color: var(--accent);
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-sm);
-            }
-
-            .why-icon {
-                font-size: 36px;
-                margin-bottom: 16px;
-            }
-
-            .why-title {
-                font-size: 16px;
-                font-weight: 700;
-                color: var(--ink);
-                margin-bottom: 8px;
-            }
-
-            .why-desc {
-                font-size: 14px;
-                color: var(--ink-3);
-                line-height: 1.7;
-            }
-
-            /* ── TESTIMONIALS ────────────────────────── */
-            .testi-grid {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 20px;
-            }
-
-            .testi-card {
-                background: var(--bg-alt);
-                border: 1px solid var(--border-soft);
-                border-radius: var(--r-xl);
-                padding: 24px;
-                transition: var(--transition);
-            }
-
-            .testi-card:hover {
-                box-shadow: var(--shadow-md);
-                transform: translateY(-2px);
-            }
-
-            .testi-stars {
-                color: var(--yellow);
-                font-size: 14px;
-                margin-bottom: 12px;
-            }
-
-            .testi-text {
-                font-size: 14px;
-                color: var(--ink-3);
-                line-height: 1.75;
-                margin-bottom: 18px;
-                font-style: italic;
-            }
-
-            .testi-user {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-
-            .testi-avatar {
-                width: 38px;
-                height: 38px;
-                border-radius: 50%;
-                background: linear-gradient(135deg, var(--accent), #C8522A);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 700;
-                font-size: 14px;
-                color: #fff;
-            }
-
-            .testi-name {
-                font-weight: 600;
-                font-size: 14px;
-                color: var(--ink);
-            }
-
-            .testi-job {
-                font-size: 12px;
-                color: var(--ink-muted);
-            }
-
-            @media(max-width:1024px) {
-                .hero {
-                    grid-template-columns: 1fr;
-                    gap: 40px;
-                }
-
-                .hero__visual {
-                    order: -1;
-                }
-
-                .cat-grid {
-                    grid-template-columns: repeat(3, 1fr);
-                }
-
-                .banner-grid {
-                    grid-template-columns: 1fr;
-                }
-
-                .why-grid {
-                    grid-template-columns: repeat(2, 1fr);
-                }
-
-                .testi-grid {
-                    grid-template-columns: 1fr;
-                }
-            }
-
-            @media(max-width:768px) {
-                .cat-grid {
-                    grid-template-columns: repeat(3, 1fr);
-                }
-
-                .hero__stats {
-                    gap: 24px;
-                    flex-wrap: wrap;
-                }
-
-                .flash-bar {
-                    flex-direction: column;
-                    align-items: flex-start;
-                }
-            }
-        </style>
-    @endpush
-
-    <div class="container">
-        <div class="hero">
+    {{-- ── HERO ────────────────────────────── --}}
+    <section class="hero">
+        <div class="hero__grid"></div>
+        <div class="hero__glow" style="width:800px;height:800px;top:-200px;right:-200px;"></div>
+        <div class="hero__glow" style="width:400px;height:400px;bottom:-100px;left:100px;opacity:.5;"></div>
+
+        <div class="container">
             <div class="hero__content">
-                <div class="hero__eyebrow"><span></span> Flash Sale — Giảm đến 40% hôm nay</div>
-                <h1 class="display-1 hero__title">Công nghệ<br><em>đỉnh cao,</em><br>giá tốt nhất.</h1>
-                <p class="hero__desc">Laptop, điện thoại, tablet chính hãng 100%. Bảo hành 12 tháng, đổi trả 7 ngày, giao
-                    hàng trong ngày.</p>
+                <div class="hero__eyebrow">
+                    <span class="hero__eyebrow-dot"></span>
+                    Bộ sưu tập mới — 2026
+                </div>
+
+                <h1 class="hero__title">
+                    Công nghệ<br><span>đỉnh cao</span>,<br>giá tốt nhất.
+                </h1>
+
+                <p class="hero__sub">Hàng nghìn sản phẩm công nghệ chính hãng từ Apple, Samsung, Sony và hơn 50 thương hiệu
+                    hàng đầu thế giới.</p>
+
                 <div class="hero__cta">
-                    <a href="{{ url('san-pham') }}" class="btn btn-primary btn-lg">Mua sắm ngay →</a>
-                    <a href="{{ url('khuyen-mai') }}" class="btn btn-outline btn-lg">Xem khuyến mãi</a>
+                    <a href="{{ url('san-pham') }}" class="btn btn-accent btn-xl">
+                        Khám phá ngay
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round">
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                            <polyline points="12 5 19 12 12 19" />
+                        </svg>
+                    </a>
+                    <a href="{{ url('khuyen-mai') }}" class="btn btn-outline btn-xl"
+                        style="border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.7)">
+                        Xem khuyến mãi
+                    </a>
                 </div>
+
                 <div class="hero__stats">
-                    <div>
-                        <div class="hero__stat-num">50K+</div>
-                        <div class="hero__stat-label">Khách hàng</div>
-                    </div>
-                    <div>
-                        <div class="hero__stat-num">5.000+</div>
-                        <div class="hero__stat-label">Sản phẩm</div>
-                    </div>
-                    <div>
-                        <div class="hero__stat-num">4.9★</div>
-                        <div class="hero__stat-label">Đánh giá</div>
-                    </div>
-                </div>
-            </div>
-            <div class="hero__visual">
-                <div class="hero__float hero__float--1">🔥 Bán chạy #1</div>
-                <div class="hero__float hero__float--2">✅ Chính hãng 100%</div>
-                <div class="hero__grid">
-                    <a href="{{ url('chi-tiet?id=1') }}" class="hero__card featured">
-                        <div class="hero__card-emoji">💻</div>
-                        <div class="hero__card-name">MacBook Pro M3 Pro</div>
-                        <div class="hero__card-price">42.990.000₫</div>
-                    </a>
-                    <a href="{{ url('chi-tiet?id=2') }}" class="hero__card">
-                        <div class="hero__card-emoji">📱</div>
-                        <div class="hero__card-name">iPhone 15 Pro Max</div>
-                        <div class="hero__card-price">32.990.000₫</div>
-                    </a>
-                    <a href="{{ url('chi-tiet?id=5') }}" class="hero__card">
-                        <div class="hero__card-emoji">📟</div>
-                        <div class="hero__card-name">iPad Pro M2</div>
-                        <div class="hero__card-price">28.990.000₫</div>
-                    </a>
+                    @php $stats = [['50K+','Khách hàng'],['10K+','Sản phẩm'],['500+','Thương hiệu'],['4.9','Điểm đánh giá']]; @endphp
+                    @foreach ($stats as $s)
+                        <div class="hero__stat">
+                            <div class="hero__stat-num">{{ $s[0] }}</div>
+                            <div class="hero__stat-label">{{ $s[1] }}</div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <div class="brands">
-        <div class="brands__track">
-            <span class="brands__item">Apple</span><span class="brands__item">Samsung</span><span
-                class="brands__item">Dell</span>
-            <span class="brands__item">ASUS</span><span class="brands__item">Sony</span><span class="brands__item">LG</span>
-            <span class="brands__item">HP</span><span class="brands__item">Lenovo</span><span
-                class="brands__item">Bose</span>
-            <span class="brands__item">Logitech</span><span class="brands__item">Microsoft</span><span
-                class="brands__item">Razer</span>
-            <span class="brands__item">Apple</span><span class="brands__item">Samsung</span><span
-                class="brands__item">Dell</span>
-            <span class="brands__item">ASUS</span><span class="brands__item">Sony</span><span class="brands__item">LG</span>
-            <span class="brands__item">HP</span><span class="brands__item">Lenovo</span><span
-                class="brands__item">Bose</span>
-            <span class="brands__item">Logitech</span><span class="brands__item">Microsoft</span><span
-                class="brands__item">Razer</span>
+    {{-- ── BRANDS MARQUEE ─────────────────── --}}
+    <div class="brands-bar">
+        <div class="brands-track">
+            @php $brs = ['Apple','Samsung','Sony','Dell','Asus','LG','Bose','Logitech','Microsoft','Google','OnePlus','Xiaomi','Apple','Samsung','Sony','Dell','Asus','LG','Bose','Logitech','Microsoft','Google','OnePlus','Xiaomi']; @endphp
+            @foreach ($brs as $br)
+                <span class="brand-name">{{ $br }}</span>
+                <svg width="5" height="5" viewBox="0 0 5 5" style="color:var(--border-soft);flex-shrink:0">
+                    <circle cx="2.5" cy="2.5" r="2.5" fill="currentColor" />
+                </svg>
+            @endforeach
         </div>
     </div>
 
+    {{-- ── CATEGORIES ──────────────────────── --}}
     <section class="section">
         <div class="container">
-            <div class="section-header section-header--center">
-                <div class="section-header__eyebrow">Danh Mục</div>
-                <h2 class="display-2 section-header__title">Tìm theo <span class="text-accent">loại sản phẩm</span></h2>
+            <div class="section-header section-header-center reveal" style="text-align:center">
+                <div class="section-eyebrow">Danh mục</div>
+                <h2 class="section-title">Khám phá theo danh mục</h2>
             </div>
+
             <div class="cat-grid">
-                <a href="{{ url('san-pham?cat=laptop') }}" class="cat-card">
-                    <div class="cat-card__icon">💻</div>
-                    <div class="cat-card__name">Laptop</div>
-                    <div class="cat-card__count">234 sản phẩm</div>
-                </a>
-                <a href="{{ url('san-pham?cat=phone') }}" class="cat-card">
-                    <div class="cat-card__icon">📱</div>
-                    <div class="cat-card__name">Điện Thoại</div>
-                    <div class="cat-card__count">456 sản phẩm</div>
-                </a>
-                <a href="{{ url('san-pham?cat=tablet') }}" class="cat-card">
-                    <div class="cat-card__icon">📟</div>
-                    <div class="cat-card__name">Máy Tính Bảng</div>
-                    <div class="cat-card__count">128 sản phẩm</div>
-                </a>
-                <a href="{{ url('san-pham?cat=watch') }}" class="cat-card">
-                    <div class="cat-card__icon">⌚</div>
-                    <div class="cat-card__name">Smartwatch</div>
-                    <div class="cat-card__count">89 sản phẩm</div>
-                </a>
-                <a href="{{ url('san-pham?cat=audio') }}" class="cat-card">
-                    <div class="cat-card__icon">🎧</div>
-                    <div class="cat-card__name">Tai Nghe</div>
-                    <div class="cat-card__count">167 sản phẩm</div>
-                </a>
-                <a href="{{ url('san-pham?cat=accessory') }}" class="cat-card">
-                    <div class="cat-card__icon">🖱️</div>
-                    <div class="cat-card__name">Phụ Kiện</div>
-                    <div class="cat-card__count">678 sản phẩm</div>
-                </a>
+                @php $cats = [['slug' => 'laptop', 'label' => 'Laptop', 'count' => '124 sản phẩm', 'path' => 'M2 3h20v14H2zM8 21h8M12 17v4'], ['slug' => 'phone', 'label' => 'Điện thoại', 'count' => '89 sản phẩm', 'path' => 'M12 18h.01M8 21h8a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1z'], ['slug' => 'tablet', 'label' => 'Máy tính bảng', 'count' => '56 sản phẩm', 'path' => 'M18 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1zM12 17h.01'], ['slug' => 'audio', 'label' => 'Tai nghe', 'count' => '78 sản phẩm', 'path' => 'M3 18v-6a9 9 0 0 1 18 0v6M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z'], ['slug' => 'watch', 'label' => 'Smartwatch', 'count' => '43 sản phẩm', 'path' => 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14l-4-4h3V8h2v4h3z'], ['slug' => 'accessory', 'label' => 'Phụ kiện', 'count' => '200+ sản phẩm', 'path' => 'M12 22V8M5 12H2a10 10 0 0 0 20 0h-3']]; @endphp
+                @foreach ($cats as $i => $cat)
+                    <a href="{{ url('san-pham?cat=' . $cat['slug']) }}" class="cat-tile reveal"
+                        style="--delay:{{ $i * 50 }}ms">
+                        <div class="cat-tile__icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.7" stroke-linecap="round">
+                                <path d="{{ $cat['path'] }}" />
+                            </svg>
+                        </div>
+                        <div class="cat-tile__name">{{ $cat['label'] }}</div>
+                        <div class="cat-tile__count">{{ $cat['count'] }}</div>
+                    </a>
+                @endforeach
             </div>
         </div>
     </section>
 
+    {{-- ── PROMO BANNERS ───────────────────── --}}
     <section class="section" style="padding-top:0">
         <div class="container">
-            <div class="flash-bar">
-                <div class="flash-bar__title">⚡ Flash Sale</div>
-                <div id="flashCountdown"></div>
-                <a href="{{ url('khuyen-mai') }}" class="btn btn-sm"
-                    style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2)">Xem tất cả
-                    →</a>
-            </div>
-            <div class="grid-4">
-                <!-- Sản phẩm 1 -->
-                <div class="product-card">
-                    <div class="product-card__thumb">
-                        <div class="product-card__badges"><span class="badge badge-sale">-14%</span></div>
-                        <button class="product-card__wish" data-wish-id="1" data-wish-name="MacBook Pro">♥</button>
-                        <div class="product-card__img">💻</div>
-                        <div class="product-card__actions">
-                            <button class="btn btn-ghost btn-sm" onclick="Toast.show('Xem nhanh','info')">👁 Xem
-                                nhanh</button>
-                            <button class="btn btn-primary btn-sm"
-                                onclick="Cart.add({id:1,name:'MacBook Pro',price:42990000,img:'💻'})">+ Giỏ hàng</button>
-                        </div>
+            <div class="promo-grid">
+                <a href="{{ url('san-pham?cat=laptop') }}" class="promo-card promo-card--dark"
+                    style="text-decoration:none">
+                    <div class="promo-card__orb" style="width:300px;height:300px;top:-80px;right:-80px;"></div>
+                    <div class="promo-card__orb" style="width:150px;height:150px;top:20px;right:60px;opacity:.5;"></div>
+                    <div class="promo-card__product">
+                        <svg width="220" height="220" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width=".5" stroke-linecap="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2" />
+                            <line x1="8" y1="21" x2="16" y2="21" />
+                            <line x1="12" y1="17" x2="12" y2="21" />
+                        </svg>
                     </div>
-                    <div class="product-card__body">
-                        <div class="product-card__brand">Apple</div>
-                        <div class="product-card__name"><a href="{{ url('chi-tiet?id=1') }}">MacBook Pro 14" M3 Pro</a>
-                        </div>
-                        <div class="product-card__rating"><span class="product-card__stars">★★★★★</span><span
-                                class="product-card__reviews">(234)</span></div>
-                        <div class="product-card__price"><span class="product-card__price-current">42.990.000₫</span><span
-                                class="product-card__price-old">49.990.000₫</span></div>
-                    </div>
-                </div>
-                <!-- Sản phẩm 2 -->
-                <div class="product-card">
-                    <div class="product-card__thumb">
-                        <div class="product-card__badges"><span class="badge badge-sale">-11%</span></div>
-                        <button class="product-card__wish" data-wish-id="2" data-wish-name="iPhone 15 Pro Max">♥</button>
-                        <div class="product-card__img">📱</div>
-                        <div class="product-card__actions">
-                            <button class="btn btn-ghost btn-sm" onclick="Toast.show('Xem nhanh','info')">👁 Xem
-                                nhanh</button>
-                            <button class="btn btn-primary btn-sm"
-                                onclick="Cart.add({id:2,name:'iPhone 15 Pro Max',price:32990000,img:'📱'})">+ Giỏ
-                                hàng</button>
-                        </div>
-                    </div>
-                    <div class="product-card__body">
-                        <div class="product-card__brand">Apple</div>
-                        <div class="product-card__name"><a href="{{ url('chi-tiet?id=2') }}">iPhone 15 Pro Max 256GB</a>
-                        </div>
-                        <div class="product-card__rating"><span class="product-card__stars">★★★★★</span><span
-                                class="product-card__reviews">(567)</span></div>
-                        <div class="product-card__price"><span class="product-card__price-current">32.990.000₫</span><span
-                                class="product-card__price-old">36.990.000₫</span></div>
-                    </div>
-                </div>
-                <!-- Sản phẩm 3 -->
-                <div class="product-card">
-                    <div class="product-card__thumb">
-                        <div class="product-card__badges"><span class="badge badge-hot">Hot 🔥</span></div>
-                        <button class="product-card__wish" data-wish-id="6" data-wish-name="Sony WH-1000XM5">♥</button>
-                        <div class="product-card__img">🎧</div>
-                        <div class="product-card__actions">
-                            <button class="btn btn-ghost btn-sm" onclick="Toast.show('Xem nhanh','info')">👁 Xem
-                                nhanh</button>
-                            <button class="btn btn-primary btn-sm"
-                                onclick="Cart.add({id:6,name:'Sony WH-1000XM5',price:8490000,img:'🎧'})">+ Giỏ
-                                hàng</button>
-                        </div>
-                    </div>
-                    <div class="product-card__body">
-                        <div class="product-card__brand">Sony</div>
-                        <div class="product-card__name"><a href="{{ url('chi-tiet?id=6') }}">Sony WH-1000XM5</a></div>
-                        <div class="product-card__rating"><span class="product-card__stars">★★★★★</span><span
-                                class="product-card__reviews">(1.203)</span></div>
-                        <div class="product-card__price"><span class="product-card__price-current">8.490.000₫</span><span
-                                class="product-card__price-old">9.990.000₫</span></div>
-                    </div>
-                </div>
-                <!-- Sản phẩm 4 -->
-                <div class="product-card">
-                    <div class="product-card__thumb">
-                        <div class="product-card__badges"><span class="badge badge-new">Mới</span></div>
-                        <button class="product-card__wish" data-wish-id="8" data-wish-name="Apple Watch S9">♥</button>
-                        <div class="product-card__img">⌚</div>
-                        <div class="product-card__actions">
-                            <button class="btn btn-ghost btn-sm" onclick="Toast.show('Xem nhanh','info')">👁 Xem
-                                nhanh</button>
-                            <button class="btn btn-primary btn-sm"
-                                onclick="Cart.add({id:8,name:'Apple Watch S9',price:11990000,img:'⌚'})">+ Giỏ hàng</button>
-                        </div>
-                    </div>
-                    <div class="product-card__body">
-                        <div class="product-card__brand">Apple</div>
-                        <div class="product-card__name"><a href="{{ url('chi-tiet?id=8') }}">Apple Watch Series 9</a>
-                        </div>
-                        <div class="product-card__rating"><span class="product-card__stars">★★★★★</span><span
-                                class="product-card__reviews">(892)</span></div>
-                        <div class="product-card__price"><span class="product-card__price-current">11.990.000₫</span><span
-                                class="product-card__price-old">13.990.000₫</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="section" style="padding-top:0">
-        <div class="container">
-            <div class="banner-grid">
-                <a href="{{ url('san-pham?cat=laptop') }}" class="banner banner--1">
-                    <div class="banner__bg-emoji">💻</div>
-                    <div class="banner__tag">Laptop</div>
-                    <h3 class="banner__title">MacBook & Gaming<br>Laptop Cao Cấp</h3>
-                    <p class="banner__sub">Hiệu năng M3 Pro — thiết kế mỏng nhẹ</p>
-                    <span class="banner__cta">Khám phá ngay →</span>
+                    <div class="promo-card__eyebrow">MacBook Pro</div>
+                    <h3 class="promo-card__title">Hiệu năng M3 Pro<br>đột phá giới hạn</h3>
+                    <span class="btn btn-accent btn-sm" style="width:fit-content">Mua ngay</span>
                 </a>
-                <a href="{{ url('san-pham?cat=phone') }}" class="banner banner--2">
-                    <div class="banner__bg-emoji">📱</div>
-                    <div class="banner__tag">Smartphone</div>
-                    <h3 class="banner__title">iPhone 15<br>Pro Series</h3>
-                    <p class="banner__sub">Chip A17 Pro · Camera 48MP</p>
-                    <span class="banner__cta">Mua ngay →</span>
+
+                <a href="{{ url('khuyen-mai') }}" class="promo-card promo-card--accent" style="text-decoration:none">
+                    <div class="promo-card__orb"
+                        style="width:280px;height:280px;top:-60px;right:-60px;background:rgba(255,255,255,.08);"></div>
+                    <div class="promo-card__product">
+                        <svg width="180" height="180" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width=".6" stroke-linecap="round">
+                            <path d="M12 18h.01M8 21h8a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1z" />
+                        </svg>
+                    </div>
+                    <div class="promo-card__eyebrow">Flash Sale hôm nay</div>
+                    <h3 class="promo-card__title">Giảm đến 40%<br>điện thoại flagship</h3>
+                    <span class="btn btn-sm"
+                        style="background:rgba(255,255,255,.2);color:#fff;width:fit-content;border:none">Xem ngay</span>
                 </a>
             </div>
         </div>
     </section>
 
-    <section class="section">
-        <div class="container">
-            <div class="d-flex justify-between align-center mb-32" style="flex-wrap:wrap;gap:16px">
-                <div>
-                    <div class="section-header__eyebrow" style="display:inline-flex;margin-bottom:8px">Bán Chạy</div>
-                    <h2 class="display-2" style="margin:0">Sản phẩm <span class="text-accent">nổi bật</span></h2>
-                </div>
-            </div>
-            <div class="grid-4">
-                <!-- MacBook -->
-                <div class="product-card">
-                    <div class="product-card__thumb">
-                        <div class="product-card__badges"><span class="badge badge-hot">Hot 🔥</span></div>
-                        <button class="product-card__wish" data-wish-id="1" data-wish-name="MacBook Pro">♥</button>
-                        <div class="product-card__img">💻</div>
-                        <div class="product-card__actions">
-                            <button class="btn btn-primary btn-sm"
-                                onclick="Cart.add({id:1,name:'MacBook Pro',price:42990000,img:'💻'})">+ Giỏ hàng</button>
-                        </div>
-                    </div>
-                    <div class="product-card__body">
-                        <div class="product-card__brand">Apple</div>
-                        <div class="product-card__name"><a href="{{ url('chi-tiet?id=1') }}">MacBook Pro 14" M3 Pro</a>
-                        </div>
-                        <div class="product-card__price"><span class="product-card__price-current">42.990.000₫</span>
-                        </div>
-                    </div>
-                </div>
-                <!-- iPhone -->
-                <div class="product-card">
-                    <div class="product-card__thumb">
-                        <div class="product-card__badges"><span class="badge badge-sale">-11%</span></div>
-                        <button class="product-card__wish" data-wish-id="2" data-wish-name="iPhone 15 Pro Max">♥</button>
-                        <div class="product-card__img">📱</div>
-                        <div class="product-card__actions">
-                            <button class="btn btn-primary btn-sm"
-                                onclick="Cart.add({id:2,name:'iPhone 15 Pro Max',price:32990000,img:'📱'})">+ Giỏ
-                                hàng</button>
-                        </div>
-                    </div>
-                    <div class="product-card__body">
-                        <div class="product-card__brand">Apple</div>
-                        <div class="product-card__name"><a href="{{ url('chi-tiet?id=2') }}">iPhone 15 Pro Max 256GB</a>
-                        </div>
-                        <div class="product-card__price"><span class="product-card__price-current">32.990.000₫</span><span
-                                class="product-card__price-old">36.990.000₫</span></div>
-                    </div>
-                </div>
-                <!-- iPad -->
-                <div class="product-card">
-                    <div class="product-card__thumb">
-                        <div class="product-card__badges"><span class="badge badge-sale">-10%</span></div>
-                        <button class="product-card__wish" data-wish-id="5" data-wish-name="iPad Pro">♥</button>
-                        <div class="product-card__img">📟</div>
-                        <div class="product-card__actions">
-                            <button class="btn btn-primary btn-sm"
-                                onclick="Cart.add({id:5,name:'iPad Pro',price:28990000,img:'📟'})">+ Giỏ hàng</button>
-                        </div>
-                    </div>
-                    <div class="product-card__body">
-                        <div class="product-card__brand">Apple</div>
-                        <div class="product-card__name"><a href="{{ url('chi-tiet?id=5') }}">iPad Pro 12.9" M2</a></div>
-                        <div class="product-card__price"><span class="product-card__price-current">28.990.000₫</span><span
-                                class="product-card__price-old">32.000.000₫</span></div>
-                    </div>
-                </div>
-                <!-- Sony -->
-                <div class="product-card">
-                    <div class="product-card__thumb">
-                        <div class="product-card__badges"><span class="badge badge-hot">Hot 🔥</span></div>
-                        <button class="product-card__wish" data-wish-id="6" data-wish-name="Sony WH-1000XM5">♥</button>
-                        <div class="product-card__img">🎧</div>
-                        <div class="product-card__actions">
-                            <button class="btn btn-primary btn-sm"
-                                onclick="Cart.add({id:6,name:'Sony WH-1000XM5',price:8490000,img:'🎧'})">+ Giỏ
-                                hàng</button>
-                        </div>
-                    </div>
-                    <div class="product-card__body">
-                        <div class="product-card__brand">Sony</div>
-                        <div class="product-card__name"><a href="{{ url('chi-tiet?id=6') }}">Sony WH-1000XM5</a></div>
-                        <div class="product-card__price"><span class="product-card__price-current">8.490.000₫</span><span
-                                class="product-card__price-old">9.990.000₫</span></div>
-                    </div>
-                </div>
-            </div>
-            <div class="text-center mt-32">
-                <a href="{{ url('san-pham') }}" class="btn btn-outline btn-lg">Xem tất cả sản phẩm →</a>
-            </div>
-        </div>
-    </section>
-
-    <section class="section" style="background:var(--surface)">
-        <div class="container">
-            <div class="section-header section-header--center">
-                <div class="section-header__eyebrow">Cam Kết</div>
-                <h2 class="display-2 section-header__title">Tại sao chọn <span class="text-accent">Nexus?</span></h2>
-            </div>
-            <div class="why-grid">
-                <div class="why-card">
-                    <div class="why-icon">🛡️</div>
-                    <div class="why-title">100% Chính Hãng</div>
-                    <div class="why-desc">Tất cả sản phẩm có tem chính hãng, hóa đơn VAT.</div>
-                </div>
-                <div class="why-card">
-                    <div class="why-icon">🚀</div>
-                    <div class="why-title">Giao Hàng Nhanh</div>
-                    <div class="why-desc">Giao trong ngày tại TP.HCM & Hà Nội.</div>
-                </div>
-                <div class="why-card">
-                    <div class="why-icon">🔄</div>
-                    <div class="why-title">Đổi Trả 7 Ngày</div>
-                    <div class="why-desc">Đổi trả dễ dàng trong 7 ngày nếu lỗi.</div>
-                </div>
-                <div class="why-card">
-                    <div class="why-icon">💬</div>
-                    <div class="why-title">Hỗ Trợ 24/7</div>
-                    <div class="why-desc">Đội ngũ tư vấn online 24/7, luôn sẵn sàng.</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="section">
-        <div class="container">
-            <div class="section-header section-header--center">
-                <div class="section-header__eyebrow">Đánh Giá</div>
-                <h2 class="display-2 section-header__title">Khách hàng <span class="text-accent">nói gì</span></h2>
-            </div>
-            <div class="testi-grid">
-                <div class="testi-card">
-                    <div class="testi-stars">★★★★★</div>
-                    <p class="testi-text">"MacBook Pro M3 giá tốt, giao hàng nhanh, seal nguyên hộp."</p>
-                    <div class="testi-user">
-                        <div class="testi-avatar">NA</div>
-                        <div>
-                            <div class="testi-name">Ngọc Anh</div>
-                            <div class="testi-job">Designer</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="testi-card">
-                    <div class="testi-stars">★★★★★</div>
-                    <p class="testi-text">"iPhone 15 Pro Max về đúng hẹn, staff tư vấn nhiệt tình."</p>
-                    <div class="testi-user">
-                        <div class="testi-avatar">HD</div>
-                        <div>
-                            <div class="testi-name">Hữu Đức</div>
-                            <div class="testi-job">Kỹ sư IT</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="testi-card">
-                    <div class="testi-stars">★★★★★</div>
-                    <p class="testi-text">"Dịch vụ hậu mãi tốt, đổi máy mới ngay khi lỗi."</p>
-                    <div class="testi-user">
-                        <div class="testi-avatar">MQ</div>
-                        <div>
-                            <div class="testi-name">Minh Quân</div>
-                            <div class="testi-job">Freelancer</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
+    {{-- ── FEATURED PRODUCTS ───────────────── --}}
     <section class="section" style="padding-top:0">
         <div class="container">
             <div
-                style="background:var(--ink);border-radius:var(--r-2xl);padding:64px;text-align:center;position:relative;overflow:hidden">
-                <div
-                    style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:400px;opacity:.03;pointer-events:none">
-                    N</div>
-                <div class="section-header__eyebrow"
-                    style="color:rgba(255,255,255,.5);margin-bottom:16px;display:inline-flex">Nâng cấp ngay</div>
-                <h2 class="display-2" style="color:#fff;margin-bottom:14px">Sẵn sàng nâng cấp <em
-                        style="font-style:normal;color:var(--accent)">thiết bị?</em></h2>
-                <p style="font-size:16px;color:rgba(255,255,255,.6);margin-bottom:36px">Hơn 5.000 sản phẩm công nghệ chính
-                    hãng giá tốt nhất thị trường</p>
-                <div class="d-flex gap-16" style="justify-content:center;flex-wrap:wrap">
-                    <a href="{{ url('san-pham') }}" class="btn btn-accent btn-xl">Mua sắm ngay</a>
-                    <a href="{{ url('lien-he') }}" class="btn btn-xl"
-                        style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)">Tư vấn
-                        miễn phí</a>
+                style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+                <div>
+                    <div class="section-eyebrow reveal">Nổi bật</div>
+                    <h2 class="section-title reveal">Sản phẩm bán chạy</h2>
+                </div>
+                <div class="tabs-nav">
+                    @foreach (['Tất cả', 'Laptop', 'Điện thoại', 'Tai nghe'] as $t)
+                        <button class="tab-pill {{ $loop->first ? 'active' : '' }}"
+                            onclick="switchTab(this)">{{ $t }}</button>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="grid-4">
+                @php
+                    $products = [
+                        [
+                            'id' => 1,
+                            'name' => 'MacBook Pro 14" M3 Pro',
+                            'brand' => 'Apple',
+                            'price' => 42990000,
+                            'old' => 48490000,
+                            'badge' => '',
+                        ],
+                        [
+                            'id' => 2,
+                            'name' => 'iPhone 15 Pro Max',
+                            'brand' => 'Apple',
+                            'price' => 32990000,
+                            'old' => 36990000,
+                            'badge' => 'Hot',
+                        ],
+                        [
+                            'id' => 3,
+                            'name' => 'Samsung S24 Ultra',
+                            'brand' => 'Samsung',
+                            'price' => 29990000,
+                            'old' => 33990000,
+                            'badge' => '-11%',
+                        ],
+                        [
+                            'id' => 6,
+                            'name' => 'Sony WH-1000XM5',
+                            'brand' => 'Sony',
+                            'price' => 8490000,
+                            'old' => 9990000,
+                            'badge' => 'Best',
+                        ],
+                ]; @endphp
+
+                @foreach ($products as $p)
+                    <div class="product-card reveal">
+                        <div class="product-card__thumb">
+                            @if ($p['badge'])
+                                <div class="product-card__badges">
+                                    <span
+                                        class="badge {{ str_starts_with($p['badge'], '-') ? 'badge-sale' : ($p['badge'] === 'Hot' ? 'badge-hot' : 'badge-best') }}">{{ $p['badge'] }}</span>
+                                </div>
+                            @endif
+                            <button class="product-card__wish" data-wish-id="{{ $p['id'] }}"
+                                data-wish-name="{{ $p['name'] }}" data-wish-price="{{ $p['price'] }}"
+                                aria-label="Yêu thích">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                                    <path
+                                        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                </svg>
+                            </button>
+                            <div class="product-card__img" style="display:flex;align-items:center;justify-content:center">
+                                <svg width="72" height="72" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width=".7" stroke-linecap="round">
+                                    <rect x="2" y="3" width="20" height="14" rx="2" />
+                                    <line x1="8" y1="21" x2="16" y2="21" />
+                                    <line x1="12" y1="17" x2="12" y2="21" />
+                                </svg>
+                            </div>
+                            <div class="product-card__actions">
+                                <button class="btn btn-ghost"
+                                    onclick="Cart.add({id:{{ $p['id'] }},name:'{{ addslashes($p['name']) }}',price:{{ $p['price'] }},img:''})">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                        <circle cx="9" cy="21" r="1" />
+                                        <circle cx="20" cy="21" r="1" />
+                                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                                    </svg>
+                                    Giỏ hàng
+                                </button>
+                                <a href="{{ route('products.show') }}" class="btn btn-primary">Xem ngay</a>
+                            </div>
+                        </div>
+                        <div class="product-card__body">
+                            <div class="product-card__brand">{{ $p['brand'] }}</div>
+                            <div class="product-card__name"><a
+                                    href="{{ route('products.show') }}">{{ $p['name'] }}</a></div>
+                            <div class="product-card__rating">
+                                <div class="product-card__stars">
+                                    @for ($s = 1; $s <= 5; $s++)
+                                        <svg width="12" height="12" viewBox="0 0 24 24"
+                                            fill="{{ $s <= 5 ? '#F59E0B' : '#E5E3DE' }}"
+                                            stroke="{{ $s <= 5 ? '#F59E0B' : '#E5E3DE' }}" stroke-width="1">
+                                            <polygon
+                                                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                        </svg>
+                                    @endfor
+                                </div>
+                            </div>
+                            <div class="product-card__price">
+                                <span
+                                    class="product-card__price-current">{{ number_format($p['price'], 0, ',', '.') }}₫</span>
+                                @if ($p['old'])
+                                    <span class="product-card__price-old">{{ number_format($p['old'], 0, ',', '.') }}₫</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <div style="text-align:center;margin-top:36px">
+                <a href="{{ url('san-pham') }}" class="btn btn-outline btn-lg">
+                    Xem tất cả sản phẩm
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round">
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                        <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    {{-- ── FEATURE STRIP ───────────────────── --}}
+    <section class="section" style="padding-top:0">
+        <div class="container">
+            <div class="feature-strip reveal">
+                @php $features = [['path' => 'M1 3h15v13H1zM16 8h4l3 3v4h-7V8zM5.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM18.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z', 'title' => 'Giao hàng toàn quốc', 'sub' => 'Miễn phí cho đơn từ 1 triệu'], ['path' => 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', 'title' => 'Bảo hành chính hãng', 'sub' => '12 – 24 tháng tùy sản phẩm'], ['path' => 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10', 'title' => 'Đổi trả dễ dàng', 'sub' => '30 ngày không cần lý do'], ['path' => 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', 'title' => 'Hỗ trợ 24/7', 'sub' => 'Tư vấn & chăm sóc tận tâm']]; @endphp
+                @foreach ($features as $f)
+                    <div class="feature-item">
+                        <div class="feature-item__icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.7" stroke-linecap="round">
+                                <path d="{{ $f['path'] }}" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="feature-item__title">{{ $f['title'] }}</div>
+                            <div class="feature-item__sub">{{ $f['sub'] }}</div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+    {{-- ── TESTIMONIALS ────────────────────── --}}
+    <section class="section" style="background:var(--surface);padding-top:64px;padding-bottom:64px">
+        <div class="container">
+            <div class="section-header section-header-center reveal" style="text-align:center">
+                <div class="section-eyebrow">Khách hàng</div>
+                <h2 class="section-title">Được tin dùng bởi hàng chục nghìn khách hàng</h2>
+            </div>
+
+            <div class="testimonials-grid">
+                @php $reviews = [['name' => 'Nguyễn Thị Lan', 'role' => 'Kỹ sư phần mềm', 'stars' => 5, 'text' => 'Mua MacBook Pro tại Nexus, hàng chính hãng, seal mới hoàn toàn. Giao hàng đúng hẹn, tư vấn nhiệt tình. Sẽ tiếp tục ủng hộ!'], ['name' => 'Trần Văn Minh', 'role' => 'Nhà thiết kế đồ họa', 'stars' => 5, 'text' => 'iPhone 15 Pro Max mua tại đây giá tốt hơn nhiều so với các cửa hàng khác. Bảo hành uy tín, hỗ trợ sau bán hàng rất chu đáo.'], ['name' => 'Lê Thị Hương', 'role' => 'Giáo viên', 'stars' => 5, 'text' => 'Lần đầu mua đã tin tưởng ngay vì website chuyên nghiệp. Sản phẩm đúng mô tả, đóng gói cẩn thận. Rất hài lòng!']]; @endphp
+                @foreach ($reviews as $r)
+                    <div class="testimonial-card reveal">
+                        <div class="testimonial-stars">
+                            @for ($s = 1; $s <= 5; $s++)
+                                <svg width="14" height="14" viewBox="0 0 24 24"
+                                    fill="{{ $s <= $r['stars'] ? '#F59E0B' : '#E5E3DE' }}"
+                                    stroke="{{ $s <= $r['stars'] ? '#F59E0B' : '#E5E3DE' }}" stroke-width="1">
+                                    <polygon
+                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                </svg>
+                            @endfor
+                        </div>
+                        <p class="testimonial-text">"{{ $r['text'] }}"</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">{{ mb_substr($r['name'], 0, 1) }}</div>
+                            <div>
+                                <div class="testimonial-name">{{ $r['name'] }}</div>
+                                <div class="testimonial-sub">{{ $r['role'] }}</div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+    {{-- ── CTA ─────────────────────────────── --}}
+    <section class="section">
+        <div class="container">
+            <div class="cta-section">
+                <div class="cta-section__content">
+                    <h2 class="cta-section__title">Sẵn sàng nâng cấp thiết bị của bạn?</h2>
+                    <p class="cta-section__sub">Hơn 10.000 sản phẩm chính hãng đang chờ bạn khám phá.</p>
+                    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+                        <a href="{{ url('san-pham') }}" class="btn btn-accent btn-xl">
+                            Mua sắm ngay
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round">
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                                <polyline points="12 5 19 12 12 19" />
+                            </svg>
+                        </a>
+                        <a href="{{ url('lien-he') }}" class="btn btn-xl"
+                            style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)">Liên
+                            hệ tư vấn</a>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
-@endsection
 
-@push('scripts')
     <script>
-        const flashEnd = new Date();
-        flashEnd.setHours(flashEnd.getHours() + 5, 30);
-        initCountdown(flashEnd, 'flashCountdown');
-        initReveal();
-        initWishBtns();
+        function switchTab(btn) {
+            document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        window.switchTab = switchTab;
     </script>
-@endpush
+@endsection

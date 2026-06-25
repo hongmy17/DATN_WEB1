@@ -1,0 +1,26 @@
+.account-layout { display:grid; grid-template-columns:220px 1fr; gap:24px; padding:40px 0 80px; }
+.account-nav { background:var(--bg-alt); border:1px solid var(--border-soft); border-radius:var(--r-xl); padding:16px; position:sticky; top:88px; }
+.account-nav-link { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--r-md); font-size:14px; color:var(--ink-2); transition:var(--t); margin-bottom:2px; }
+.account-nav-link:hover { background:var(--surface); color:var(--ink); }
+.account-nav-link.active { background:var(--ink); color:#fff; font-weight:500; }
+.addr-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+.addr-card { background:var(--bg-alt); border:1.5px solid var(--border-soft); border-radius:var(--r-xl); padding:20px; position:relative; transition:var(--t); }
+.addr-card:hover { border-color:var(--border); box-shadow:var(--shadow-sm); }
+.addr-card.default { border-color:var(--accent); background:var(--accent-light); }
+.addr-card__head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:10px; }
+.addr-card__name { font-size:15px; font-weight:600; color:var(--ink); }
+.addr-card__actions { display:flex; gap:6px; }
+.addr-card__info { font-size:13.5px; color:var(--ink-3); line-height:1.7; }
+.addr-add { border:1.5px dashed var(--border); border-radius:var(--r-xl); padding:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; cursor:pointer; transition:var(--t); min-height:160px; color:var(--ink-muted); text-align:center; }
+.addr-add:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-light); }
+
+@media(max-width:768px){ .account-layout{grid-template-columns:1fr;} .account-nav{position:static;} .addr-grid{grid-template-columns:1fr;} }
+.addr-form-wrap { max-width:680px; margin:0 auto; padding:40px 0 80px; }
+.addr-form-card { background:var(--bg-alt); border:1px solid var(--border-soft); border-radius:var(--r-2xl); padding:36px; }
+.form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:600px){ .form-row-2{grid-template-columns:1fr;} }
+
+.addr-form-wrap { max-width:680px; margin:0 auto; padding:40px 0 80px; }
+.addr-form-card { background:var(--bg-alt); border:1px solid var(--border-soft); border-radius:var(--r-2xl); padding:36px; }
+.form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:600px){ .form-row-2{grid-template-columns:1fr;} }

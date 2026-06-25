@@ -1,8 +1,8 @@
 /* ══════════════════════════════════════════
-   NEXUS STORE — Main JS
+   NEXUS STORE — Main JS v3
 ══════════════════════════════════════════ */
 
-// ── CART ─────────────────────────────────
+/* ── CART ─────────────────────────────── */
 const Cart = {
     get() {
         try {
@@ -55,7 +55,7 @@ const Cart = {
     },
 };
 
-// ── WISHLIST ──────────────────────────────
+/* ── WISHLIST ────────────────────────── */
 const Wishlist = {
     get() {
         try {
@@ -68,21 +68,26 @@ const Wishlist = {
         localStorage.setItem("nx_wish", JSON.stringify(w));
         Wishlist.updateUI();
     },
-    toggle(id, name) {
+    toggle(id, name, price, img) {
         const w = Wishlist.get();
-        const idx = w.indexOf(String(id));
+        const sid = String(id);
+        const idx = w.findIndex((i) => String(i.id) === sid);
         if (idx >= 0) {
             w.splice(idx, 1);
-            Toast.show(`Đã xóa khỏi yêu thích`, "info");
+            Toast.show(`Đã xoá khỏi yêu thích`, "info");
         } else {
-            w.push(String(id));
-            Toast.show(`Đã thêm "${name}" vào yêu thích`, "success");
+            w.push({
+                id: sid,
+                name: name || "Sản phẩm",
+                price: price || 0,
+                img: img || "",
+            });
+            Toast.show(`Đã thêm vào yêu thích`, "success");
         }
         Wishlist.save(w);
-        return idx < 0;
     },
     has(id) {
-        return Wishlist.get().includes(String(id));
+        return Wishlist.get().some((i) => String(i.id) === String(id));
     },
     count() {
         return Wishlist.get().length;
@@ -94,16 +99,22 @@ const Wishlist = {
             el.style.display = n > 0 ? "flex" : "none";
         });
         document.querySelectorAll("[data-wish-id]").forEach((btn) => {
-            const id = btn.dataset.wishId;
-            btn.classList.toggle("active", Wishlist.has(id));
+            btn.classList.toggle("active", Wishlist.has(btn.dataset.wishId));
         });
     },
 };
 
-// ── TOAST ─────────────────────────────────
+/* ── TOAST ───────────────────────────── */
 const Toast = {
     container: null,
-
+    icons: {
+        success:
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>',
+        error: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+        info: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+        warning:
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    },
     init() {
         if (!Toast.container) {
             Toast.container = document.createElement("div");
@@ -111,214 +122,100 @@ const Toast = {
             document.body.appendChild(Toast.container);
         }
     },
-
     show(msg, type = "success", duration = 3200) {
         Toast.init();
-
-        const icons = {
-            success: '<i class="fa-solid fa-check"></i>',
-            error: '<i class="fa-solid fa-times"></i>',
-            info: '<i class="fa-solid fa-info"></i>',
-            warning: '<i class="fa-solid fa-triangle-exclamation"></i>',
-        };
-
         const el = document.createElement("div");
         el.className = `toast toast--${type}`;
-
         el.innerHTML = `
-      <span class="toast__icon">${icons[type] || icons.info}</span>
+      <span class="toast__icon">${Toast.icons[type] || Toast.icons.info}</span>
       <span class="toast__msg">${msg}</span>
-  
-    `;
-
+      <button class="toast__close" onclick="this.parentElement.remove()" aria-label="Đóng">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>`;
         Toast.container.appendChild(el);
-
         setTimeout(() => {
             el.style.opacity = "0";
-            el.style.transform = "translateX(110%)";
-            el.style.transition = ".3s ease";
-
-            setTimeout(() => el.remove(), 300);
+            el.style.transform = "translateX(10px)";
+            el.style.transition = ".25s ease";
+            setTimeout(() => el.remove(), 260);
         }, duration);
     },
 };
 
-// ── FORMAT ────────────────────────────────
-function fmtPrice(n) {
-    return n.toLocaleString("vi-VN") + "₫";
-}
-function fmtDiscount(orig, sale) {
-    return Math.round((1 - sale / orig) * 100) + "%";
+/* ── EVENT DELEGATION — WISHLIST ─────── */
+function initWishlistButtons() {
+    document.addEventListener("click", function (e) {
+        const btn = e.target.closest("[data-wish-id]");
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const id = btn.dataset.wishId;
+        const name = btn.dataset.wishName || "Sản phẩm";
+        const price = parseInt(btn.dataset.wishPrice || "0");
+        const img = btn.dataset.wishImg || "";
+        Wishlist.toggle(id, name, price, img);
+    });
 }
 
-// ── NAVBAR ────────────────────────────────
+/* ── NAVBAR ──────────────────────────── */
 function initNavbar() {
     const nav = document.querySelector(".navbar");
     if (!nav) return;
     window.addEventListener(
         "scroll",
-        () => nav.classList.toggle("scrolled", scrollY > 10),
+        () => {
+            nav.classList.toggle("scrolled", scrollY > 10);
+        },
         { passive: true },
     );
-    document
-        .querySelector(".navbar__hamburger")
-        ?.addEventListener("click", () =>
-            document.body.classList.toggle("nav-open"),
-        );
     Cart.updateUI();
     Wishlist.updateUI();
-    // Mark active link
-    const path = location.pathname.split("/").pop();
-    nav.querySelectorAll(".navbar__nav-link").forEach((a) => {
-        if (
-            a.getAttribute("href") &&
-            a.getAttribute("href").split("/").pop() === path
-        )
-            a.classList.add("active");
+    const path = location.pathname;
+    document.querySelectorAll(".navbar__nav-link").forEach((a) => {
+        try {
+            if (new URL(a.href).pathname === path) a.classList.add("active");
+        } catch (e) {}
     });
 }
 
-// ── REVEAL ON SCROLL ──────────────────────
+/* ── REVEAL ANIMATION ────────────────── */
 function initReveal() {
-    const els = document.querySelectorAll(".reveal");
-    if (!els.length) return;
-    const io = new IntersectionObserver(
+    if (!("IntersectionObserver" in window)) {
+        document
+            .querySelectorAll(".reveal")
+            .forEach((el) => el.classList.add("visible"));
+        return;
+    }
+    const obs = new IntersectionObserver(
         (entries) => {
-            entries.forEach((e, i) => {
+            entries.forEach((e) => {
                 if (e.isIntersecting) {
-                    setTimeout(() => e.target.classList.add("visible"), i * 60);
-                    io.unobserve(e.target);
+                    e.target.classList.add("visible");
+                    obs.unobserve(e.target);
                 }
             });
         },
         { threshold: 0.08 },
     );
-    els.forEach((el) => io.observe(el));
+    document.querySelectorAll(".reveal").forEach((el) => obs.observe(el));
 }
 
-// ── QTY CONTROL ───────────────────────────
-function initQtyControls() {
-    document.querySelectorAll(".qty-ctrl").forEach((wrap) => {
-        const inp = wrap.querySelector(".qty-ctrl__input");
-        if (!inp) return;
-        wrap.querySelector(".qty-ctrl__btn--minus")?.addEventListener(
-            "click",
-            () => {
-                const v = Math.max(1, parseInt(inp.value || 1) - 1);
-                inp.value = v;
-                inp.dispatchEvent(new Event("change"));
-            },
-        );
-        wrap.querySelector(".qty-ctrl__btn--plus")?.addEventListener(
-            "click",
-            () => {
-                const max = parseInt(inp.max || 99);
-                const v = Math.min(max, parseInt(inp.value || 1) + 1);
-                inp.value = v;
-                inp.dispatchEvent(new Event("change"));
-            },
-        );
-    });
+/* ── FORMAT HELPERS ──────────────────── */
+function fmtPrice(n) {
+    return n.toLocaleString("vi-VN") + "₫";
 }
 
-// ── WISHLIST BUTTONS ──────────────────────
-function initWishBtns() {
-    document.querySelectorAll("[data-wish-id]").forEach((btn) => {
-        if (btn.dataset.wishInited) return;
-        btn.dataset.wishInited = "1";
-        btn.classList.toggle("active", Wishlist.has(btn.dataset.wishId));
-        btn.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const added = Wishlist.toggle(
-                btn.dataset.wishId,
-                btn.dataset.wishName || "Sản phẩm",
-            );
-            btn.classList.toggle("active", added);
-        });
-    });
-}
-
-// ── MODAL ─────────────────────────────────
-function openModal(id) {
-    const m = document.getElementById(id);
-    if (m) {
-        m.classList.add("open");
-        document.body.style.overflow = "hidden";
-    }
-}
-function closeModal(id) {
-    const m = document.getElementById(id);
-    if (m) {
-        m.classList.remove("open");
-        document.body.style.overflow = "";
-    }
-}
-document.addEventListener("click", (e) => {
-    if (e.target.classList.contains("modal-overlay")) {
-        e.target.classList.remove("open");
-        document.body.style.overflow = "";
-    }
-});
-
-// ── COUNTDOWN ─────────────────────────────
-function initCountdown(targetDate, elId) {
-    const el = document.getElementById(elId);
-    if (!el) return;
-    function tick() {
-        const d = new Date(targetDate) - Date.now();
-        if (d <= 0) {
-            el.textContent = "Đã kết thúc";
-            return;
-        }
-        const h = String(Math.floor(d / 3.6e6)).padStart(2, "0");
-        const m = String(Math.floor((d % 3.6e6) / 6e4)).padStart(2, "0");
-        const s = String(Math.floor((d % 6e4) / 1e3)).padStart(2, "0");
-        el.innerHTML = `<span class="cd__unit"><b>${h}</b><small>Giờ</small></span><span class="cd__sep">:</span><span class="cd__unit"><b>${m}</b><small>Phút</small></span><span class="cd__sep">:</span><span class="cd__unit"><b>${s}</b><small>Giây</small></span>`;
-    }
-    tick();
-    setInterval(tick, 1000);
-}
-
-// ── SEARCH ────────────────────────────────
-function initSearch() {
-    document.querySelectorAll(".navbar__search-input").forEach((inp) => {
-        inp.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" && inp.value.trim()) {
-                location.href = `san-pham.html?q=${encodeURIComponent(inp.value.trim())}`;
-            }
-        });
-    });
-}
-
-// ── TABS ──────────────────────────────────
-function initTabs(containerSelector) {
-    document
-        .querySelectorAll(containerSelector || "[data-tabs]")
-        .forEach((container) => {
-            const btns = container.querySelectorAll("[data-tab]");
-            btns.forEach((btn) => {
-                btn.addEventListener("click", () => {
-                    const target = btn.dataset.tab;
-                    btns.forEach((b) => b.classList.remove("active"));
-                    btn.classList.add("active");
-                    container
-                        .querySelectorAll("[data-tab-panel]")
-                        .forEach((p) => {
-                            p.style.display =
-                                p.dataset.tabPanel === target ? "" : "none";
-                        });
-                });
-            });
-        });
-}
-
-// ── INIT ──────────────────────────────────
+/* ── INIT ────────────────────────────── */
 document.addEventListener("DOMContentLoaded", () => {
     initNavbar();
     initReveal();
-    initQtyControls();
-    initWishBtns();
-    initSearch();
-    initTabs();
+    initWishlistButtons();
 });
+
+/* ── EXPORTS ─────────────────────────── */
+window.Cart = Cart;
+window.Wishlist = Wishlist;
+window.Toast = Toast;
+window.fmtPrice = fmtPrice;
