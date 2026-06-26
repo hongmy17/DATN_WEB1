@@ -40,7 +40,6 @@ class VariantsRelationManager extends RelationManager
                 ->required()
                 ->unique(ignoreRecord: true)
                 ->placeholder('VD: IPHONE-DEN-512GB')
-                // FIX: gợi ý SKU dựa trên base_sku của sản phẩm khi tạo mới
                 ->default(function () {
                     $product = $this->getOwnerRecord();
                     return $product->base_sku ? strtoupper($product->base_sku) . '-' : null;
@@ -58,7 +57,7 @@ class VariantsRelationManager extends RelationManager
                 ->numeric()
                 ->prefix('₫')
                 ->nullable()
-                ->gte('price') // FIX: giá gốc phải >= giá bán, tránh nhập sai gây % giảm âm
+                ->gte('price')
                 ->helperText('Để trống nếu không muốn gạch ngang. Phải lớn hơn hoặc bằng giá bán.'),
 
             TextInput::make('stock_quantity')
@@ -75,8 +74,11 @@ class VariantsRelationManager extends RelationManager
                     $product      = $this->getOwnerRecord();
                     $attributeIds = $product->attributes()->pluck('attributes.id');
 
+                    // ── FIX 2: sort theo sort_order đúng thứ tự ──────────
                     return AttributeValue::whereIn('attribute_id', $attributeIds)
                         ->with('attribute')
+                        ->orderBy('attribute_id')
+                        ->orderBy('sort_order') // ← đảm bảo thứ tự S→M→L, Đỏ→Xanh→Đen
                         ->get()
                         ->mapWithKeys(fn ($v) => [
                             $v->id => $v->attribute->name . ': ' . $v->value,
@@ -85,8 +87,6 @@ class VariantsRelationManager extends RelationManager
                 ->relationship('attributeValues', 'value')
                 ->preload()
                 ->live()
-                // FIX: bắt buộc chọn ít nhất 1 thuộc tính nếu sản phẩm CÓ gắn attribute.
-                // Nếu sản phẩm không gắn attribute nào thì cho phép trống (sản phẩm 1 biến thể duy nhất).
                 ->required(fn () => $this->getOwnerRecord()->attributes()->exists())
                 ->rules([
                     function ($component, $get, $record) {
@@ -95,6 +95,19 @@ class VariantsRelationManager extends RelationManager
                                 return;
                             }
 
+                            // ── FIX 5: không được chọn 2 value cùng 1 attribute ──
+                            $selectedValues  = AttributeValue::whereIn('id', $value)->get();
+                            $attributeGroups = $selectedValues->groupBy('attribute_id');
+
+                            foreach ($attributeGroups as $attrId => $values) {
+                                if ($values->count() > 1) {
+                                    $attrName = $values->first()->attribute->name;
+                                    $fail("Không được chọn 2 giá trị của cùng 1 thuộc tính \"{$attrName}\".");
+                                    return;
+                                }
+                            }
+
+                            // Kiểm tra trùng tổ hợp
                             $product     = $this->getOwnerRecord();
                             $selectedIds = collect($value)
                                 ->map(fn ($id) => (int) $id)
@@ -125,7 +138,21 @@ class VariantsRelationManager extends RelationManager
                 ->directory('products/variants')
                 ->imagePreviewHeight('120')
                 ->nullable()
-                ->helperText('Để trống sẽ dùng ảnh đại diện sản phẩm khi hiển thị ra client'),
+                ->live()
+                ->helperText(function (callable $get) {
+                    $product  = $this->getOwnerRecord();
+                    $valueIds = $get('attributeValues') ?? [];
+                    $colorImg = $this->findColorLinkedImage($product, $valueIds);
+
+                    if ($colorImg) {
+                        return new \Illuminate\Support\HtmlString(
+                            '💡 Tìm thấy ảnh của biến thể khác cùng màu này — '
+                            . 'nếu bạn không upload, hệ thống sẽ tự dùng ảnh đó khi lưu.'
+                        );
+                    }
+
+                    return 'Để trống sẽ dùng ảnh đại diện sản phẩm khi hiển thị ra client.';
+                }),
 
             Toggle::make('status')
                 ->label('Đang bán')
@@ -149,12 +176,13 @@ class VariantsRelationManager extends RelationManager
                     ->copyable()
                     ->fontFamily('mono'),
 
-                // FIX: render color swatch nếu attribute là display_type màu
                 TextColumn::make('attributeValues')
                     ->label('Thuộc tính')
                     ->html()
                     ->getStateUsing(function ($record) {
+                        // ── FIX 2: sort theo sort_order khi hiển thị ──────
                         return $record->attributeValues
+                            ->sortBy(fn ($v) => [$v->attribute_id, $v->sort_order])
                             ->map(function ($val) {
                                 $label = e($val->attribute->name . ': ' . $val->value);
 
@@ -183,7 +211,6 @@ class VariantsRelationManager extends RelationManager
                     ->sortable()
                     ->placeholder('—'),
 
-                // Thêm: hiện % giảm giá luôn trong bảng admin
                 TextColumn::make('discount_percent')
                     ->label('Giảm')
                     ->badge()
@@ -222,12 +249,16 @@ class VariantsRelationManager extends RelationManager
                             ];
                         }
 
-                        // FIX: ->live() để mỗi lần tick/bỏ tick checkbox, bảng preview
-                        // bên dưới tự render lại ngay — đúng tinh thần "xem trước rồi mới tạo".
+                        // ── FIX 2: sort theo sort_order trong CheckboxList ──
                         $fields = $attributes->map(fn ($attribute) =>
                             CheckboxList::make("attribute_{$attribute->id}")
                                 ->label($attribute->name)
-                                ->options($attribute->attributeValues->pluck('value', 'id')->toArray())
+                                ->options(
+                                    $attribute->attributeValues
+                                        ->sortBy('sort_order') // ← thứ tự đúng
+                                        ->pluck('value', 'id')
+                                        ->toArray()
+                                )
                                 ->columns(3)
                                 ->live()
                         )->toArray();
@@ -244,8 +275,7 @@ class VariantsRelationManager extends RelationManager
                             ->live()
                             ->helperText('Áp dụng cho tất cả biến thể được tạo ra');
 
-                        // FIX: bảng preview — hiện trước khi tạo: SKU dự kiến, tổ hợp,
-                        // tổ hợp nào sẽ tạo mới / tổ hợp nào đã tồn tại sẽ bị bỏ qua.
+                        // Preview bảng tổ hợp
                         $fields[] = Placeholder::make('preview')
                             ->label('Xem trước tổ hợp sẽ tạo')
                             ->content(function ($get) use ($product) {
@@ -300,7 +330,6 @@ class VariantsRelationManager extends RelationManager
                         $product      = $this->getOwnerRecord();
                         $defaultPrice = (float) ($data['default_price'] ?? 0);
                         $defaultStock = (int) ($data['default_stock'] ?? 0);
-                        // FIX: dùng base_sku của sản phẩm làm tiền tố SKU sinh ra
                         $skuPrefix    = $product->base_sku
                             ? strtoupper(Str::slug($product->base_sku))
                             : strtoupper(Str::slug($product->code));
@@ -324,20 +353,18 @@ class VariantsRelationManager extends RelationManager
                                 ->map(fn ($id) => (int) $id)->sort()->values()->toArray())
                             ->toArray();
 
-                        // FIX: SKU sinh ra phải duy nhất trong toàn bảng product_variants,
-                        // không chỉ trong phạm vi sản phẩm này -> nạp trước toàn bộ SKU đang tồn tại
-                        // để tự động thêm hậu tố khi đụng, tránh DB unique exception giữa chừng.
                         $existingSkus = ProductVariant::pluck('sku')
                             ->map(fn ($s) => strtoupper($s))
                             ->flip()->toArray();
 
-                        // FIX: bọc transaction — nếu có lỗi bất ngờ giữa chừng (DB exception,
-                        // ràng buộc khác...), toàn bộ batch sẽ rollback thay vì tạo dở dang.
+                        // ── FIX 4: collect variants vừa tạo để mở inline-edit sau ──
+                        $newVariantIds = [];
+
                         try {
                             DB::transaction(function () use (
                                 $combinations, $existingCombos, &$existingSkus,
                                 $skuPrefix, $defaultPrice, $defaultStock, $product,
-                                &$created, &$skipped
+                                &$created, &$skipped, &$newVariantIds
                             ) {
                                 foreach ($combinations as $combo) {
                                     $comboIds = collect($combo)->map(fn ($id) => (int) $id)
@@ -348,16 +375,19 @@ class VariantsRelationManager extends RelationManager
                                         continue;
                                     }
 
-                                    $valueLabels = AttributeValue::whereIn('id', $comboIds)->orderBy('id')
-                                        ->pluck('value')->map(fn ($v) => Str::slug($v))->implode('-');
+                                    // ── FIX 2: sort theo attribute_id TRƯỚC, rồi sort_order SAU
+                                    // Đảm bảo Màu sắc luôn đứng trước Dung lượng trong SKU
+                                    // (vì attribute_id Màu sắc = 1, Dung lượng = 2)
+                                    $valueLabels = AttributeValue::whereIn('id', $comboIds)
+                                        ->orderBy('attribute_id')  // ← nhóm theo attribute trước
+                                        ->orderBy('sort_order')    // ← rồi mới sort trong nhóm
+                                        ->pluck('value')
+                                        ->map(fn ($v) => Str::slug($v))
+                                        ->implode('-');
 
                                     $baseSku = strtoupper($skuPrefix . '-' . $valueLabels);
-
-                                    // FIX: nếu SKU sinh ra trùng (2 tổ hợp khác attribute nhưng
-                                    // cùng slug giá trị, hoặc trùng với SKU sản phẩm khác),
-                                    // tự thêm hậu tố số thay vì để DB ném exception.
-                                    $sku   = $baseSku;
-                                    $i     = 2;
+                                    $sku     = $baseSku;
+                                    $i       = 2;
                                     while (isset($existingSkus[$sku])) {
                                         $sku = $baseSku . '-' . $i;
                                         $i++;
@@ -368,12 +398,15 @@ class VariantsRelationManager extends RelationManager
                                         'sku'            => $sku,
                                         'price'          => $defaultPrice,
                                         'stock_quantity' => $defaultStock,
+                                        // FIX: tự link ảnh theo màu nếu đã có variant khác cùng màu có ảnh
+                                        'image'          => $this->findColorLinkedImage($product, $comboIds),
                                         'status'         => true,
                                     ]);
 
                                     $variant->attributeValues()->attach($comboIds);
-                                    $existingCombos[] = $comboIds;
+                                    $existingCombos[]   = $comboIds;
                                     $existingSkus[$sku] = true;
+                                    $newVariantIds[]    = $variant->id;
                                     $created++;
                                 }
                             });
@@ -399,7 +432,111 @@ class VariantsRelationManager extends RelationManager
                         Notification::make()->title($msg)->success()->send();
                     }),
 
-                // Thêm: xóa tất cả & generate lại
+                // ── FIX 4: Inline edit giá/tồn kho cho tất cả variant sau generate ──
+                Action::make('bulkEditAll')
+                    ->label('Sửa giá & tồn kho')
+                    ->icon('heroicon-o-pencil-square')
+                    ->color('info')
+                    ->visible(fn () => $this->getOwnerRecord()->variants()->exists())
+                    ->form(function (): array {
+                        $product  = $this->getOwnerRecord();
+                        // FIX 3: eager-load 'attribute' để getAttributeLabelAttribute
+                        // không bắn N+1 query khi render label từng variant
+                        $variants = $product->variants()
+                            ->with('attributeValues.attribute')
+                            ->orderBy('id')
+                            ->get();
+
+                        $fields = [
+                            Placeholder::make('hint')
+                                ->label('')
+                                ->content(new \Illuminate\Support\HtmlString(
+                                    '<div style="font-size:13px;color:var(--gray-500);margin-bottom:4px">'
+                                    . '💡 Sửa giá và tồn kho cho từng biến thể bên dưới.</div>'
+                                )),
+                        ];
+
+                        foreach ($variants as $v) {
+                            $label = $v->attribute_label ?: $v->sku;
+
+                            $fields[] = Placeholder::make("header_{$v->id}")
+                                ->label('')
+                                ->content(new \Illuminate\Support\HtmlString(
+                                    '<div style="font-weight:600;font-size:13px;padding:6px 0 2px;border-top:1px solid var(--gray-200);margin-top:4px">'
+                                    . e($label)
+                                    . ' <span style="font-weight:400;color:var(--gray-400);font-size:11px">(' . e($v->sku) . ')</span></div>'
+                                ))
+                                ->columnSpanFull();
+
+                            $fields[] = TextInput::make("rows.{$v->id}.price")
+                                ->label('Giá bán (₫)')
+                                ->numeric()
+                                ->prefix('₫')
+                                ->minValue(0)
+                                ->default($v->price);
+
+                            $fields[] = TextInput::make("rows.{$v->id}.compare_price")
+                                ->label('Giá gốc (₫)')
+                                ->numeric()
+                                ->prefix('₫')
+                                ->minValue(0)
+                                ->nullable()
+                                ->default($v->compare_price);
+
+                            $fields[] = TextInput::make("rows.{$v->id}.stock_quantity")
+                                ->label('Tồn kho')
+                                ->numeric()
+                                ->minValue(0)
+                                ->default($v->stock_quantity);
+                        }
+
+                        return $fields;
+                    })
+                    ->modalHeading('Sửa giá & tồn kho biến thể')
+                    ->modalWidth('2xl')
+                    ->modalSubmitActionLabel('Lưu tất cả')
+                    ->action(function (array $data): void {
+                        $rows    = $data['rows'] ?? [];
+                        $updated = 0;
+                        $errors  = [];
+
+                        foreach ($rows as $variantId => $row) {
+                            $variant = ProductVariant::find($variantId);
+                            if (! $variant) {
+                                continue;
+                            }
+
+                            $price        = isset($row['price']) && $row['price'] !== '' ? (float) $row['price'] : $variant->price;
+                            $comparePrice = isset($row['compare_price']) && $row['compare_price'] !== '' ? (float) $row['compare_price'] : null;
+                            $stock        = isset($row['stock_quantity']) && $row['stock_quantity'] !== '' ? (int) $row['stock_quantity'] : $variant->stock_quantity;
+
+                            if ($comparePrice && $comparePrice < $price) {
+                                $errors[] = "SKU {$variant->sku}: giá gốc nhỏ hơn giá bán — bỏ qua.";
+                                continue;
+                            }
+
+                            $variant->update([
+                                'price'          => $price,
+                                'compare_price'  => $comparePrice ?: null,
+                                'stock_quantity' => $stock,
+                            ]);
+
+                            $updated++;
+                        }
+
+                        if (! empty($errors)) {
+                            Notification::make()
+                                ->title("Đã lưu {$updated} biến thể, bỏ qua " . count($errors))
+                                ->body(implode("\n", $errors))
+                                ->warning()->send();
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title("Đã cập nhật {$updated} biến thể")
+                            ->success()->send();
+                    }),
+
                 Action::make('deleteAllVariants')
                     ->label('Xóa tất cả & tạo lại')
                     ->icon('heroicon-o-trash')
@@ -409,8 +546,6 @@ class VariantsRelationManager extends RelationManager
                     ->modalDescription('Hành động này sẽ xóa TẤT CẢ biến thể hiện tại của sản phẩm. Không thể hoàn tác. Dùng khi muốn đổi lại toàn bộ cấu trúc thuộc tính.')
                     ->modalSubmitActionLabel('Xóa tất cả')
                     ->visible(fn () => $this->getOwnerRecord()->variants()->exists())
-                    // FIX: nhất quán với rule chặn xóa biến thể cuối khi đang publish —
-                    // không cho xóa sạch toàn bộ biến thể của sản phẩm đang hiển thị cho khách.
                     ->disabled(fn () => $this->getOwnerRecord()->status)
                     ->tooltip(fn () => $this->getOwnerRecord()->status
                         ? 'Tắt hiển thị sản phẩm trước khi xóa toàn bộ biến thể'
@@ -428,7 +563,6 @@ class VariantsRelationManager extends RelationManager
                             return;
                         }
 
-                        // FIX: bọc transaction để đảm bảo xóa pivot + variant nhất quán
                         $count = DB::transaction(function () use ($product) {
                             $count = $product->variants()->count();
                             $product->variants()->each(function ($variant) {
@@ -444,12 +578,17 @@ class VariantsRelationManager extends RelationManager
                             ->success()->send();
                     }),
 
-                CreateAction::make()->label('Thêm thủ công'),
+                CreateAction::make()
+                    ->label('Thêm thủ công')
+                    ->mutateFormDataUsing(function (array $data): array {
+                        return $this->applyColorLinkedImage($data);
+                    }),
             ])
             ->recordActions([
-                EditAction::make(),
-                // FIX: chặn xóa variant cuối cùng nếu sản phẩm đang publish (status=true)
-                // tránh sản phẩm publish mà 0 variant → client crash
+                EditAction::make()
+                    ->mutateFormDataUsing(function (array $data): array {
+                        return $this->applyColorLinkedImage($data);
+                    }),
                 DeleteAction::make()
                     ->before(function ($record, DeleteAction $action) {
                         $product = $record->product;
@@ -499,9 +638,8 @@ class VariantsRelationManager extends RelationManager
                                 return;
                             }
 
-                            // FIX: validate compare_price >= price sau khi update hàng loạt
                             foreach ($records as $record) {
-                                $newPrice  = $updateData['price'] ?? $record->price;
+                                $newPrice   = $updateData['price'] ?? $record->price;
                                 $newCompare = $updateData['compare_price'] ?? $record->compare_price;
 
                                 if ($newCompare && $newCompare < $newPrice) {
@@ -525,6 +663,66 @@ class VariantsRelationManager extends RelationManager
             ]);
     }
 
+    // ── Private helpers ──────────────────────────────────────────────────────
+
+    /**
+     * Tìm ảnh từ 1 variant khác (cùng sản phẩm) đã có ảnh, chia sẻ chung
+     * 1 attribute_value thuộc nhóm "màu sắc" (display_type = 1) với
+     * danh sách $valueIds đang được chọn trong form hiện tại.
+     *
+     * VD: variant "Đen / 512GB" đã có ảnh → variant "Đen / 1TB" mới tạo,
+     * chưa upload ảnh, sẽ tự mượn đúng ảnh đó vì cùng giá trị "Đen".
+     *
+     * Trả về path ảnh (string) hoặc null nếu không tìm thấy.
+     */
+    private function findColorLinkedImage($product, array $valueIds, ?int $excludeVariantId = null): ?string
+    {
+        if (empty($valueIds)) {
+            return null;
+        }
+
+        // Lấy đúng các attribute_value thuộc nhóm màu (display_type = 1)
+        // trong danh sách đang chọn — bỏ qua các thuộc tính khác (size, dung lượng...)
+        $colorValueIds = AttributeValue::whereIn('id', $valueIds)
+            ->whereHas('attribute', fn ($q) => $q->where('display_type', 1))
+            ->pluck('id');
+
+        if ($colorValueIds->isEmpty()) {
+            return null;
+        }
+
+        $variant = $product->variants()
+            ->whereNotNull('image')
+            ->when($excludeVariantId, fn ($q) => $q->where('id', '!=', $excludeVariantId))
+            ->whereHas('attributeValues', fn ($q) => $q->whereIn('attribute_values.id', $colorValueIds))
+            ->first();
+
+        return $variant?->image;
+    }
+
+    /**
+     * Nếu admin để trống ô ảnh nhưng đã chọn 1 màu đã có ảnh ở variant khác
+     * cùng sản phẩm, tự gán ảnh đó vào $data trước khi lưu.
+     * Admin upload ảnh riêng thì ưu tiên ảnh admin upload, không override.
+     */
+    private function applyColorLinkedImage(array $data): array
+    {
+        if (! empty($data['image'])) {
+            return $data; // admin đã tự upload, không can thiệp
+        }
+
+        $product  = $this->getOwnerRecord();
+        $valueIds = $data['attributeValues'] ?? [];
+
+        $linkedImage = $this->findColorLinkedImage($product, $valueIds);
+
+        if ($linkedImage) {
+            $data['image'] = $linkedImage;
+        }
+
+        return $data;
+    }
+
     private function cartesian(array $groups): array
     {
         $result = [[]];
@@ -540,10 +738,6 @@ class VariantsRelationManager extends RelationManager
         return $result;
     }
 
-    /**
-     * FIX: lấy danh sách nhóm attribute_value_id đã chọn từ form state ($get),
-     * dùng chung cho cả preview và action thật để không bị lệch logic.
-     */
     private function extractGroupsFromFormState(callable $get, \Illuminate\Database\Eloquent\Collection $attributes): array
     {
         return $attributes
@@ -553,11 +747,6 @@ class VariantsRelationManager extends RelationManager
             ->values()->toArray();
     }
 
-    /**
-     * FIX: build trước toàn bộ danh sách SKU + tổ hợp sẽ được tạo, kèm trạng thái
-     * "đã tồn tại" hay "sẽ tạo mới" — dùng để hiển thị bảng preview trong modal,
-     * và TÁI SỬ DỤNG y nguyên khi thực sự tạo, để preview luôn khớp với kết quả thật.
-     */
     private function buildVariantPreview($product, callable $get): array
     {
         $attributes = $product->attributes()->with('attributeValues')->get();
@@ -589,8 +778,11 @@ class VariantsRelationManager extends RelationManager
             $comboIds = collect($combo)->map(fn ($id) => (int) $id)->sort()->values()->toArray();
             $exists   = in_array($comboIds, $existingCombos);
 
-            $values = AttributeValue::whereIn('id', $comboIds)->with('attribute')
-                ->get()->sortBy(fn ($v) => $v->id);
+            // ── FIX 2: sort theo sort_order khi preview cũng nhất quán ──
+            $values = AttributeValue::whereIn('id', $comboIds)
+                ->with('attribute')
+                ->get()
+                ->sortBy(fn ($v) => [$v->attribute_id, $v->sort_order]);
 
             $label       = $values->map(fn ($v) => $v->attribute->name . ': ' . $v->value)->join(' / ');
             $valueLabels = $values->map(fn ($v) => Str::slug($v->value))->implode('-');
@@ -599,8 +791,6 @@ class VariantsRelationManager extends RelationManager
             if ($exists) {
                 $willSkip++;
             } else {
-                // FIX: cùng thuật toán chống đụng SKU như lúc tạo thật,
-                // để SKU hiển thị ở preview = SKU thực sự được lưu.
                 $sku = $baseSku;
                 $i   = 2;
                 while (isset($existingSkus[$sku])) {
@@ -609,7 +799,7 @@ class VariantsRelationManager extends RelationManager
                 }
                 $existingSkus[$sku] = true;
                 $existingCombos[]   = $comboIds;
-                $baseSku = $sku;
+                $baseSku            = $sku;
                 $willCreate++;
             }
 

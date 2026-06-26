@@ -10,7 +10,9 @@ class Product extends Model
 {
     use SoftDeletes;
 
-    protected const DELETED_AT = 'delete_at';
+    // ── FIX 1: đặt tên column xóa mềm đúng với schema DB ────────────
+    // Column trong DB là "delete_at", không phải "deleted_at"
+    const DELETED_AT = 'delete_at';
 
     protected $fillable = [
         'code', 'base_sku', 'category_id', 'name', 'slug',
@@ -61,10 +63,17 @@ class Product extends Model
     /**
      * Chỉ lấy sản phẩm đang publish — dùng cho client.
      * Admin KHÔNG dùng scope này (admin cần xem cả sản phẩm đang ẩn).
+     *
+     * FIX 1: Bỏ whereNull('delete_at') vì SoftDeletes đã tự thêm điều kiện
+     * này vào mọi query (global scope). scopeVisible chỉ cần check status.
+     * Nếu bạn KHÔNG dùng SoftDeletes global scope (withTrashed), thì Laravel
+     * tự loại sản phẩm có delete_at != NULL rồi — không cần check tay.
      */
     public function scopeVisible(Builder $query): Builder
     {
         return $query->where('status', true);
+        // SoftDeletes global scope đã tự thêm: AND delete_at IS NULL
+        // Không cần ->whereNull('delete_at') thêm nữa.
     }
 
     /**
@@ -80,14 +89,38 @@ class Product extends Model
 
     // ─── Accessors ────────────────────────────────────────────
 
+    /**
+     * FIX 5: Accessor min_price dùng aggregate đã được eager-load qua
+     * withMin('variants', 'price'). Nếu chưa eager-load thì fallback về
+     * query — nhưng khuyến khích luôn dùng withMin() khi query danh sách.
+     *
+     * Cách dùng đúng trong Controller/Query:
+     *   Product::visible()->withMin('variants', 'price')->withMax('variants', 'price')->get()
+     * Khi đó $product->variants_min_price và $product->variants_max_price sẽ có giá trị,
+     * accessor sẽ trả về ngay mà không cần thêm query.
+     */
     public function getMinPriceAttribute(): ?float
     {
-        return $this->variants_min_price ?? $this->variants()->min('price');
+        // variants_min_price được Eloquent tự gắn khi dùng withMin()
+        if (array_key_exists('variants_min_price', $this->attributes)) {
+            return $this->attributes['variants_min_price'] !== null
+                ? (float) $this->attributes['variants_min_price']
+                : null;
+        }
+
+        // Fallback: query trực tiếp (chấp nhận thêm 1 query nếu không eager-load)
+        return $this->variants()->active()->min('price');
     }
 
     public function getMaxPriceAttribute(): ?float
     {
-        return $this->variants_max_price ?? $this->variants()->max('price');
+        if (array_key_exists('variants_max_price', $this->attributes)) {
+            return $this->attributes['variants_max_price'] !== null
+                ? (float) $this->attributes['variants_max_price']
+                : null;
+        }
+
+        return $this->variants()->active()->max('price');
     }
 
     public function getThumbnailUrlAttribute(): ?string

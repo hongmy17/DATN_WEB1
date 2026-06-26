@@ -32,6 +32,30 @@ class Order extends Model
     const STATUS_COMPLETED  = 3;
     const STATUS_CANCELLED  = 4;
 
+    // ─── Stock hook: hoàn kho khi đơn chuyển sang "Đã hủy" ───────
+    // MỚI: chỉ hoàn kho 1 LẦN tại đúng thời điểm order_status chuyển
+    // SANG STATUS_CANCELLED từ 1 trạng thái khác (không lặp lại nếu
+    // record được save nhiều lần ở trạng thái hủy, và không hoàn kho
+    // khi đơn được TẠO MỚI thẳng với status = hủy, vì khi đó chưa
+    // từng bị trừ kho lúc nào cả — chỉ trừ kho lúc tạo OrderItem).
+    protected static function booted(): void
+    {
+        static::updating(function (Order $order) {
+            $isBecomingCancelled = $order->isDirty('order_status')
+                && (int) $order->order_status === self::STATUS_CANCELLED
+                && (int) $order->getOriginal('order_status') !== self::STATUS_CANCELLED;
+
+            if (! $isBecomingCancelled) {
+                return;
+            }
+
+            $order->items()->with('variant')->get()->each(function (OrderItem $item) {
+                ProductVariant::where('id', $item->variant_id)
+                    ->increment('stock_quantity', $item->quantity);
+            });
+        });
+    }
+
     public function statusLabel(): string
     {
         return match ($this->order_status) {

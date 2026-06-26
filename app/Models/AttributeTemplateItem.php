@@ -6,7 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class AttributeTemplateItem extends Model
 {
-    protected $fillable = ['attribute_template_id', 'name', 'sort_order'];
+    protected $fillable = [
+        'attribute_template_id',
+        'name',
+        'attribute_id',   // ← MỚI: FK sang attributes
+        'sort_order',
+    ];
 
     protected static function booted(): void
     {
@@ -21,5 +26,14 @@ class AttributeTemplateItem extends Model
     public function template()
     {
         return $this->belongsTo(AttributeTemplate::class, 'attribute_template_id');
+    }
+
+    /**
+     * MỚI: Item giờ map thẳng sang Attribute toàn cục.
+     * Dùng để ProductForm auto-fill selectedAttributes.
+     */
+    public function attribute()
+    {
+        return $this->belongsTo(Attribute::class);
     }
 }

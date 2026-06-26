@@ -179,33 +179,7 @@
                     @endforeach
                 </div>
 
-                <div class="filter-section">
-                    <div class="filter-title">Tình trạng</div>
-                    <div class="filter-check"><label><input type="checkbox" checked onchange="applyFilter()"> Còn
-                            hàng</label></div>
-                    <div class="filter-check"><label><input type="checkbox" onchange="applyFilter()"> Hàng sắp về</label>
-                    </div>
-                </div>
-
-                <div class="filter-section">
-                    <div class="filter-title">Đánh giá</div>
-                    @for ($r = 5; $r >= 4; $r--)
-                        <div class="filter-check">
-                            <label style="gap:4px">
-                                <input type="checkbox" onchange="applyFilter()">
-                                @for ($s = 1; $s <= 5; $s++)
-                                    <svg width="13" height="13" viewBox="0 0 24 24"
-                                        fill="{{ $s <= $r ? '#F59E0B' : '#E5E3DE' }}"
-                                        stroke="{{ $s <= $r ? '#F59E0B' : '#E5E3DE' }}" stroke-width="1">
-                                        <polygon
-                                            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                                    </svg>
-                                @endfor
-                                trở lên
-                            </label>
-                        </div>
-                    @endfor
-                </div>
+              
 
                 <button onclick="applyFilter()" class="btn btn-accent btn-full">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -243,77 +217,7 @@
                                 'rating' => 4.9,
                                 'reviews' => 6,
                                 'badge' => '',
-                            ],
-                            [
-                                'id' => 2,
-                                'name' => 'iPhone 15 Pro Max 256GB',
-                                'brand' => 'Apple',
-                                'price' => 32990000,
-                                'old' => 36990000,
-                                'rating' => 4.8,
-                                'reviews' => 12,
-                                'badge' => 'Hot',
-                            ],
-                            [
-                                'id' => 3,
-                                'name' => 'Samsung Galaxy S24 Ultra',
-                                'brand' => 'Samsung',
-                                'price' => 29990000,
-                                'old' => 33990000,
-                                'rating' => 4.7,
-                                'reviews' => 9,
-                                'badge' => '-11%',
-                            ],
-                            [
-                                'id' => 4,
-                                'name' => 'Dell XPS 15 2024',
-                                'brand' => 'Dell',
-                                'price' => 38990000,
-                                'old' => null,
-                                'rating' => 4.6,
-                                'reviews' => 4,
-                                'badge' => '',
-                            ],
-                            [
-                                'id' => 5,
-                                'name' => 'iPad Pro 13" M4',
-                                'brand' => 'Apple',
-                                'price' => 28990000,
-                                'old' => null,
-                                'rating' => 4.8,
-                                'reviews' => 7,
-                                'badge' => 'Mới',
-                            ],
-                            [
-                                'id' => 6,
-                                'name' => 'Sony WH-1000XM5',
-                                'brand' => 'Sony',
-                                'price' => 8490000,
-                                'old' => 9990000,
-                                'rating' => 4.9,
-                                'reviews' => 21,
-                                'badge' => 'Best',
-                            ],
-                            [
-                                'id' => 7,
-                                'name' => 'Apple Watch Series 9',
-                                'brand' => 'Apple',
-                                'price' => 11990000,
-                                'old' => 13490000,
-                                'rating' => 4.7,
-                                'reviews' => 8,
-                                'badge' => '',
-                            ],
-                            [
-                                'id' => 8,
-                                'name' => 'Bose QuietComfort 45',
-                                'brand' => 'Bose',
-                                'price' => 7290000,
-                                'old' => null,
-                                'rating' => 4.6,
-                                'reviews' => 5,
-                                'badge' => '',
-                            ],
+                            ]
                         ];
                     @endphp
 

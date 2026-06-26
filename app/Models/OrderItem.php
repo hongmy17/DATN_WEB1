@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class OrderItem extends Model
 {
@@ -17,6 +18,40 @@ class OrderItem extends Model
         'unit_price',
         'total_price',
     ];
+
+    // ─── Stock hooks ────────────────────────────────────────────
+    // MỚI: tự trừ kho khi tạo OrderItem, tự hoàn kho khi xóa OrderItem.
+    // Đặt ở Model (không phải Filament Resource) để logic này luôn
+    // chạy đúng dù đơn hàng được tạo từ admin, từ trang khách, hay API.
+
+    protected static function booted(): void
+    {
+        static::creating(function (OrderItem $item) {
+            // Khóa row variant để tránh 2 đơn hàng cùng lúc trừ kho
+            // dẫn tới âm kho (race condition khi nhiều khách checkout cùng lúc).
+            $variant = ProductVariant::where('id', $item->variant_id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $variant) {
+                throw new \RuntimeException("Biến thể #{$item->variant_id} không tồn tại.");
+            }
+
+            if ($variant->stock_quantity < $item->quantity) {
+                throw new \RuntimeException(
+                    "SKU {$variant->sku} không đủ hàng (còn {$variant->stock_quantity}, cần {$item->quantity})."
+                );
+            }
+
+            $variant->decrement('stock_quantity', $item->quantity);
+        });
+
+        static::deleting(function (OrderItem $item) {
+            // Khi xóa 1 item khỏi đơn (hủy 1 phần / sửa đơn) → hoàn lại kho
+            ProductVariant::where('id', $item->variant_id)
+                ->increment('stock_quantity', $item->quantity);
+        });
+    }
 
     // Relationships
     public function order()

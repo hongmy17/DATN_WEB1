@@ -33,6 +33,15 @@ class ProductVariant extends Model
         return $this->belongsTo(Product::class);
     }
 
+    /**
+     * FIX 3: Thêm ->withPivot() không cần thiết ở đây, nhưng quan trọng là
+     * eager-load 'attribute' ngay trong relation để getAttributeLabelAttribute
+     * không bắn thêm query khi duyệt collection.
+     *
+     * Cách dùng đúng khi query variants:
+     *   $product->variants()->with('attributeValues.attribute')->get()
+     * Hoặc dùng $with bên dưới để tự động load.
+     */
     public function attributeValues()
     {
         return $this->belongsToMany(
@@ -111,12 +120,22 @@ class ProductVariant extends Model
     }
 
     /**
-     * Nhãn hiển thị tổ hợp thuộc tính, dùng cho admin và client.
+     * FIX 3: Nhãn tổ hợp thuộc tính — sort nhất quán theo attribute_id rồi sort_order.
      * VD: "Màu sắc: Đen / Dung lượng: 512GB"
+     *
+     * QUAN TRỌNG: Luôn eager-load 'attributeValues.attribute' trước khi gọi accessor này.
+     * Nếu không, mỗi lần dùng $variant->attribute_label sẽ tạo thêm N query.
+     *
+     *   ✅ Đúng: $variants->load('attributeValues.attribute')
+     *   ✅ Đúng: Variant::with('attributeValues.attribute')->get()
+     *   ❌ Sai:  Variant::all()->map(fn($v) => $v->attribute_label)  ← N+1
      */
     public function getAttributeLabelAttribute(): string
     {
+        // FIX 3: sort theo [attribute_id, sort_order] để thứ tự nhất quán
+        // (Màu sắc luôn đứng trước Dung lượng nếu attribute_id Màu < Dung lượng)
         return $this->attributeValues
+            ->sortBy(fn ($v) => [$v->attribute_id, $v->sort_order])
             ->map(fn ($v) => $v->attribute->name . ': ' . $v->value)
             ->join(' / ');
     }
