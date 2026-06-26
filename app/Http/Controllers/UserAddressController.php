@@ -35,18 +35,23 @@ class UserAddressController extends Controller
 
         $isFirst = Auth::user()->addresses()->count() === 0;
 
-        Auth::user()->addresses()->create([
+        $address = Auth::user()->addresses()->create([
             'receiver_name'  => $request->receiver_name,
             'receiver_phone' => $request->receiver_phone,
             'province'       => $request->province,
             'district'       => $request->district,
             'ward'           => $request->ward,
             'address_detail' => $request->address_detail,
-            'is_default'     => $isFirst ? true : $request->boolean('is_default'),
+            'is_default'     => false,
         ]);
 
+        // Nếu là địa chỉ đầu tiên hoặc user chọn làm mặc định
+        if ($isFirst || $request->boolean('is_default')) {
+            $address->setAsDefault();
+        }
+
         $redirectTo = request()->input('redirect_to', route('addresses.index'));
-return redirect($redirectTo)->with('success', 'Thêm địa chỉ thành công!');
+        return redirect($redirectTo)->with('success', 'Thêm địa chỉ thành công!');
     }
 
     // Form sửa địa chỉ
@@ -71,12 +76,21 @@ return redirect($redirectTo)->with('success', 'Thêm địa chỉ thành công!'
         ]);
 
         $address->update($request->only([
-            'receiver_name', 'receiver_phone',
-            'province', 'district', 'ward', 'address_detail',
+            'receiver_name',
+            'receiver_phone',
+            'province',
+            'district',
+            'ward',
+            'address_detail',
         ]));
 
+        // Nếu user chọn làm mặc định → bỏ mặc định cũ
+        if ($request->boolean('is_default')) {
+            $address->setAsDefault();
+        }
+
         $redirectTo = request()->input('redirect_to', route('addresses.index'));
-return redirect($redirectTo)->with('success', 'Cập nhật địa chỉ thành công!');
+        return redirect($redirectTo)->with('success', 'Cập nhật địa chỉ thành công!');
     }
 
     // Xóa địa chỉ
