@@ -57,15 +57,46 @@ class VariantsRelationManager extends RelationManager
                 ->numeric()
                 ->prefix('₫')
                 ->nullable()
-                ->gte('price')
-                ->helperText('Để trống nếu không muốn gạch ngang. Phải lớn hơn hoặc bằng giá bán.'),
+                ->gt('price')
+                ->helperText('Để trống nếu không muốn gạch ngang. Phải lớn hơn giá bán (để % giảm có ý nghĩa).'),
+
+            // ── MỚI: giá khuyến mãi có thời hạn — không cần tự đổi compare_price ──
+            TextInput::make('sale_price')
+                ->label('Giá khuyến mãi (₫)')
+                ->numeric()
+                ->prefix('₫')
+                ->nullable()
+                ->lte('price')
+                ->helperText('Giá tạm thời thấp hơn giá bán, chỉ áp dụng trong khoảng ngày bên dưới. '
+                    . 'Để trống ngày = áp dụng ngay khi lưu.'),
+
+            \Filament\Forms\Components\DateTimePicker::make('sale_starts_at')
+                ->label('Bắt đầu khuyến mãi')
+                ->nullable()
+                ->native(false),
+
+            \Filament\Forms\Components\DateTimePicker::make('sale_ends_at')
+                ->label('Kết thúc khuyến mãi')
+                ->nullable()
+                ->native(false)
+                ->afterOrEqual('sale_starts_at'),
 
             TextInput::make('stock_quantity')
                 ->label('Tồn kho')
-                ->required()
+                ->required(fn (callable $get) => (bool) $get('manage_stock')) // ── FIX #3: chỉ required khi đang quản lý kho
                 ->numeric()
                 ->default(0)
-                ->minValue(0),
+                ->minValue(0)
+                ->visible(fn (callable $get) => (bool) $get('manage_stock'))
+                ->disabled(fn (callable $get) => ! $get('manage_stock')),
+
+            // ── MỚI: tắt quản lý kho cho hàng đặt trước / dịch vụ ───────────
+            Toggle::make('manage_stock')
+                ->label('Quản lý tồn kho')
+                ->default(true)
+                ->live()
+                ->helperText('Tắt nếu là hàng đặt trước/dịch vụ — sẽ luôn coi như còn hàng, '
+                    . 'không trừ/kiểm tra kho khi có đơn.'),
 
             Select::make('attributeValues')
                 ->label('Thuộc tính')
@@ -74,18 +105,25 @@ class VariantsRelationManager extends RelationManager
                     $product      = $this->getOwnerRecord();
                     $attributeIds = $product->attributes()->pluck('attributes.id');
 
-                    // ── FIX 2: sort theo sort_order đúng thứ tự ──────────
+                    // sort theo attribute_id rồi sort_order → thứ tự nhất quán S→M→L, Đỏ→Xanh→Đen
                     return AttributeValue::whereIn('attribute_id', $attributeIds)
                         ->with('attribute')
                         ->orderBy('attribute_id')
-                        ->orderBy('sort_order') // ← đảm bảo thứ tự S→M→L, Đỏ→Xanh→Đen
+                        ->orderBy('sort_order')
                         ->get()
                         ->mapWithKeys(fn ($v) => [
                             $v->id => $v->attribute->name . ': ' . $v->value,
                         ]);
                 })
-                ->relationship('attributeValues', 'value')
-                ->preload()
+                // ── FIX #2: Bỏ ->relationship() vì nó override ->options() và mất custom sort.
+                // Thay bằng ->saveRelationshipsUsing() để lưu pivot thủ công, đồng thời
+                // ->default() load giá trị hiện có khi Edit.
+                ->default(function ($record) {
+                    return $record?->attributeValues()->pluck('attribute_values.id')->toArray() ?? [];
+                })
+                ->saveRelationshipsUsing(function ($record, $state) {
+                    $record->attributeValues()->sync($state ?? []);
+                })
                 ->live()
                 ->required(fn () => $this->getOwnerRecord()->attributes()->exists())
                 ->rules([
@@ -95,7 +133,7 @@ class VariantsRelationManager extends RelationManager
                                 return;
                             }
 
-                            // ── FIX 5: không được chọn 2 value cùng 1 attribute ──
+                            // không được chọn 2 value cùng 1 attribute
                             $selectedValues  = AttributeValue::whereIn('id', $value)->get();
                             $attributeGroups = $selectedValues->groupBy('attribute_id');
 
@@ -153,6 +191,37 @@ class VariantsRelationManager extends RelationManager
 
                     return 'Để trống sẽ dùng ảnh đại diện sản phẩm khi hiển thị ra client.';
                 }),
+
+            // ── MỚI: gallery nhiều ảnh phụ riêng cho biến thể này ───────────
+            // VD: ảnh mặt trước, mặt sau, góc nghiêng — giống gallery sản phẩm
+            // của Flatsome, nhưng riêng cho từng biến thể cụ thể.
+            FileUpload::make('gallery')
+                ->label('Ảnh phụ (gallery riêng biến thể)')
+                ->image()
+                ->multiple()
+                ->reorderable()
+                ->directory('products/variants/gallery')
+                ->imagePreviewHeight('100')
+                ->panelLayout('grid')
+                ->nullable()
+                ->helperText('Nhiều ảnh phụ chỉ thuộc riêng biến thể này (vd ảnh mặt trước/sau/góc nghiêng).'),
+
+            // ── MỚI: mô tả ngắn riêng cho biến thể ──────────────────────────
+            \Filament\Forms\Components\Textarea::make('description')
+                ->label('Mô tả ngắn riêng biến thể')
+                ->rows(2)
+                ->nullable()
+                ->placeholder('VD: Bản 512GB tặng thêm ốp bảo vệ')
+                ->helperText('Để trống nếu không cần mô tả khác với sản phẩm chính.'),
+
+            // ── MỚI: chọn làm biến thể mặc định ──────────────────────────────
+            // Chỉ 1 biến thể/sản phẩm được is_default = true — hệ thống tự bỏ
+            // cờ ở các variant khác khi bạn chọn (xem ProductVariant::booted()).
+            Toggle::make('is_default')
+                ->label('Đặt làm biến thể mặc định')
+                ->default(false)
+                ->helperText('Ảnh + giá của biến thể này sẽ hiển thị đầu tiên khi khách '
+                    . 'vào trang sản phẩm, trước khi họ chọn màu/size.'),
 
             Toggle::make('status')
                 ->label('Đang bán')
@@ -222,14 +291,31 @@ class VariantsRelationManager extends RelationManager
                     ->numeric()
                     ->sortable()
                     ->badge()
-                    ->color(fn ($state) => match (true) {
-                        $state === 0 => 'danger',
-                        $state < 5   => 'warning',
-                        default      => 'success',
+                    ->formatStateUsing(fn ($state, $record) => $record->manage_stock ? $state : '∞')
+                    ->color(fn ($state, $record) => match (true) {
+                        // ── FIX #4: hàng đặt trước / dịch vụ → xám, không đỏ
+                        ! $record->manage_stock => 'gray',
+                        $state === 0            => 'danger',
+                        $state < 5              => 'warning',
+                        default                 => 'success',
                     }),
 
                 ToggleColumn::make('status')
                     ->label('Đang bán'),
+
+                // ── MỚI: cột chọn biến thể mặc định ngay trên bảng ──────────
+                ToggleColumn::make('is_default')
+                    ->label('Mặc định')
+                    ->afterStateUpdated(function ($record, $state) {
+                        if ($state) {
+                            // ProductVariant::booted() đã tự bỏ cờ ở variant khác.
+                            Notification::make()
+                                ->title("Đã đặt SKU {$record->sku} làm biến thể mặc định")
+                                ->success()->send();
+                        }
+                        // ── FIX #9: force refresh bảng để các variant khác cập nhật is_default = false
+                        $this->dispatch('$refresh');
+                    }),
             ])
             ->filters([])
             ->headerActions([
@@ -440,8 +526,6 @@ class VariantsRelationManager extends RelationManager
                     ->visible(fn () => $this->getOwnerRecord()->variants()->exists())
                     ->form(function (): array {
                         $product  = $this->getOwnerRecord();
-                        // FIX 3: eager-load 'attribute' để getAttributeLabelAttribute
-                        // không bắn N+1 query khi render label từng variant
                         $variants = $product->variants()
                             ->with('attributeValues.attribute')
                             ->orderBy('id')
@@ -473,7 +557,7 @@ class VariantsRelationManager extends RelationManager
                                 ->numeric()
                                 ->prefix('₫')
                                 ->minValue(0)
-                                ->default($v->price);
+                                ->default((string) $v->price);
 
                             $fields[] = TextInput::make("rows.{$v->id}.compare_price")
                                 ->label('Giá gốc (₫)')
@@ -481,13 +565,13 @@ class VariantsRelationManager extends RelationManager
                                 ->prefix('₫')
                                 ->minValue(0)
                                 ->nullable()
-                                ->default($v->compare_price);
+                                ->default($v->compare_price !== null ? (string) $v->compare_price : null);
 
                             $fields[] = TextInput::make("rows.{$v->id}.stock_quantity")
                                 ->label('Tồn kho')
                                 ->numeric()
                                 ->minValue(0)
-                                ->default($v->stock_quantity);
+                                ->default((string) $v->stock_quantity);
                         }
 
                         return $fields;
@@ -510,8 +594,9 @@ class VariantsRelationManager extends RelationManager
                             $comparePrice = isset($row['compare_price']) && $row['compare_price'] !== '' ? (float) $row['compare_price'] : null;
                             $stock        = isset($row['stock_quantity']) && $row['stock_quantity'] !== '' ? (int) $row['stock_quantity'] : $variant->stock_quantity;
 
-                            if ($comparePrice && $comparePrice < $price) {
-                                $errors[] = "SKU {$variant->sku}: giá gốc nhỏ hơn giá bán — bỏ qua.";
+                            // nhất quán với form: compare_price phải > price (không được bằng)
+                            if ($comparePrice && $comparePrice <= $price) {
+                                $errors[] = "SKU {$variant->sku}: giá gốc phải lớn hơn giá bán — bỏ qua.";
                                 continue;
                             }
 
@@ -566,6 +651,13 @@ class VariantsRelationManager extends RelationManager
                         $count = DB::transaction(function () use ($product) {
                             $count = $product->variants()->count();
                             $product->variants()->each(function ($variant) {
+                                // Dọn file ảnh trước khi xóa record
+                                if ($variant->image) {
+                                    \Illuminate\Support\Facades\Storage::disk('public')->delete($variant->image);
+                                }
+                                foreach ($variant->gallery ?? [] as $path) {
+                                    \Illuminate\Support\Facades\Storage::disk('public')->delete($path);
+                                }
                                 $variant->attributeValues()->detach();
                                 $variant->delete();
                             });
@@ -601,6 +693,15 @@ class VariantsRelationManager extends RelationManager
                                 ->send();
 
                             $action->cancel();
+                            return;
+                        }
+
+                        // Dọn file ảnh trên storage trước khi xóa record
+                        if ($record->image) {
+                            \Illuminate\Support\Facades\Storage::disk('public')->delete($record->image);
+                        }
+                        foreach ($record->gallery ?? [] as $path) {
+                            \Illuminate\Support\Facades\Storage::disk('public')->delete($path);
                         }
                     }),
             ])
@@ -658,6 +759,80 @@ class VariantsRelationManager extends RelationManager
                         })
                         ->deselectRecordsAfterCompletion(),
 
+                    // ── MỚI: tăng/giảm giá theo % cho nhiều biến thể đã chọn ──
+                    // VD: gõ "10" + chọn "Tăng" → giá bán tất cả SKU đã tick
+                    // tăng thêm 10%, không cần gõ giá tuyệt đối từng dòng.
+                    \Filament\Actions\BulkAction::make('bulkAdjustPricePercent')
+                        ->label('Tăng/giảm giá theo %')
+                        ->icon('heroicon-o-receipt-percent')
+                        ->color('warning')
+                        ->form([
+                            \Filament\Forms\Components\Radio::make('direction')
+                                ->label('Hướng điều chỉnh')
+                                ->options([
+                                    'increase' => 'Tăng giá',
+                                    'decrease' => 'Giảm giá',
+                                ])
+                                ->default('increase')
+                                ->required()
+                                ->inline(),
+
+                            TextInput::make('percent')
+                                ->label('Tỷ lệ (%)')
+                                ->numeric()
+                                ->required()
+                                ->minValue(0.01)
+                                ->maxValue(100)
+                                ->suffix('%')
+                                ->helperText('VD: nhập 10 = tăng/giảm 10% giá bán hiện tại của mỗi SKU đã chọn.'),
+
+                            Toggle::make('apply_to_compare_price')
+                                ->label('Áp dụng luôn cho Giá gốc (compare_price)')
+                                ->default(false)
+                                ->helperText('Nếu tắt, chỉ đổi Giá bán — Giá gốc giữ nguyên.'),
+                        ])
+                        ->action(function (Collection $records, array $data): void {
+                            $percent   = (float) $data['percent'];
+                            $factor    = $data['direction'] === 'increase' ? (1 + $percent / 100) : (1 - $percent / 100);
+                            $applyCmp  = (bool) ($data['apply_to_compare_price'] ?? false);
+                            $updated   = 0;
+                            $skipped   = [];
+
+                            foreach ($records as $record) {
+                                $newPrice = round($record->price * $factor, -2); // tròn tới hàng trăm cho đẹp giá VNĐ
+
+                                if ($newPrice < 0) {
+                                    $skipped[] = $record->sku;
+                                    continue;
+                                }
+
+                                $update = ['price' => $newPrice];
+
+                                if ($applyCmp && $record->compare_price) {
+                                    $newCompare = round($record->compare_price * $factor, -2);
+                                    // Giá gốc không được nhỏ hơn giá bán mới
+                                    $update['compare_price'] = max($newCompare, $newPrice);
+                                }
+
+                                $record->update($update);
+                                $updated++;
+                            }
+
+                            if (! empty($skipped)) {
+                                Notification::make()
+                                    ->title("Đã cập nhật {$updated} biến thể, bỏ qua " . count($skipped))
+                                    ->body('Bỏ qua vì giá sau điều chỉnh < 0: ' . implode(', ', $skipped))
+                                    ->warning()->send();
+                                return;
+                            }
+
+                            Notification::make()
+                                ->title("Đã " . ($data['direction'] === 'increase' ? 'tăng' : 'giảm')
+                                    . " giá {$percent}% cho {$updated} biến thể")
+                                ->success()->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
                     DeleteBulkAction::make(),
                 ]),
             ]);
@@ -682,7 +857,6 @@ class VariantsRelationManager extends RelationManager
         }
 
         // Lấy đúng các attribute_value thuộc nhóm màu (display_type = 1)
-        // trong danh sách đang chọn — bỏ qua các thuộc tính khác (size, dung lượng...)
         $colorValueIds = AttributeValue::whereIn('id', $valueIds)
             ->whereHas('attribute', fn ($q) => $q->where('display_type', 1))
             ->pluck('id');
@@ -691,13 +865,27 @@ class VariantsRelationManager extends RelationManager
             return null;
         }
 
+        // ── Ưu tiên 1: variant khác cùng sản phẩm đã có ảnh riêng cùng màu ──
         $variant = $product->variants()
             ->whereNotNull('image')
             ->when($excludeVariantId, fn ($q) => $q->where('id', '!=', $excludeVariantId))
             ->whereHas('attributeValues', fn ($q) => $q->whereIn('attribute_values.id', $colorValueIds))
             ->first();
 
-        return $variant?->image;
+        if ($variant?->image) {
+            return $variant->image;
+        }
+
+        // ── FIX #8: Ưu tiên 2: Thư viện ảnh sản phẩm (product_images) có gắn màu này ──
+        // Flatsome dùng cách này: ảnh trong gallery được tag theo màu, variant chỉ cần
+        // kế thừa — không cần upload ảnh riêng mỗi lần generate biến thể mới.
+        $libraryImage = $product->images()
+            ->whereIn('attribute_value_id', $colorValueIds)
+            ->orderBy('is_primary', 'desc') // ưu tiên ảnh chính trước
+            ->orderBy('sort_order')
+            ->first();
+
+        return $libraryImage?->image_url;
     }
 
     /**

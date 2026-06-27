@@ -30,6 +30,12 @@ class ProductsTable
                 ->withCount('variants')
                 ->withMin('variants', 'price')
                 ->withMax('variants', 'price')
+                // MỚI: tổng tồn kho toàn sản phẩm + đếm biến thể hết/sắp hết hàng
+                ->withSum('variants', 'stock_quantity')
+                ->withCount(['variants as low_stock_variants_count' => fn ($q) => $q
+                    ->where('manage_stock', true)
+                    ->where('stock_quantity', '<=', \App\Models\ProductVariant::LOW_STOCK_THRESHOLD)
+                ])
             )
             ->columns([
                 ImageColumn::make('thumbnail')
@@ -77,6 +83,25 @@ class ProductsTable
                             . '₫ - ' . number_format($record->variants_max_price, 0, ',', '.') . '₫';
                     }),
 
+                // ── MỚI: tổng tồn kho + cảnh báo có bao nhiêu SKU sắp hết hàng ──
+                // Giống cột "Low stock amount" của WooCommerce — admin thấy ngay
+                // trong danh sách, không cần mở từng sản phẩm vào tab Biến thể.
+                TextColumn::make('variants_sum_stock_quantity')
+                    ->label('Tổng tồn kho')
+                    ->numeric()
+                    ->sortable()
+                    ->badge()
+                    ->color(fn ($state) => match (true) {
+                        $state === null || $state == 0 => 'danger',
+                        $state < 10                     => 'warning',
+                        default                          => 'success',
+                    })
+                    ->formatStateUsing(fn ($state) => $state === null ? '—' : number_format($state, 0, ',', '.'))
+                    ->description(fn ($record) => $record->low_stock_variants_count > 0
+                        ? "⚠ {$record->low_stock_variants_count} SKU sắp hết/hết hàng"
+                        : null
+                    ),
+
                 IconColumn::make('status')
                     ->label('Hiển thị')
                     ->boolean()
@@ -122,6 +147,14 @@ class ProductsTable
                             ->orWhereDoesntHave('variants')
                         )
                     ),
+
+                // MỚI: lọc nhanh sản phẩm có ít nhất 1 SKU sắp hết/hết hàng
+                \Filament\Tables\Filters\Filter::make('low_stock')
+                    ->label('Có SKU sắp hết hàng')
+                    ->query(fn (Builder $query) => $query->whereHas('variants', fn ($q) => $q
+                        ->where('manage_stock', true)
+                        ->where('stock_quantity', '<=', \App\Models\ProductVariant::LOW_STOCK_THRESHOLD)
+                    )),
 
                 TrashedFilter::make()
                     ->label('Sản phẩm đã xóa'),

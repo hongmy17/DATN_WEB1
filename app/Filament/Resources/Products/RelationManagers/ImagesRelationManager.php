@@ -60,6 +60,82 @@ class ImagesRelationManager extends RelationManager
             ])
             ->filters([])
             ->headerActions([
+                // ── MỚI: tổng quan màu nào đã có ảnh, màu nào chưa ─────────────
+                // Trước đây phải mở từng variant mới biết màu nào thiếu ảnh.
+                // Giờ bấm 1 nút là thấy hết, giống bảng kiểm tra của Flatsome.
+                Action::make('colorOverview')
+                    ->label('Tổng quan theo màu')
+                    ->icon('heroicon-o-swatch')
+                    ->color('gray')
+                    ->modalHeading('Tổng quan ảnh theo màu')
+                    ->modalWidth('xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Đóng')
+                    ->visible(fn () => ! empty($this->getColorAttributeOptions($this->getOwnerRecord())))
+                    ->form(function (): array {
+                        $product = $this->getOwnerRecord();
+
+                        // Tất cả giá trị màu mà sản phẩm đang dùng (qua attribute đã chọn)
+                        $colorValues = AttributeValue::whereIn(
+                            'attribute_id',
+                            $product->attributes()->where('display_type', 1)->pluck('attributes.id')
+                        )->orderBy('sort_order')->get();
+
+                        // Ảnh đã gắn theo từng attribute_value_id (Thư viện ảnh)
+                        $imageCountByValue = $product->images()
+                            ->whereNotNull('attribute_value_id')
+                            ->selectRaw('attribute_value_id, count(*) as total')
+                            ->groupBy('attribute_value_id')
+                            ->reorder() // ← xóa ORDER BY sort_order kế thừa từ relation, không hợp lệ với GROUP BY
+                            ->pluck('total', 'attribute_value_id');
+
+                        // Variant nào theo màu đã có ảnh riêng (image hoặc gallery)
+                        $variantsWithImage = $product->variants()
+                            ->with('attributeValues')
+                            ->get()
+                            ->filter(fn ($v) => $v->image || ! empty($v->gallery));
+
+                        $rows = $colorValues->map(function ($value) use ($imageCountByValue, $variantsWithImage) {
+                            $libCount     = $imageCountByValue[$value->id] ?? 0;
+                            $variantCount = $variantsWithImage->filter(
+                                fn ($v) => $v->attributeValues->pluck('id')->contains($value->id)
+                            )->count();
+
+                            $hasAny = $libCount > 0 || $variantCount > 0;
+                            $swatch = $value->color_code
+                                ? '<span style="display:inline-block;width:12px;height:12px;border-radius:50%;'
+                                  . 'background:' . e($value->color_code) . ';margin-right:6px;vertical-align:middle;'
+                                  . 'border:1px solid #ccc"></span>'
+                                : '';
+
+                            $status = $hasAny
+                                ? '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:11px">✓ Đã có ảnh</span>'
+                                : '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-size:11px">⚠ Chưa có ảnh nào</span>';
+
+                            return '<tr style="border-bottom:1px solid var(--gray-200)">'
+                                . '<td style="padding:8px 10px">' . $swatch . e($value->value) . '</td>'
+                                . '<td style="padding:8px 10px;font-size:12px">' . $libCount . ' ảnh (Thư viện)</td>'
+                                . '<td style="padding:8px 10px;font-size:12px">' . $variantCount . ' biến thể có ảnh riêng</td>'
+                                . '<td style="padding:8px 10px">' . $status . '</td>'
+                                . '</tr>';
+                        })->join('');
+
+                        $html = '<div style="max-height:380px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px">'
+                            . '<table style="width:100%;border-collapse:collapse">'
+                            . '<thead><tr style="background:var(--gray-50)">'
+                            . '<th style="padding:8px 10px;text-align:left;font-size:11px">Màu</th>'
+                            . '<th style="padding:8px 10px;text-align:left;font-size:11px">Thư viện ảnh</th>'
+                            . '<th style="padding:8px 10px;text-align:left;font-size:11px">Biến thể</th>'
+                            . '<th style="padding:8px 10px;text-align:left;font-size:11px">Trạng thái</th>'
+                            . '</tr></thead><tbody>' . $rows . '</tbody></table></div>';
+
+                        return [
+                            \Filament\Forms\Components\Placeholder::make('overview')
+                                ->label('')
+                                ->content(new \Illuminate\Support\HtmlString($html)),
+                        ];
+                    }),
+
                 Action::make('uploadImages')
                     ->label('Upload ảnh')
                     ->icon('heroicon-o-photo')

@@ -37,6 +37,12 @@ class OrderItem extends Model
                 throw new \RuntimeException("Biến thể #{$item->variant_id} không tồn tại.");
             }
 
+            // MỚI: nếu variant tắt quản lý kho (hàng đặt trước/dịch vụ)
+            // → không kiểm tra và không trừ kho.
+            if (! $variant->manage_stock) {
+                return;
+            }
+
             if ($variant->stock_quantity < $item->quantity) {
                 throw new \RuntimeException(
                     "SKU {$variant->sku} không đủ hàng (còn {$variant->stock_quantity}, cần {$item->quantity})."
@@ -48,6 +54,12 @@ class OrderItem extends Model
 
         static::deleting(function (OrderItem $item) {
             // Khi xóa 1 item khỏi đơn (hủy 1 phần / sửa đơn) → hoàn lại kho
+            // MỚI: bỏ qua nếu variant không quản lý kho
+            $variant = ProductVariant::find($item->variant_id);
+            if ($variant && ! $variant->manage_stock) {
+                return;
+            }
+
             ProductVariant::where('id', $item->variant_id)
                 ->increment('stock_quantity', $item->quantity);
         });

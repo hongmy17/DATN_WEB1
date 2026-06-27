@@ -12,19 +12,54 @@ class ProductVariant extends Model
         'sku',
         'price',
         'compare_price',
+        'sale_price',          // MỚI: giá khuyến mãi có thời hạn
+        'sale_starts_at',      // MỚI
+        'sale_ends_at',        // MỚI
         'stock_quantity',
+        'manage_stock',        // MỚI: false = không trừ/check kho (hàng đặt trước, dịch vụ)
         'image',
+        'gallery',             // MỚI: nhiều ảnh phụ riêng cho biến thể
+        'description',         // MỚI: mô tả ngắn riêng biến thể
+        'is_default',          // MỚI: biến thể được chọn sẵn
         'status',
     ];
 
     protected $casts = [
         'price'          => 'float',
         'compare_price'  => 'float',
+        'sale_price'     => 'float',
+        'sale_starts_at' => 'datetime',
+        'sale_ends_at'   => 'datetime',
         'stock_quantity' => 'integer',
+        'manage_stock'   => 'boolean',
+        'gallery'        => 'array',
+        'is_default'     => 'boolean',
         'status'         => 'boolean',
     ];
 
     const LOW_STOCK_THRESHOLD = 5;
+
+    // ─── MỚI: đảm bảo mỗi sản phẩm chỉ có ĐÚNG 1 is_default = true ────
+    // Khi 1 variant được set is_default, tự bỏ cờ này ở tất cả variant
+    // khác cùng sản phẩm — admin không cần tự tay làm việc đó.
+    protected static function booted(): void
+    {
+        static::saved(function (ProductVariant $variant) {
+            if ($variant->is_default) {
+                static::where('product_id', $variant->product_id)
+                    ->where('id', '!=', $variant->id)
+                    ->update(['is_default' => false]);
+            }
+        });
+
+        static::deleted(function (ProductVariant $variant) {
+            // Nếu xóa đúng variant đang là default, tự gán default cho 1 variant còn lại
+            if ($variant->is_default) {
+                $next = static::where('product_id', $variant->product_id)->first();
+                $next?->update(['is_default' => true]);
+            }
+        });
+    }
 
     // ─── Relations ────────────────────────────────────────────
 
@@ -60,16 +95,24 @@ class ProductVariant extends Model
         return $query->where('status', true);
     }
 
-    /** Chỉ lấy variant còn hàng */
+    /** Chỉ lấy variant còn hàng (bỏ qua nếu variant không quản lý kho) */
     public function scopeInStock(Builder $query): Builder
     {
-        return $query->where('stock_quantity', '>', 0);
+        return $query->where(fn ($q) => $q
+            ->where('manage_stock', false)
+            ->orWhere('stock_quantity', '>', 0)
+        );
     }
 
     // ─── Stock status accessors ────────────────────────────────
 
     public function getStockStatusAttribute(): string
     {
+        // MỚI: sản phẩm không quản lý kho (đặt trước/dịch vụ) luôn coi như còn hàng
+        if (! $this->manage_stock) {
+            return 'in_stock';
+        }
+
         if ($this->stock_quantity <= 0) {
             return 'out_of_stock';
         }
@@ -81,6 +124,10 @@ class ProductVariant extends Model
 
     public function getStockStatusLabelAttribute(): string
     {
+        if (! $this->manage_stock) {
+            return 'Đặt trước / Dịch vụ';
+        }
+
         return match ($this->stock_status) {
             'out_of_stock' => 'Hết hàng',
             'low_stock'    => 'Sắp hết hàng',
@@ -90,6 +137,10 @@ class ProductVariant extends Model
 
     public function getStockStatusColorAttribute(): string
     {
+        if (! $this->manage_stock) {
+            return 'gray';
+        }
+
         return match ($this->stock_status) {
             'out_of_stock' => 'danger',
             'low_stock'    => 'warning',
@@ -99,14 +150,49 @@ class ProductVariant extends Model
 
     // ─── Price / image accessors ───────────────────────────────
 
+    /**
+     * MỚI: giá khuyến mãi đang còn hiệu lực hay không (theo sale_starts_at/sale_ends_at).
+     * Nếu không đặt ngày bắt đầu/kết thúc thì coi như luôn hiệu lực khi có sale_price.
+     */
+    public function getIsSaleActiveAttribute(): bool
+    {
+        if (! $this->sale_price) {
+            return false;
+        }
+
+        $now = now();
+
+        if ($this->sale_starts_at && $now->lt($this->sale_starts_at)) {
+            return false;
+        }
+
+        if ($this->sale_ends_at && $now->gt($this->sale_ends_at)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * MỚI: giá bán thực tế hiển thị cho khách — ưu tiên sale_price nếu đang
+     * trong thời hạn khuyến mãi, ngược lại dùng `price` như bình thường.
+     * Dùng accessor này ở client thay vì đọc trực tiếp `price`.
+     */
+    public function getCurrentPriceAttribute(): float
+    {
+        return $this->is_sale_active ? (float) $this->sale_price : (float) $this->price;
+    }
+
     /** % giảm giá, null nếu không có compare_price hoặc không giảm */
     public function getDiscountPercentAttribute(): ?int
     {
-        if (! $this->compare_price || $this->compare_price <= $this->price) {
+        $current = $this->current_price;
+
+        if (! $this->compare_price || $this->compare_price <= $current) {
             return null;
         }
 
-        return (int) round((($this->compare_price - $this->price) / $this->compare_price) * 100);
+        return (int) round((($this->compare_price - $current) / $this->compare_price) * 100);
     }
 
     /** Ảnh hiển thị: ưu tiên ảnh riêng variant, fallback về ảnh đại diện sản phẩm */
@@ -117,6 +203,22 @@ class ProductVariant extends Model
         }
 
         return $this->product?->thumbnail_url;
+    }
+
+    /** MỚI: toàn bộ ảnh của biến thể (ảnh chính + gallery), dùng cho slider/lightbox */
+    public function getAllImagesAttribute(): array
+    {
+        $images = [];
+
+        if ($this->image) {
+            $images[] = asset('storage/' . $this->image);
+        }
+
+        foreach ($this->gallery ?? [] as $path) {
+            $images[] = asset('storage/' . $path);
+        }
+
+        return $images;
     }
 
     /**

@@ -27,10 +27,13 @@ class ProductsForm
     {
         return $schema->components([
             // ── FIX: code sinh theo tên sản phẩm: MBP14M3P-001 ──
+            // FIX MỚI: DB cột `code` là char(15) — maxLength phải khớp,
+            // trước đây để 20 sai lệch với DB, generator cũng được bọc
+            // thêm an toàn cắt chuỗi ở generateNextCode() để không bao giờ vượt 15.
             TextInput::make('code')
                 ->label('Mã sản phẩm')
                 ->required()
-                ->maxLength(20)
+                ->maxLength(15)
                 ->unique(ignoreRecord: true)
                 ->disabled()
                 ->dehydrated()
@@ -38,7 +41,7 @@ class ProductsForm
                     $name = $get('name');
                     return !empty($name) ? self::generateNextCode($name) : self::generateNextCode();
                 })
-                ->helperText('Tự động sinh theo tên sản phẩm khi nhập tên, VD: MBP14M3P-001'),
+                ->helperText('Tự động sinh theo tên sản phẩm khi nhập tên, VD: MBP14M3P-001 (tối đa 15 ký tự)'),
 
             TextInput::make('base_sku')
                 ->label('SKU gốc')
@@ -74,9 +77,25 @@ class ProductsForm
                 ->searchable()
                 ->preload()
                 ->live()
-                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                ->afterStateUpdated(function ($state, callable $set, callable $get, $record) {
                     if (! $state) {
                         return;
+                    }
+
+                    // ── MỚI: cảnh báo nếu sản phẩm đã có biến thể dùng thuộc tính cũ ──
+                    // Đổi category sang danh mục khác (mẫu thuộc tính khác) mà sản phẩm
+                    // đã có variant gắn theo attribute cũ → dữ liệu sẽ rời rạc (variant
+                    // vẫn còn nhưng không khớp attribute mới). Cảnh báo để admin tự quyết
+                    // định (không chặn cứng, vì có thể admin chỉ đang sửa nhẹ category).
+                    if ($record && $record->variants()->exists()) {
+                        Notification::make()
+                            ->title('⚠️ Sản phẩm này đã có biến thể')
+                            ->body('Đổi danh mục có thể làm thuộc tính tự điền khác với thuộc tính '
+                                . 'các biến thể hiện tại đang dùng. Kiểm tra lại tab "Biến thể sản phẩm" '
+                                . 'sau khi lưu, hoặc dùng "Xóa tất cả & tạo lại" nếu cần đổi cấu trúc.')
+                            ->warning()
+                            ->persistent()
+                            ->send();
                     }
 
                     $currentAttrs = $get('selectedAttributes');
@@ -110,6 +129,42 @@ class ProductsForm
                 ->preload()
                 ->searchable()
                 ->live()
+
+                // ── MỚI: chặn gỡ attribute đang được variant sử dụng ──────────
+                // Nếu bỏ chọn 1 attribute mà variant_attribute_values vẫn còn
+                // tham chiếu tới giá trị của attribute đó, dữ liệu hiển thị sẽ
+                // mất liên kết (label biến thể trống) dù pivot DB vẫn còn record.
+                ->rules([
+                    function ($get, $record) {
+                        return function (string $attribute, $value, $fail) use ($record) {
+                            if (! $record) {
+                                return; // sản phẩm mới tạo, chưa có variant nào
+                            }
+
+                            $previouslySelected = $record->attributes()->pluck('attributes.id')
+                                ->map(fn ($id) => (int) $id)->toArray();
+                            $nowSelected = collect($value ?? [])->map(fn ($id) => (int) $id)->toArray();
+                            $removedAttrIds = array_diff($previouslySelected, $nowSelected);
+
+                            if (empty($removedAttrIds)) {
+                                return;
+                            }
+
+                            // Kiểm tra xem có variant nào đang dùng giá trị của attribute bị gỡ không
+                            $usedAttributeNames = \App\Models\Attribute::whereIn('id', $removedAttrIds)
+                                ->whereHas('attributeValues.variantAttributeValues', function ($q) use ($record) {
+                                    $q->whereHas('variant', fn ($vq) => $vq->where('product_id', $record->id));
+                                })
+                                ->pluck('name');
+
+                            if ($usedAttributeNames->isNotEmpty()) {
+                                $fail('Không thể gỡ thuộc tính "' . $usedAttributeNames->join(', ')
+                                    . '" vì đang có biến thể sử dụng. Hãy xóa các biến thể liên quan trước '
+                                    . '(tab "Biến thể sản phẩm" → "Xóa tất cả & tạo lại"), rồi mới gỡ thuộc tính.');
+                            }
+                        };
+                    },
+                ])
 
                 // ── FIX: nút quản lý giá trị cho các thuộc tính ĐÃ chọn ─────────
                 // Không cần thoát sang AttributeResource để thêm "Xanh" vào
@@ -336,7 +391,7 @@ class ProductsForm
 
             Toggle::make('status')
                 ->label('Hiển thị sản phẩm')
-                ->default(false)
+                ->default(true)
                 ->live()
                 ->helperText('Tắt để ẩn sản phẩm khỏi trang khách hàng')
                 ->rules([
@@ -448,7 +503,15 @@ class ProductsForm
             : 1;
         
         // 3. Ghép abbreviation + số (3 chữ số, padding 0)
-        return $abbreviation . '-' . str_pad((string) $nextNumber, 3, '0', STR_PAD_LEFT);
+        // FIX MỚI: hard-cap tổng độ dài ≤ 15 ký tự để khớp DB char(15).
+        // Nếu nextNumber vượt 999 (4-5 chữ số) khiến chuỗi vượt 15 ký tự,
+        // tự cắt ngắn abbreviation cho đủ chỗ, không bao giờ để MySQL tự cắt
+        // (MySQL strict mode sẽ throw lỗi insert nếu vượt char(15)).
+        $suffix       = '-' . str_pad((string) $nextNumber, 3, '0', STR_PAD_LEFT);
+        $maxAbbrevLen = 15 - strlen($suffix);
+        $abbreviation = substr($abbreviation, 0, max($maxAbbrevLen, 1));
+
+        return $abbreviation . $suffix;
     }
 
     /**
