@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Attributes\Schemas;
 
+use App\Models\AttributeValue;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -17,17 +18,18 @@ class AttributesForm
                 ->label('Tên thuộc tính')
                 ->required()
                 ->maxLength(255)
-                ->placeholder('VD: Màu sắc, Dung lượng...'),
+                ->placeholder('VD: Màu sắc, Dung lượng, Kích cỡ...'),
 
             Select::make('display_type')
                 ->label('Kiểu hiển thị')
                 ->options([
-                    0 => 'Text (chip)',
+                    0 => 'Text (chip) — S / M / L / XL',
                     1 => 'Màu sắc (color swatch)',
                 ])
                 ->default(0)
                 ->required()
-                ->live(),
+                ->live()
+                ->helperText('Chọn "Màu sắc" để hiện ô chọn mã màu bên dưới'),
 
             Repeater::make('attributeValues')
                 ->label('Danh sách giá trị')
@@ -36,60 +38,46 @@ class AttributesForm
                     TextInput::make('value')
                         ->label('Giá trị')
                         ->required()
-                        ->placeholder('VD: Đỏ, 512GB...'),
+                        ->placeholder('VD: Đỏ, 512GB, XL...'),
 
-                    // BUG FIX: Thêm ->live() để color_code phản ứng ngay khi display_type thay đổi.
-                    // Path '../../display_type' đúng: lên 1 cấp (Repeater item) → lên 1 cấp (Schema) → lấy display_type.
                     ColorPicker::make('color_code')
                         ->label('Mã màu')
-                        ->live()
                         ->visible(fn (callable $get) => (int) $get('../../display_type') === 1),
 
                     TextInput::make('sort_order')
-                        ->label('Thứ tự')
+                        ->hiddenLabel()
                         ->numeric()
                         ->default(0)
-                        ->disabled()
+                        ->hidden()
                         ->dehydrated(),
                 ])
-                ->columns(3)
+                ->columns(fn (callable $get) => (int) $get('display_type') === 1 ? 2 : 1)
                 ->defaultItems(0)
-                ->addActionLabel('Thêm giá trị')
+                ->addActionLabel('+ Thêm giá trị')
                 ->reorderable('sort_order')
                 ->collapsible()
-                ->afterStateUpdated(function ($state, callable $set) {
-                    $sorted = collect($state)
+                ->mutateDehydratedStateUsing(fn (array $state): array =>
+                    collect($state)
                         ->values()
-                        ->map(function ($item, $index) {
-                            $item['sort_order'] = $index + 1;
-                            return $item;
-                        })
-                        ->toArray();
-
-                    $set('attributeValues', $sorted);
-                })
-                ->afterStateHydrated(function ($component, $state) {
-                    if (!empty($state)) {
-                        $sorted = collect($state)
-                            ->sortBy('sort_order')
-                            ->values()
-                            ->map(function ($item, $index) {
-                                $item['sort_order'] = $index + 1;
-                                return $item;
-                            })
-                            ->toArray();
-                        $component->state($sorted);
-                    }
-                })
-                ->mutateDehydratedStateUsing(function (array $state): array {
-                    return collect($state)
-                        ->values()
-                        ->map(function ($item, $index) {
-                            $item['sort_order'] = $index + 1;
-                            return $item;
-                        })
-                        ->toArray();
-                }),
+                        ->map(fn ($item, $i) => array_merge($item, ['sort_order' => $i + 1]))
+                        ->toArray()
+                )
+                ->deleteAction(
+                    fn ($action) => $action->before(function ($item, $action) {
+                        $valueId = $item['id'] ?? null;
+                        if (! $valueId) { return; }
+                        $inUse = AttributeValue::where('id', $valueId)
+                            ->whereHas('variantAttributeValues')
+                            ->exists();
+                        if ($inUse) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Không thể xóa giá trị này')
+                                ->body('Đang được dùng bởi biến thể sản phẩm.')
+                                ->danger()->send();
+                            $action->cancel();
+                        }
+                    })
+                ),
         ]);
     }
 }

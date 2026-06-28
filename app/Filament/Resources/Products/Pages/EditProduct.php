@@ -15,7 +15,19 @@ class EditProduct extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->before(function ($record, DeleteAction $action) {
+                    // Không cho xóa sản phẩm đang hiển thị
+                    if ($record->status) {
+                        \Filament\Notifications\Notification::make()
+                            ->title('Không thể xóa sản phẩm đang hiển thị')
+                            ->body('Tắt hiển thị trước khi xóa.')
+                            ->danger()
+                            ->send();
+                        $action->cancel();
+                    }
+                }),
+
             RestoreAction::make(),
             ForceDeleteAction::make(),
         ];

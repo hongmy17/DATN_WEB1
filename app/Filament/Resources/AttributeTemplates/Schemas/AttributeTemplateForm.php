@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\AttributeTemplates\Schemas;
 
-use App\Models\Category;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -13,18 +12,16 @@ class AttributeTemplateForm
     {
         return $schema->components([
             Select::make('category_id')
-                ->label('Danh mục')
-                ->relationship('category', 'name')  // ← dùng relationship như Product
-                ->required()
-                ->searchable()
-                ->preload()
-                ->placeholder('Chọn danh mục...'),
+                ->label('Danh mục áp dụng')
+                ->relationship('category', 'name')
+                ->required()->searchable()->preload()
+                ->placeholder('Chọn danh mục...')
+                ->helperText('Mỗi danh mục chỉ nên có 1 mẫu để auto-fill hoạt động đúng'),
 
             TextInput::make('name')
                 ->label('Tên mẫu')
-                ->required()
-                ->maxLength(100)
-                ->placeholder('VD: Điện Thoại, Laptop...'),
+                ->required()->maxLength(100)
+                ->placeholder('VD: Điện Thoại, Laptop Gaming...'),
         ]);
     }
 }

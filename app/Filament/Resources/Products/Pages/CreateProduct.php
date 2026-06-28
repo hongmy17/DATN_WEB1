@@ -18,6 +18,7 @@ class CreateProduct extends CreateRecord
 
     protected function getRedirectUrl(): string
     {
+        // Sau khi tạo → chuyển thẳng vào Edit để thêm ảnh và biến thể
         return $this->getResource()::getUrl('edit', ['record' => $this->getRecord()]);
     }
 }
