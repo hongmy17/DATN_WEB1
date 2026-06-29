@@ -92,24 +92,8 @@ class ProductForm
                                     ->send();
                             }
 
-                            // Tự điền thuộc tính từ template nếu chưa chọn
-                            if (! empty($get('selectedAttributes'))) {
-                                return;
-                            }
-
-                            $template = AttributeTemplate::where('category_id', $state)
-                                ->with('items')
-                                ->first();
-
-                            $attributeIds = $template?->items
-                                ->pluck('attribute_id')
-                                ->filter()
-                                ->values()
-                                ->toArray();
-
-                            if (! empty($attributeIds)) {
-                                $set('selectedAttributes', $attributeIds);
-                            }
+                            // Template chỉ dùng cho tab "Thông số kỹ thuật" (CustomAttributes)
+                            // không còn auto-fill selectedAttributes (biến thể) nữa
                         }),
                 ]),
 
@@ -153,11 +137,11 @@ class ProductForm
                                 return 'Chọn danh mục trước để tự động điền từ mẫu, hoặc nhấn + để tạo thuộc tính mới.';
                             }
                             $template    = AttributeTemplate::where('category_id', $categoryId)->first();
-                            $mappedCount = $template?->items()->whereNotNull('attribute_id')->count() ?? 0;
-                            if (! $template || $mappedCount === 0) {
+                            if (! $template) {
                                 return 'Danh mục này chưa có mẫu thuộc tính. Chọn thủ công hoặc nhấn + để tạo mới.';
                             }
-                            return "Đã điền từ mẫu \"{$template->name}\" ({$mappedCount} thuộc tính). Nhấn + để tạo thêm.";
+                            $itemCount = $template->items()->count();
+                            return "Danh mục này có mẫu \"{$template->name}\" ({$itemCount} thông số). Chọn thuộc tính biến thể thủ công bên dưới.";
                         })
                         // Chặn gỡ attribute đang dùng bởi variant
                         ->rules([

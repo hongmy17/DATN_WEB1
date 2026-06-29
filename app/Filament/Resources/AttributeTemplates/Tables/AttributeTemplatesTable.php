@@ -29,7 +29,6 @@ class AttributeTemplatesTable
                     ->label('Số thuộc tính')->counts('items')
                     ->badge()->color(fn ($state) => $state > 0 ? 'success' : 'danger')->alignCenter(),
 
-               
 
                 TextColumn::make('created_at')
                     ->label('Tạo lúc')->date('d/m/Y')->sortable()->color('gray')
