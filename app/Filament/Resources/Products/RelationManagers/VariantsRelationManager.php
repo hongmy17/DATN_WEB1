@@ -81,7 +81,7 @@ class VariantsRelationManager extends RelationManager
                 ->nullable()
                 ->helperText('Phải lớn hơn giá bán để % giảm có ý nghĩa. Để trống nếu không cần gạch ngang.')
                 ->rules([
-                    fn (callable $get) => function (string $attribute, $value, $fail) use ($get) {
+                    fn(callable $get) => function (string $attribute, $value, $fail) use ($get) {
                         if ($value === null || $value === '') {
                             return;
                         }
@@ -99,7 +99,7 @@ class VariantsRelationManager extends RelationManager
                 ->nullable()
                 ->helperText('Giá tạm thời áp dụng trong khoảng thời gian bên dưới. Để trống nếu không có.')
                 ->rules([
-                    fn (callable $get) => function (string $attribute, $value, $fail) use ($get) {
+                    fn(callable $get) => function (string $attribute, $value, $fail) use ($get) {
                         if ($value === null || $value === '') {
                             return;
                         }
@@ -120,7 +120,7 @@ class VariantsRelationManager extends RelationManager
                 ->native(false)
                 ->afterOrEqual('sale_starts_at')
                 ->rules([
-                    fn (callable $get) => function (string $attribute, $value, $fail) use ($get) {
+                    fn(callable $get) => function (string $attribute, $value, $fail) use ($get) {
                         if ($value && $get('sale_price') && now()->greaterThan($value)) {
                             $fail('Thời gian kết thúc đã qua — khuyến mãi sẽ không có hiệu lực.');
                         }
@@ -139,8 +139,8 @@ class VariantsRelationManager extends RelationManager
                 ->numeric()
                 ->default(0)
                 ->minValue(0)
-                ->visible(fn (callable $get) => (bool) $get('manage_stock'))
-                ->required(fn (callable $get) => (bool) $get('manage_stock')),
+                ->visible(fn(callable $get) => (bool) $get('manage_stock'))
+                ->required(fn(callable $get) => (bool) $get('manage_stock')),
 
             // ── Thuộc tính ────────────────────────────────────────────────────
             Select::make('attributeValues')
@@ -155,7 +155,7 @@ class VariantsRelationManager extends RelationManager
                         ->orderBy('attribute_id')
                         ->orderBy('sort_order')
                         ->get()
-                        ->mapWithKeys(fn ($v) => [
+                        ->mapWithKeys(fn($v) => [
                             $v->id => $v->attribute->name . ': ' . $v->value,
                         ]);
                 })
@@ -172,9 +172,9 @@ class VariantsRelationManager extends RelationManager
                         );
                     }
                 })
-                ->saveRelationshipsUsing(fn ($record, $state) => $record->attributeValues()->sync($state ?? []))
+                ->saveRelationshipsUsing(fn($record, $state) => $record->attributeValues()->sync($state ?? []))
                 ->live()
-                ->required(fn () => $this->getOwnerRecord()->attributes()->exists())
+                ->required(fn() => $this->getOwnerRecord()->attributes()->exists())
                 ->rules([
                     function ($record) {
                         return function (string $attribute, $value, $fail) use ($record) {
@@ -192,17 +192,17 @@ class VariantsRelationManager extends RelationManager
                             }
 
                             // Không cho trùng tổ hợp
-                            $selectedIds = collect($value)->map(fn ($id) => (int) $id)->sort()->values()->toArray();
+                            $selectedIds = collect($value)->map(fn($id) => (int) $id)->sort()->values()->toArray();
                             $product     = $this->getOwnerRecord();
 
                             $duplicate = $product->variants()
                                 ->with('attributeValues')
-                                ->when($record, fn ($q) => $q->where('id', '!=', $record->id))
+                                ->when($record, fn($q) => $q->where('id', '!=', $record->id))
                                 ->get()
                                 ->first(function ($variant) use ($selectedIds) {
                                     $existing = $variant->attributeValues
                                         ->pluck('id')
-                                        ->map(fn ($id) => (int) $id)
+                                        ->map(fn($id) => (int) $id)
                                         ->sort()->values()->toArray();
                                     return $existing === $selectedIds;
                                 });
@@ -260,7 +260,7 @@ class VariantsRelationManager extends RelationManager
             // ── FIX N+1: eager-load attributeValues.attribute trong 1 query ──
             // Cột "Thuộc tính" gọi $record->attributeValues->map(fn($v) => $v->attribute->name)
             // Nếu không eager-load: 10 variant × 2 attribute = 20 query phụ mỗi lần render.
-            ->modifyQueryUsing(fn ($query) => $query->with('attributeValues.attribute'))
+            ->modifyQueryUsing(fn($query) => $query->with('attributeValues.attribute'))
             ->columns([
                 ImageColumn::make('image')
                     ->label('Ảnh')
@@ -280,7 +280,7 @@ class VariantsRelationManager extends RelationManager
                     ->html()
                     ->getStateUsing(function ($record) {
                         return $record->attributeValues
-                            ->sortBy(fn ($v) => [$v->attribute_id, $v->sort_order])
+                            ->sortBy(fn($v) => [$v->attribute_id, $v->sort_order])
                             ->map(function ($val) {
                                 $label = e($val->attribute->name . ': ' . $val->value);
                                 if ($val->attribute->display_type === 1 && $val->color_code) {
@@ -310,15 +310,15 @@ class VariantsRelationManager extends RelationManager
                     ->label('Giảm')
                     ->badge()
                     // ── FIX: null → xám thay vì đỏ, chỉ đỏ khi thực sự có giảm giá ──
-                    ->color(fn ($state) => $state ? 'danger' : 'gray')
-                    ->formatStateUsing(fn ($state) => $state ? "-{$state}%" : '—')
+                    ->color(fn($state) => $state ? 'danger' : 'gray')
+                    ->formatStateUsing(fn($state) => $state ? "-{$state}%" : '—')
                     ->placeholder('—'),
 
                 TextColumn::make('stock_quantity')
                     ->label('Kho')
                     ->badge()
-                    ->formatStateUsing(fn ($state, $record) => $record->manage_stock ? $state : '∞')
-                    ->color(fn ($state, $record) => match (true) {
+                    ->formatStateUsing(fn($state, $record) => $record->manage_stock ? $state : '∞')
+                    ->color(fn($state, $record) => match (true) {
                         ! $record->manage_stock => 'gray',
                         $state === 0            => 'danger',
                         $state < 5              => 'warning',
@@ -359,7 +359,8 @@ class VariantsRelationManager extends RelationManager
                             ];
                         }
 
-                        $fields = $attributes->map(fn ($attr) =>
+                        $fields = $attributes->map(
+                            fn($attr) =>
                             CheckboxList::make("attribute_{$attr->id}")
                                 ->label($attr->name)
                                 ->options(
@@ -408,13 +409,13 @@ class VariantsRelationManager extends RelationManager
 
                                 return new \Illuminate\Support\HtmlString(
                                     '<div style="font-size:13px;margin-bottom:8px">' . $summary . '</div>'
-                                    . '<div style="max-height:240px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px">'
-                                    . '<table style="width:100%;border-collapse:collapse">'
-                                    . '<thead><tr style="background:var(--gray-50)">'
-                                    . '<th style="padding:5px 10px;text-align:left;font-size:11px">SKU dự kiến</th>'
-                                    . '<th style="padding:5px 10px;text-align:left;font-size:11px">Tổ hợp</th>'
-                                    . '<th style="padding:5px 10px;text-align:left;font-size:11px">Trạng thái</th>'
-                                    . '</tr></thead><tbody>' . $rows . '</tbody></table></div>'
+                                        . '<div style="max-height:240px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px">'
+                                        . '<table style="width:100%;border-collapse:collapse">'
+                                        . '<thead><tr style="background:var(--gray-50)">'
+                                        . '<th style="padding:5px 10px;text-align:left;font-size:11px">SKU dự kiến</th>'
+                                        . '<th style="padding:5px 10px;text-align:left;font-size:11px">Tổ hợp</th>'
+                                        . '<th style="padding:5px 10px;text-align:left;font-size:11px">Trạng thái</th>'
+                                        . '</tr></thead><tbody>' . $rows . '</tbody></table></div>'
                                 );
                             })
                             ->columnSpanFull();
@@ -423,7 +424,8 @@ class VariantsRelationManager extends RelationManager
                     })
                     ->requiresConfirmation()
                     ->modalHeading('Generate biến thể')
-                    ->modalDescription(fn () =>
+                    ->modalDescription(
+                        fn() =>
                         $this->getOwnerRecord()->variants()->count() > 0
                             ? 'Sản phẩm đã có ' . $this->getOwnerRecord()->variants()->count() . ' biến thể — chỉ tổ hợp mới sẽ được thêm vào.'
                             : 'Chọn giá trị thuộc tính, xem trước bảng tổ hợp rồi xác nhận.'
@@ -440,8 +442,8 @@ class VariantsRelationManager extends RelationManager
 
                         $groups = collect($data)
                             ->except(['default_price', 'default_stock'])
-                            ->filter(fn ($v) => ! empty($v))
-                            ->map(fn ($v) => array_map('intval', (array) $v))
+                            ->filter(fn($v) => ! empty($v))
+                            ->map(fn($v) => array_map('intval', (array) $v))
                             ->values()->toArray();
 
                         if (empty($groups)) {
@@ -452,7 +454,7 @@ class VariantsRelationManager extends RelationManager
                         $combinations   = $this->cartesian($groups);
                         $existingCombos = $this->getExistingCombos($product);
                         $existingSkus   = ProductVariant::pluck('sku')
-                            ->map(fn ($s) => strtoupper($s))
+                            ->map(fn($s) => strtoupper($s))
                             ->flip()->toArray();
 
                         $created = 0;
@@ -460,9 +462,15 @@ class VariantsRelationManager extends RelationManager
 
                         try {
                             DB::transaction(function () use (
-                                $combinations, &$existingCombos, &$existingSkus,
-                                $skuPrefix, $defaultPrice, $defaultStock, $product,
-                                &$created, &$skipped
+                                $combinations,
+                                &$existingCombos,
+                                &$existingSkus,
+                                $skuPrefix,
+                                $defaultPrice,
+                                $defaultStock,
+                                $product,
+                                &$created,
+                                &$skipped
                             ) {
                                 // Load tất cả AttributeValue cần thiết 1 lần
                                 $allIds   = collect($combinations)->flatten()->unique()->values();
@@ -471,7 +479,7 @@ class VariantsRelationManager extends RelationManager
                                     ->keyBy('id');
 
                                 foreach ($combinations as $combo) {
-                                    $comboIds = collect($combo)->map(fn ($id) => (int) $id)
+                                    $comboIds = collect($combo)->map(fn($id) => (int) $id)
                                         ->sort()->values()->toArray();
 
                                     if (in_array($comboIds, $existingCombos)) {
@@ -481,11 +489,11 @@ class VariantsRelationManager extends RelationManager
 
                                     // Sort theo attribute_id rồi sort_order → SKU nhất quán
                                     $sortedValues = collect($comboIds)
-                                        ->map(fn ($id) => $valueMap->get($id))
+                                        ->map(fn($id) => $valueMap->get($id))
                                         ->filter()
-                                        ->sortBy(fn ($v) => [$v->attribute_id, $v->sort_order]);
+                                        ->sortBy(fn($v) => [$v->attribute_id, $v->sort_order]);
 
-                                    $valueLabels = $sortedValues->map(fn ($v) => Str::slug($v->value))->implode('-');
+                                    $valueLabels = $sortedValues->map(fn($v) => Str::slug($v->value))->implode('-');
                                     $baseSku     = strtoupper($skuPrefix . '-' . $valueLabels);
                                     $sku         = $baseSku;
                                     $i           = 2;
@@ -540,7 +548,7 @@ class VariantsRelationManager extends RelationManager
                     ->label('Sửa giá & kho')
                     ->icon('heroicon-o-pencil-square')
                     ->color('info')
-                    ->visible(fn () => $this->getOwnerRecord()->variants()->exists())
+                    ->visible(fn() => $this->getOwnerRecord()->variants()->exists())
                     ->form(function (): array {
                         $product  = $this->getOwnerRecord();
                         $variants = $product->variants()
@@ -550,7 +558,7 @@ class VariantsRelationManager extends RelationManager
 
                         $fields = [
                             Placeholder::make('hint')
-                                ->label('')
+                                ->hiddenLabel()
                                 ->content(new \Illuminate\Support\HtmlString(
                                     '<div style="font-size:13px;color:var(--gray-500)">Chỉnh giá và tồn kho cho từng biến thể — bấm "Lưu tất cả" 1 lần.</div>'
                                 )),
@@ -566,13 +574,13 @@ class VariantsRelationManager extends RelationManager
                                 : '';
 
                             $fields[] = Placeholder::make("header_{$v->id}")
-                                ->label('')
+                                ->hiddenLabel()
                                 ->content(new \Illuminate\Support\HtmlString(
                                     '<div style="font-weight:600;font-size:13px;padding:6px 0 2px;border-top:1px solid var(--gray-200);margin-top:4px">'
-                                    . e($label)
-                                    . ' <span style="font-weight:400;color:var(--gray-400);font-size:11px">(' . e($v->sku) . ')</span>'
-                                    . $manageBadge
-                                    . '</div>'
+                                        . e($label)
+                                        . ' <span style="font-weight:400;color:var(--gray-400);font-size:11px">(' . e($v->sku) . ')</span>'
+                                        . $manageBadge
+                                        . '</div>'
                                 ))
                                 ->columnSpanFull();
 
@@ -642,11 +650,12 @@ class VariantsRelationManager extends RelationManager
                     ->modalHeading('Xóa toàn bộ biến thể?')
                     ->modalDescription('Hành động này xóa TẤT CẢ biến thể hiện tại và không thể hoàn tác. Dùng khi cần đổi cấu trúc thuộc tính.')
                     ->modalSubmitActionLabel('Xóa tất cả')
-                    ->visible(fn () => $this->getOwnerRecord()->variants()->exists())
-                    ->disabled(fn () => (bool) $this->getOwnerRecord()->status)
-                    ->tooltip(fn () => $this->getOwnerRecord()->status
-                        ? 'Tắt hiển thị sản phẩm trước khi xóa toàn bộ biến thể'
-                        : null
+                    ->visible(fn() => $this->getOwnerRecord()->variants()->exists())
+                    ->disabled(fn() => (bool) $this->getOwnerRecord()->status)
+                    ->tooltip(
+                        fn() => $this->getOwnerRecord()->status
+                            ? 'Tắt hiển thị sản phẩm trước khi xóa toàn bộ biến thể'
+                            : null
                     )
                     ->action(function (): void {
                         $product = $this->getOwnerRecord();
@@ -702,11 +711,11 @@ class VariantsRelationManager extends RelationManager
 
                 CreateAction::make()
                     ->label('Thêm thủ công')
-                    ->mutateFormDataUsing(fn (array $data) => $this->applyColorLinkedImage($data)),
+                    ->mutateFormDataUsing(fn(array $data) => $this->applyColorLinkedImage($data)),
             ])
             ->recordActions([
                 EditAction::make()
-                    ->mutateFormDataUsing(fn (array $data) => $this->applyColorLinkedImage($data)),
+                    ->mutateFormDataUsing(fn(array $data) => $this->applyColorLinkedImage($data)),
 
                 DeleteAction::make()
                     ->before(function ($record, DeleteAction $action) {
@@ -772,7 +781,7 @@ class VariantsRelationManager extends RelationManager
                                     'price'          => $newPrice,
                                     'compare_price'  => $newCompare,
                                     'stock_quantity' => $newStock,
-                                ], fn ($v) => $v !== null);
+                                ], fn($v) => $v !== null);
 
                                 $record->update($update);
                             }
@@ -862,8 +871,8 @@ class VariantsRelationManager extends RelationManager
     private function getExistingCombos($product): array
     {
         return $product->variants()->with('attributeValues')->get()
-            ->map(fn ($v) => $v->attributeValues->pluck('id')
-                ->map(fn ($id) => (int) $id)->sort()->values()->toArray())
+            ->map(fn($v) => $v->attributeValues->pluck('id')
+                ->map(fn($id) => (int) $id)->sort()->values()->toArray())
             ->toArray();
     }
 
@@ -878,7 +887,7 @@ class VariantsRelationManager extends RelationManager
         }
 
         $colorValueIds = AttributeValue::whereIn('id', $valueIds)
-            ->whereHas('attribute', fn ($q) => $q->where('display_type', 1))
+            ->whereHas('attribute', fn($q) => $q->where('display_type', 1))
             ->pluck('id');
 
         if ($colorValueIds->isEmpty()) {
@@ -888,8 +897,8 @@ class VariantsRelationManager extends RelationManager
         // Ưu tiên 1: variant khác cùng màu có ảnh riêng
         $variant = $product->variants()
             ->whereNotNull('image')
-            ->when($excludeVariantId, fn ($q) => $q->where('id', '!=', $excludeVariantId))
-            ->whereHas('attributeValues', fn ($q) => $q->whereIn('attribute_values.id', $colorValueIds))
+            ->when($excludeVariantId, fn($q) => $q->where('id', '!=', $excludeVariantId))
+            ->whereHas('attributeValues', fn($q) => $q->whereIn('attribute_values.id', $colorValueIds))
             ->first();
 
         if ($variant?->image) {
@@ -945,9 +954,9 @@ class VariantsRelationManager extends RelationManager
         $attributes = $product->attributes()->with('attributeValues')->get();
 
         $groups = $attributes
-            ->map(fn ($attr) => $get("attribute_{$attr->id}") ?? [])
-            ->filter(fn ($v) => ! empty($v))
-            ->map(fn ($v) => array_map('intval', (array) $v))
+            ->map(fn($attr) => $get("attribute_{$attr->id}") ?? [])
+            ->filter(fn($v) => ! empty($v))
+            ->map(fn($v) => array_map('intval', (array) $v))
             ->values()->toArray();
 
         if (empty($groups)) {
@@ -960,7 +969,7 @@ class VariantsRelationManager extends RelationManager
         $existingCombos = $this->getExistingCombos($product);
 
         $existingSkus = ProductVariant::pluck('sku')
-            ->map(fn ($s) => strtoupper($s))
+            ->map(fn($s) => strtoupper($s))
             ->flip()->toArray();
 
         // Load tất cả AttributeValue cần thiết 1 lần — tránh N+1
@@ -975,16 +984,16 @@ class VariantsRelationManager extends RelationManager
         $willSkip   = 0;
 
         foreach ($combinations as $combo) {
-            $comboIds = collect($combo)->map(fn ($id) => (int) $id)->sort()->values()->toArray();
+            $comboIds = collect($combo)->map(fn($id) => (int) $id)->sort()->values()->toArray();
             $exists   = in_array($comboIds, $existingCombos);
 
             $values = collect($comboIds)
-                ->map(fn ($id) => $valueMap->get($id))
+                ->map(fn($id) => $valueMap->get($id))
                 ->filter()
-                ->sortBy(fn ($v) => [$v->attribute_id, $v->sort_order]);
+                ->sortBy(fn($v) => [$v->attribute_id, $v->sort_order]);
 
-            $label       = $values->map(fn ($v) => $v->attribute->name . ': ' . $v->value)->join(' / ');
-            $valueLabels = $values->map(fn ($v) => Str::slug($v->value))->implode('-');
+            $label       = $values->map(fn($v) => $v->attribute->name . ': ' . $v->value)->join(' / ');
+            $valueLabels = $values->map(fn($v) => Str::slug($v->value))->implode('-');
             $baseSku     = strtoupper($skuPrefix . '-' . $valueLabels);
 
             if ($exists) {
