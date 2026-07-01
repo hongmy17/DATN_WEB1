@@ -8,14 +8,15 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\UserAddressController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\ProductController;
 
 require __DIR__ . '/auth.php';
 
 // ─── TRANG CHÍNH ────────────────────────────────────────────────────────────
 Route::get('/', fn() => view('pages.home'))->name('home');
 
-Route::get('/san-pham', fn() => view('pages.product.index'))->name('products.index');
-Route::get('/chi-tiet', fn() => view('pages.product.show'))->name('products.show');
+Route::get('/san-pham', [ProductController::class, 'index'])->name('products.index');
+Route::get('/san-pham/{slug}', [ProductController::class, 'show'])->name('products.show');
 
 Route::get('/gio-hang', fn() => view('pages.cart.index'))->name('cart.index');
 Route::get('/thanh-toan', [CheckoutController::class, 'index'])->name('checkout.index');

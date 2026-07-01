@@ -82,6 +82,7 @@ class ImagesRelationManager extends RelationManager
                                 ->label("Chọn ảnh (còn thêm được {$canAdd} / tối đa {$this->maxImages})")
                                 ->image()
                                 ->multiple()
+                               
                                 ->directory('products/gallery')
                                 ->imagePreviewHeight('120')
                                 ->reorderable()
@@ -115,9 +116,17 @@ class ImagesRelationManager extends RelationManager
                             return;
                         }
 
-                        $hasPrimary       = $product->images()->where('is_primary', 1)->exists();
-                        $currentSort      = $product->images()->max('sort_order') ?? 0;
+                        // Validate attribute_value_id phải thuộc sản phẩm này
                         $attributeValueId = $data['attribute_value_id'] ?? null;
+                        if ($attributeValueId) {
+                            $validIds = collect($this->getColorOptions($product))->keys()->toArray();
+                            if (! in_array($attributeValueId, $validIds)) {
+                                $attributeValueId = null;
+                            }
+                        }
+
+                        $hasPrimary  = $product->images()->where('is_primary', 1)->exists();
+                        $currentSort = $product->images()->max('sort_order') ?? 0;
 
                         foreach ($images as $index => $path) {
                             $isPrimary = ! $hasPrimary && $index === 0;
@@ -243,7 +252,14 @@ class ImagesRelationManager extends RelationManager
                         ];
                     })
                     ->action(function ($record, array $data): void {
-                        $record->update(['attribute_value_id' => $data['attribute_value_id'] ?? null]);
+                        $attributeValueId = $data['attribute_value_id'] ?? null;
+                        if ($attributeValueId) {
+                            $validIds = collect($this->getColorOptions($this->getOwnerRecord()))->keys()->toArray();
+                            if (! in_array($attributeValueId, $validIds)) {
+                                $attributeValueId = null;
+                            }
+                        }
+                        $record->update(['attribute_value_id' => $attributeValueId]);
                         Notification::make()->title('Đã cập nhật màu cho ảnh')->success()->send();
                     }),
 

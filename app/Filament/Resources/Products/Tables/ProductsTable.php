@@ -28,9 +28,10 @@ class ProductsTable
             //        → $record->variants_min_price / variants_max_price có sẵn,
             //          accessor getMinPriceAttribute() trong Product model
             //          sẽ đọc từ đây thay vì query lại.
-            ->modifyQueryUsing(fn ($query) => $query
-                ->withMin('variants', 'price')
-                ->withMax('variants', 'price')
+            ->modifyQueryUsing(
+                fn($query) => $query
+                    ->withMin('variants', 'price')
+                    ->withMax('variants', 'price')
             )
             ->columns([
                 ImageColumn::make('thumbnail')
@@ -41,7 +42,7 @@ class ProductsTable
 
                 TextColumn::make('name')
                     ->label('Sản phẩm')
-                    ->description(fn ($record) => $record->code)
+                    ->description(fn($record) => $record->code)
                     ->searchable()
                     ->sortable()
                     ->weight('medium'),
@@ -56,7 +57,7 @@ class ProductsTable
                     ->label('Biến thể')
                     ->counts('variants')
                     ->badge()
-                    ->color(fn ($state) => $state > 0 ? 'success' : 'danger')
+                    ->color(fn($state) => $state > 0 ? 'success' : 'danger')
                     ->alignCenter(),
 
                 // ── Giá từ: đọc từ variants_min_price đã được eager-load ──────
@@ -72,23 +73,22 @@ class ProductsTable
 
                 ToggleColumn::make('status')
                     ->label('Hiển thị')
-                    ->beforeStateUpdated(function ($record, $state) {
-                        if ($state && ! $record->variants()->exists()) {
-                            Notification::make()
-                                ->title('Chưa có biến thể')
-                                ->body('Thêm ít nhất 1 biến thể trước khi bật hiển thị.')
-                                ->warning()
-                                ->send();
-                            return false;
+                    ->updateStateUsing(function ($record, $state) {
+                        if ($state) {
+                            if (! $record->variants()->exists()) {
+                                Notification::make()->title('Chưa có biến thể')
+                                    ->body('Thêm ít nhất 1 biến thể trước khi bật hiển thị.')
+                                    ->warning()->send();
+                                return; // không update
+                            }
+                            if (! $record->images()->exists()) {
+                                Notification::make()->title('Chưa có ảnh')
+                                    ->body('Thêm ít nhất 1 ảnh trước khi bật hiển thị.')
+                                    ->warning()->send();
+                                return;
+                            }
                         }
-                        if ($state && ! $record->images()->exists()) {
-                            Notification::make()
-                                ->title('Chưa có ảnh')
-                                ->body('Thêm ít nhất 1 ảnh trước khi bật hiển thị.')
-                                ->warning()
-                                ->send();
-                            return false;
-                        }
+                        $record->update(['status' => $state]);
                     }),
 
                 TextColumn::make('created_at')
@@ -114,8 +114,8 @@ class ProductsTable
                     ->trueLabel('Đã có biến thể')
                     ->falseLabel('Chưa có biến thể')
                     ->queries(
-                        true: fn ($query) => $query->whereHas('variants'),
-                        false: fn ($query) => $query->whereDoesntHave('variants'),
+                        true: fn($query) => $query->whereHas('variants'),
+                        false: fn($query) => $query->whereDoesntHave('variants'),
                     ),
             ])
             ->recordActions([

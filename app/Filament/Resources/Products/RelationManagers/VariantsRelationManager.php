@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Filament\Resources\Products\RelationManagers;
-
+use Filament\Forms\Components\Radio;
 use App\Models\AttributeValue;
 use App\Models\ProductVariant;
 use Filament\Actions\Action;
@@ -801,7 +801,7 @@ class VariantsRelationManager extends RelationManager
                         ->icon('heroicon-o-receipt-percent')
                         ->color('warning')
                         ->form([
-                            \Filament\Forms\Components\Radio::make('direction')
+                            Radio::make('direction')
                                 ->label('Hướng')
                                 ->options(['increase' => 'Tăng giá', 'decrease' => 'Giảm giá'])
                                 ->default('increase')

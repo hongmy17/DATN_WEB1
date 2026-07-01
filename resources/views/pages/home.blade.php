@@ -156,6 +156,7 @@
                         [
                             'id' => 1,
                             'name' => 'MacBook Pro 14" M3 Pro',
+                            'slug' => 'macbook-pro-14-m3-pro',
                             'brand' => 'Apple',
                             'price' => 42990000,
                             'old' => 48490000,
@@ -164,6 +165,7 @@
                         [
                             'id' => 2,
                             'name' => 'iPhone 15 Pro Max',
+                            'slug' => 'iphone-15-pro-max',
                             'brand' => 'Apple',
                             'price' => 32990000,
                             'old' => 36990000,
@@ -172,6 +174,7 @@
                         [
                             'id' => 3,
                             'name' => 'Samsung S24 Ultra',
+                            'slug' => 'samsung-s24-ultra',
                             'brand' => 'Samsung',
                             'price' => 29990000,
                             'old' => 33990000,
@@ -180,6 +183,7 @@
                         [
                             'id' => 6,
                             'name' => 'Sony WH-1000XM5',
+                            'slug' => 'sony-wh-1000xm5',
                             'brand' => 'Sony',
                             'price' => 8490000,
                             'old' => 9990000,
@@ -224,13 +228,13 @@
                                     </svg>
                                     Giỏ hàng
                                 </button>
-                                <a href="{{ route('products.show') }}" class="btn btn-primary">Xem ngay</a>
+                                <a href="{{ route('products.show', ['slug' => $p['slug']]) }}" class="btn btn-primary">Xem ngay</a>
                             </div>
                         </div>
                         <div class="product-card__body">
                             <div class="product-card__brand">{{ $p['brand'] }}</div>
                             <div class="product-card__name"><a
-                                    href="{{ route('products.show') }}">{{ $p['name'] }}</a></div>
+                                    href="{{ route('products.show', ['slug' => $p['slug']]) }}">{{ $p['name'] }}</a></div>
                             <div class="product-card__rating">
                                 <div class="product-card__stars">
                                     @for ($s = 1; $s <= 5; $s++)
