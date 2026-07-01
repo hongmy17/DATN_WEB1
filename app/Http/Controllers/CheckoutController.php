@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\OrderConfirmationMail;
 use App\Models\Coupon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 
 use App\Models\Order;
@@ -25,7 +27,6 @@ class CheckoutController extends Controller
                 ?? $addresses->first();
         }
 
-        // Load danh sách mã giảm giá còn hiệu lực
         $coupons = Coupon::where('status', 1)
             ->where('start_date', '<=', Carbon::now())
             ->where('end_date', '>=', Carbon::now())
@@ -41,7 +42,6 @@ class CheckoutController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            // Nếu có address_id thì không cần nhập tay, ngược lại bắt buộc
             'receiver_name'  => 'required_without:address_id|nullable|string|max:100',
             'receiver_phone' => 'required_without:address_id|nullable|string|max:15',
             'province'       => 'required_without:address_id|nullable|string|max:100',
@@ -54,7 +54,6 @@ class CheckoutController extends Controller
             'cart.*.qty'     => 'required|integer|min:1',
         ]);
 
-        // Nếu chọn địa chỉ đã lưu → tự lấy thông tin từ DB
         if ($request->address_id) {
             $savedAddr = \App\Models\UserAddress::find($request->address_id);
             if ($savedAddr && $savedAddr->user_id === Auth::id()) {
@@ -72,7 +71,6 @@ class CheckoutController extends Controller
         try {
             $order = DB::transaction(function () use ($request) {
                 $cart = collect($request->cart);
-
                 $productIds = $cart->pluck('id')->toArray();
 
                 $variants = ProductVariant::with(['product', 'attributeValues.attribute'])
@@ -156,8 +154,6 @@ class CheckoutController extends Controller
                     OrderItem::create([
                         'order_id' => $order->id,
                         'variant_id' => $variant->id,
-
-                        // Snapshot sản phẩm
                         'product_name' => $variant->product->name,
                         'variant_description' => $variantDescription,
                         'quantity' => $item['qty'],
@@ -170,6 +166,19 @@ class CheckoutController extends Controller
 
                 return $order;
             });
+
+            // ── MỚI: gửi email xác nhận đơn hàng kèm hóa đơn PDF ─────────────
+            // Vì OrderConfirmationMail implements ShouldQueue, Mail::send()
+            // ở đây THỰC CHẤT không gửi ngay — Laravel tự đẩy nó vào bảng
+            // `jobs`, hàm store() trả response về cho khách NGAY LẬP TỨC,
+            // không phải đợi email gửi xong (mất 1-3 giây qua SMTP).
+            //
+            // Email được gửi tới: ưu tiên email tài khoản đang đăng nhập,
+            // nếu khách checkout không đăng nhập (guest) thì bỏ qua gửi mail
+            // (vì checkout hiện tại bắt buộc đăng nhập — middleware 'auth').
+            if ($order->user && $order->user->email) {
+                Mail::to($order->user->email)->send(new OrderConfirmationMail($order));
+            }
 
             return response()->json([
                 'success' => true,
