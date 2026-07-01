@@ -39,9 +39,11 @@ class ImagesRelationManager extends RelationManager
             ->recordTitleAttribute('image_url')
             ->reorderable('sort_order')
             ->defaultSort('sort_order')
+            ->modifyQueryUsing(fn($query) => $query->with('attributeValue.attribute'))
             ->columns([
                 ImageColumn::make('image_url')
                     ->label('Ảnh')
+                    ->disk('public')
                     ->size(72)
                     ->defaultImageUrl(asset('images/no-image.png'))
                     ->extraImgAttributes(['class' => 'rounded-lg object-cover']),
@@ -58,7 +60,7 @@ class ImagesRelationManager extends RelationManager
                     ->badge()
                     ->color('info')
                     ->placeholder('Ảnh chung')
-                    ->description(fn ($record) => $record->attributeValue?->attribute->name),
+                    ->description(fn($record) => $record->attributeValue?->attribute->name),
 
                 TextColumn::make('sort_order')
                     ->label('Thứ tự')
@@ -82,7 +84,7 @@ class ImagesRelationManager extends RelationManager
                                 ->label("Chọn ảnh (còn thêm được {$canAdd} / tối đa {$this->maxImages})")
                                 ->image()
                                 ->multiple()
-                               
+
                                 ->directory('products/gallery')
                                 ->imagePreviewHeight('120')
                                 ->reorderable()
@@ -156,7 +158,7 @@ class ImagesRelationManager extends RelationManager
                     ->modalWidth('xl')
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Đóng')
-                    ->visible(fn () => ! empty($this->getColorOptions($this->getOwnerRecord())))
+                    ->visible(fn() => ! empty($this->getColorOptions($this->getOwnerRecord())))
                     ->form(function (): array {
                         $product = $this->getOwnerRecord();
 
@@ -180,12 +182,12 @@ class ImagesRelationManager extends RelationManager
                         $variantsWithImage = $product->variants()
                             ->with('attributeValues')
                             ->get()
-                            ->filter(fn ($v) => $v->image || ! empty($v->gallery));
+                            ->filter(fn($v) => $v->image || ! empty($v->gallery));
 
                         $rows = $colorValues->map(function ($value) use ($imageCountByValue, $variantsWithImage) {
                             $libCount     = $imageCountByValue[$value->id] ?? 0;
                             $variantCount = $variantsWithImage->filter(
-                                fn ($v) => $v->attributeValues->pluck('id')->contains($value->id)
+                                fn($v) => $v->attributeValues->pluck('id')->contains($value->id)
                             )->count();
 
                             $hasAny = $libCount > 0 || $variantCount > 0;
@@ -227,7 +229,7 @@ class ImagesRelationManager extends RelationManager
                     ->label('Đặt làm ảnh chính')
                     ->icon('heroicon-o-star')
                     ->color('warning')
-                    ->hidden(fn ($record) => (bool) $record->is_primary)
+                    ->hidden(fn($record) => (bool) $record->is_primary)
                     ->action(function ($record): void {
                         $this->getOwnerRecord()->images()->where('is_primary', 1)->update(['is_primary' => 0]);
                         $record->update(['is_primary' => 1]);
@@ -239,7 +241,7 @@ class ImagesRelationManager extends RelationManager
                     ->label('Gắn màu')
                     ->icon('heroicon-o-swatch')
                     ->color('info')
-                    ->visible(fn () => ! empty($this->getColorOptions($this->getOwnerRecord())))
+                    ->visible(fn() => ! empty($this->getColorOptions($this->getOwnerRecord())))
                     ->form(function ($record) {
                         return [
                             Select::make('attribute_value_id')
@@ -272,7 +274,7 @@ class ImagesRelationManager extends RelationManager
                         ->label('Gắn màu hàng loạt')
                         ->icon('heroicon-o-swatch')
                         ->color('info')
-                        ->visible(fn () => ! empty($this->getColorOptions($this->getOwnerRecord())))
+                        ->visible(fn() => ! empty($this->getColorOptions($this->getOwnerRecord())))
                         ->form(function () {
                             $colorOptions = $this->getColorOptions($this->getOwnerRecord());
                             return [
@@ -319,7 +321,7 @@ class ImagesRelationManager extends RelationManager
             ->with('attribute')
             ->orderBy('sort_order')
             ->get()
-            ->mapWithKeys(fn ($v) => [$v->id => $v->attribute->name . ': ' . $v->value])
+            ->mapWithKeys(fn($v) => [$v->id => $v->attribute->name . ': ' . $v->value])
             ->toArray();
     }
 }

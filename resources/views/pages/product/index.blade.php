@@ -1,25 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Sản phẩm — Nexus Store')
 @push('styles')
-    <style>
-        .shop-wrap { padding: 32px 0 80px; }
-        .shop-layout { display: grid; grid-template-columns: 240px 1fr; gap: 24px; align-items: start; }
-        .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-        .toolbar-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .toolbar-count { font-size: 14px; color: var(--ink-3); }
-        .toolbar-tag { display: flex; align-items: center; gap: 5px; padding: 4px 10px; background: var(--surface); border-radius: var(--r-full); font-size: 13px; color: var(--ink-2); }
-        .toolbar-tag button { display: flex; color: var(--ink-muted); transition: var(--t); }
-        .toolbar-tag button:hover { color: var(--red); }
-        .sort-select { padding: 7px 32px 7px 12px; border: 1.5px solid var(--border); border-radius: var(--r-md); font-size: 13.5px; font-family: var(--font-body); color: var(--ink); background: var(--bg-alt); cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%236B6459' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
-        .sort-select:focus { outline: none; border-color: var(--accent); }
-        .products-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-        .cat-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
-        .cat-chip { padding: 7px 14px; border-radius: var(--r-full); border: 1.5px solid var(--border); font-size: 13px; font-weight: 500; color: var(--ink-2); cursor: pointer; transition: var(--t); background: var(--bg-alt); white-space: nowrap; }
-        .cat-chip:hover { border-color: var(--ink); color: var(--ink); }
-        .cat-chip.active { background: var(--ink); border-color: var(--ink); color: #fff; }
-        @media(max-width:1024px) { .shop-layout { grid-template-columns: 1fr; } .filter-card { display: none; } }
-        @media(max-width:640px) { .products-grid { grid-template-columns: repeat(2, 1fr); } }
-    </style>
+    <link rel="stylesheet" href="{{ asset('assets/css/pages/products.css') }}">
 @endpush
 @section('content')
     <div class="container shop-wrap">
@@ -35,8 +17,8 @@
                 $activeCat = request('cat');
             @endphp
             @foreach ($allCats as $catId => $catName)
-                <a class="cat-chip {{ ($activeCat == $catId || ($catId === null && !$activeCat)) ? 'active' : '' }}"
-                   href="{{ $catId ? route('products.index', ['cat' => $catId]) : route('products.index') }}">
+                <a class="cat-chip {{ $activeCat == $catId || ($catId === null && !$activeCat) ? 'active' : '' }}"
+                    href="{{ $catId ? route('products.index', ['cat' => $catId]) : route('products.index') }}">
                     {{ $catName }}
                 </a>
             @endforeach
@@ -57,8 +39,10 @@
                         </div>
                         <div class="range-track">
                             <div class="range-fill" id="rangeFill"></div>
-                            <input type="range" class="range-input" id="rangeMin" min="0" max="100000000" value="0" step="1000000" oninput="updateRange()">
-                            <input type="range" class="range-input" id="rangeMax" min="0" max="100000000" value="100000000" step="1000000" oninput="updateRange()">
+                            <input type="range" class="range-input" id="rangeMin" min="0" max="100000000"
+                                value="0" step="1000000" oninput="updateRange()">
+                            <input type="range" class="range-input" id="rangeMax" min="0" max="100000000"
+                                value="100000000" step="1000000" oninput="updateRange()">
                         </div>
                     </div>
                 </div>
@@ -68,7 +52,8 @@
                     @foreach ($categories as $cat)
                         <div class="filter-check">
                             <label>
-                                <input type="checkbox" onchange="applyFilter()" {{ $activeCat == $cat->id ? 'checked' : '' }}>
+                                <input type="checkbox" onchange="applyFilter()"
+                                    {{ $activeCat == $cat->id ? 'checked' : '' }}>
                                 {{ $cat->name }}
                             </label>
                             <span class="filter-count">{{ $cat->products_count }}</span>
@@ -77,8 +62,9 @@
                 </div>
 
                 <button onclick="applyFilter()" class="btn btn-accent btn-full">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round">
+                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
                     </svg>
                     Áp dụng bộ lọc
                 </button>
@@ -92,8 +78,10 @@
                     </div>
                     <select class="sort-select" onchange="applySort(this.value)">
                         <option value="">Mặc định</option>
-                        <option value="price_asc" {{ request('sort') === 'price_asc' ? 'selected' : '' }}>Giá: thấp đến cao</option>
-                        <option value="price_desc" {{ request('sort') === 'price_desc' ? 'selected' : '' }}>Giá: cao đến thấp</option>
+                        <option value="price_asc" {{ request('sort') === 'price_asc' ? 'selected' : '' }}>Giá: thấp đến cao
+                        </option>
+                        <option value="price_desc" {{ request('sort') === 'price_desc' ? 'selected' : '' }}>Giá: cao đến
+                            thấp</option>
                         <option value="newest" {{ request('sort') === 'newest' ? 'selected' : '' }}>Mới nhất</option>
                     </select>
                 </div>
@@ -104,11 +92,13 @@
                             $minPrice = $p->variants->min('price');
                             $maxPrice = $p->variants->max('price');
                             $comparePrice = $p->variants->max('compare_price');
-                            $discount = ($comparePrice && $comparePrice > $minPrice)
-                                ? round((1 - $minPrice / $comparePrice) * 100)
-                                : 0;
+                            $discount =
+                                $comparePrice && $comparePrice > $minPrice
+                                    ? round((1 - $minPrice / $comparePrice) * 100)
+                                    : 0;
                         @endphp
-                        <div class="product-card reveal" data-cat="{{ $p->category_id }}" data-price="{{ $minPrice }}">
+                        <div class="product-card reveal" data-cat="{{ $p->category_id }}"
+                            data-price="{{ $minPrice }}">
                             <div class="product-card__thumb">
                                 @if ($discount >= 5)
                                     <div class="product-card__badges">
@@ -116,34 +106,39 @@
                                     </div>
                                 @endif
 
-                                <button class="product-card__wish"
-                                    data-wish-id="{{ $p->id }}"
-                                    data-wish-name="{{ $p->name }}"
-                                    data-wish-price="{{ $minPrice }}"
+                                <button class="product-card__wish" data-wish-id="{{ $p->id }}"
+                                    data-wish-name="{{ $p->name }}" data-wish-price="{{ $minPrice }}"
                                     aria-label="Yêu thích">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                                        <path
+                                            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                                     </svg>
                                 </button>
 
-                                <div class="product-card__img" style="display:flex;align-items:center;justify-content:center">
+                                <div class="product-card__img"
+                                    style="display:flex;align-items:center;justify-content:center">
                                     @if ($p->thumbnail)
-                                        <img src="{{ asset('storage/' . $p->thumbnail) }}" alt="{{ $p->name }}" style="max-width:100%;max-height:100%;object-fit:contain">
+                                        <img src="{{ asset('storage/' . $p->thumbnail) }}" alt="{{ $p->name }}"
+                                            style="max-width:100%;max-height:100%;object-fit:contain">
                                     @else
-                                        <svg width="68" height="68" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=".7" stroke-linecap="round">
-                                            <rect x="2" y="3" width="20" height="14" rx="2"/>
-                                            <line x1="8" y1="21" x2="16" y2="21"/>
-                                            <line x1="12" y1="17" x2="12" y2="21"/>
+                                        <svg width="68" height="68" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width=".7" stroke-linecap="round">
+                                            <rect x="2" y="3" width="20" height="14" rx="2" />
+                                            <line x1="8" y1="21" x2="16" y2="21" />
+                                            <line x1="12" y1="17" x2="12" y2="21" />
                                         </svg>
                                     @endif
                                 </div>
 
                                 <div class="product-card__actions">
                                     <button class="btn btn-ghost"
-                                        onclick="Cart.add({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $minPrice }},img:'{{ $p->thumbnail ? asset('storage/'.$p->thumbnail) : '' }}'})">
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-                                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                                        onclick="Cart.add({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $minPrice }},img:'{{ $p->thumbnail ? asset('storage/' . $p->thumbnail) : '' }}'})">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                            <circle cx="9" cy="21" r="1" />
+                                            <circle cx="20" cy="21" r="1" />
+                                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                                         </svg>
                                         Thêm giỏ
                                     </button>
@@ -162,7 +157,8 @@
                                             <svg width="12" height="12" viewBox="0 0 24 24"
                                                 fill="{{ $s <= 5 ? '#F59E0B' : '#E5E3DE' }}"
                                                 stroke="{{ $s <= 5 ? '#F59E0B' : '#E5E3DE' }}" stroke-width="1">
-                                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                                <polygon
+                                                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                             </svg>
                                         @endfor
                                     </div>
@@ -176,7 +172,8 @@
                                         @endif
                                     </span>
                                     @if ($comparePrice && $comparePrice > $minPrice)
-                                        <span class="product-card__price-old">{{ number_format($comparePrice, 0, ',', '.') }}₫</span>
+                                        <span
+                                            class="product-card__price-old">{{ number_format($comparePrice, 0, ',', '.') }}₫</span>
                                     @endif
                                 </div>
                             </div>
@@ -189,15 +186,23 @@
                 </div>
 
                 <div class="pagination">
-                    <button class="page-btn" {{ $products->onFirstPage() ? 'disabled' : '' }} onclick="window.location='{{ $products->previousPageUrl() }}'">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    <button class="page-btn" {{ $products->onFirstPage() ? 'disabled' : '' }}
+                        onclick="window.location='{{ $products->previousPageUrl() }}'">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round">
+                            <polyline points="15 18 9 12 15 6" />
+                        </svg>
                     </button>
                     @for ($page = 1; $page <= $products->lastPage(); $page++)
                         <button class="page-btn {{ $products->currentPage() === $page ? 'active' : '' }}"
                             onclick="window.location='{{ $products->url($page) }}'">{{ $page }}</button>
                     @endfor
-                    <button class="page-btn" {{ !$products->hasMorePages() ? 'disabled' : '' }} onclick="window.location='{{ $products->nextPageUrl() }}'">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    <button class="page-btn" {{ !$products->hasMorePages() ? 'disabled' : '' }}
+                        onclick="window.location='{{ $products->nextPageUrl() }}'">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round">
+                            <polyline points="9 18 15 12 9 6" />
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -214,12 +219,17 @@
             const pct2 = max / 100000000 * 100;
             document.getElementById('rangeFill').style.cssText = `left:${pct1}%;right:${100-pct2}%`;
         }
+
         function resetPrice() {
             document.getElementById('rangeMin').value = 0;
             document.getElementById('rangeMax').value = 100000000;
             updateRange();
         }
-        function applyFilter() { Toast.show('Đã áp dụng bộ lọc', 'success'); }
+
+        function applyFilter() {
+            Toast.show('Đã áp dụng bộ lọc', 'success');
+        }
+
         function applySort(v) {
             if (v) {
                 const url = new URL(window.location.href);
@@ -227,7 +237,12 @@
                 window.location = url.toString();
             }
         }
-        Object.assign(window, { updateRange, resetPrice, applyFilter, applySort });
+        Object.assign(window, {
+            updateRange,
+            resetPrice,
+            applyFilter,
+            applySort
+        });
         updateRange();
     </script>
 @endsection
