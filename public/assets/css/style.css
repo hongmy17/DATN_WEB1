@@ -2,25 +2,28 @@
    NEXUS STORE — Design System v2
    Font: Space Grotesk (headings) + Inter (body)
 ══════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 /* ── DESIGN TOKENS ──────────────────────── */
 :root {
-  --bg:           #F7F6F3;
+  /* ── Nền trang ── */
+  --bg:           #FFFFFF;        /* Trắng sạch như FPT Shop */
   --bg-alt:       #FFFFFF;
-  --surface:      #F0EDE8;
-  --surface-2:    #E8E4DE;
+  --surface:      #F5F5F5;        /* Xám nhẹ cho card, sidebar */
+  --surface-2:    #EBEBEB;
 
-  --ink:          #181614;
-  --ink-2:        #3A3530;
-  --ink-3:        #6B6459;
-  --ink-muted:    #9C9488;
+  /* ── Màu chữ ── */
+  --ink:          #1A1A1A;        /* Chữ chính - gần đen */
+  --ink-2:        #333333;
+  --ink-3:        #666666;
+  --ink-muted:    #999999;
 
-  --accent:       #C8522A;
-  --accent-light: #FBF0EB;
-  --accent-dark:  #A33E1A;
-  --accent-rgb:   200,82,42;
+  /* ── Màu chủ đạo: Đỏ FPT Shop ── */
+  --accent:       #E30019;
+  --accent-light: #FFF0F0;
+  --accent-dark:  #C0001A;
+  --accent-rgb:   227,0,25;
 
+  /* ── Màu phụ (giữ nguyên) ── */
   --green:        #2D7A52;
   --green-light:  #EAF5EF;
   --amber:        #B45309;
@@ -30,15 +33,18 @@
   --blue:         #1D4ED8;
   --blue-light:   #EFF6FF;
 
-  --border:       #DDD9D3;
-  --border-soft:  #ECEAE5;
+  /* ── Đường viền ── */
+  --border:       #E0E0E0;
+  --border-soft:  #EBEBEB;
 
-  --shadow-xs: 0 1px 2px rgba(24,22,20,.05);
-  --shadow-sm: 0 2px 8px rgba(24,22,20,.07);
-  --shadow-md: 0 8px 24px rgba(24,22,20,.09);
-  --shadow-lg: 0 20px 48px rgba(24,22,20,.12);
-  --shadow-xl: 0 40px 80px rgba(24,22,20,.16);
+  /* ── Shadow ── */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,.05);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.08);
+  --shadow-md: 0 8px 24px rgba(0,0,0,.10);
+  --shadow-lg: 0 20px 48px rgba(0,0,0,.13);
+  --shadow-xl: 0 40px 80px rgba(0,0,0,.16);
 
+  /* ── Bo góc (giữ nguyên) ── */
   --r-xs:   4px;
   --r-sm:   8px;
   --r-md:   12px;
@@ -47,8 +53,9 @@
   --r-2xl:  28px;
   --r-full: 9999px;
 
-  --font-display: 'Space Grotesk', -apple-system, sans-serif;
-  --font-body:    'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* ── Font: đổi sang Roboto ── */
+  --font-display: 'Roboto', -apple-system, sans-serif;
+  --font-body:    'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
 
   --ease-out: cubic-bezier(.16,1,.3,1);
   --ease-io:  cubic-bezier(.4,0,.2,1);
@@ -575,3 +582,10 @@ body.nav-open .navbar__nav {
   border-top: 1px solid var(--border-soft); animation: fadeIn .15s ease;
 }
 body.nav-open .navbar__nav .navbar__nav-link { font-size: 17px; padding: 12px 14px; width: 100%; }
+
+@media(max-width:768px) {
+  .banner-grid { grid-template-columns: 1fr !important; }
+  footer [style*="grid-template-columns:2fr"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}

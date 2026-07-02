@@ -68,7 +68,7 @@ const Wishlist = {
         localStorage.setItem("nx_wish", JSON.stringify(w));
         Wishlist.updateUI();
     },
-    toggle(id, name, price, img) {
+    toggle(id, name, price, img, slug) {
         const w = Wishlist.get();
         const sid = String(id);
         const idx = w.findIndex((i) => String(i.id) === sid);
@@ -81,6 +81,7 @@ const Wishlist = {
                 name: name || "Sản phẩm",
                 price: price || 0,
                 img: img || "",
+                slug: slug || "",
             });
             Toast.show(`Đã thêm vào yêu thích`, "success");
         }
@@ -155,7 +156,8 @@ function initWishlistButtons() {
         const name = btn.dataset.wishName || "Sản phẩm";
         const price = parseInt(btn.dataset.wishPrice || "0");
         const img = btn.dataset.wishImg || "";
-        Wishlist.toggle(id, name, price, img);
+        const slug = btn.dataset.wishSlug || ""; // ← THÊM
+        Wishlist.toggle(id, name, price, img, slug);
     });
 }
 

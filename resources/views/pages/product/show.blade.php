@@ -55,9 +55,11 @@
                         </div>
                     @endif
 
+
                     <button class="gallery__wish" id="wishBtn" data-wish-id="{{ $product->id }}"
-                        data-wish-name="{{ $product->name }}" data-wish-price="{{ $currentPrice }}" aria-label="Yêu thích"
-                        onclick="toggleWish()">
+                        data-wish-name="{{ addslashes($product->name) }}"
+                        data-wish-price="{{ $defaultVariant?->price ?? 0 }}" data-wish-slug="{{ $product->slug }}"
+                        data-wish-img="{{ $defaultVariant?->image ?? ($product->thumbnail ?? '') }}" aria-label="Yêu thích">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                             <path
@@ -91,7 +93,8 @@
                         </div>
                     @endif
                     @foreach ($images as $img)
-                        <div class="gallery__thumb" onclick="selectThumb(this, '{{ asset('storage/' . $img->image_url) }}')"
+                        <div class="gallery__thumb"
+                            onclick="selectThumb(this, '{{ asset('storage/' . $img->image_url) }}')"
                             title="Ảnh {{ $loop->iteration }}">
                             <img src="{{ asset('storage/' . $img->image_url) }}" alt="">
                         </div>
