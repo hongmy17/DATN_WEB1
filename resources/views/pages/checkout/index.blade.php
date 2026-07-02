@@ -323,9 +323,23 @@
         }
 
         function placeOrder() {
+            const btn = document.querySelector('button[onclick="placeOrder()"]');
+
+            // FIX: Khóa nút ngay lập tức, tránh bấm 2 lần
+            if (btn.disabled) return; // Nếu đang xử lý rồi → bỏ qua hoàn toàn
+            btn.disabled = true;
+            btn.innerHTML = `
+        <svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+        </svg>
+        Đang xử lý...
+    `;
             const cart = Cart.get();
             if (!cart.length) {
                 Toast.show('Giỏ hàng trống!', 'error');
+                // Mở khóa nút nếu validate thất bại
+                resetBtn(btn);
                 return;
             }
 
@@ -382,11 +396,25 @@
                         setTimeout(() => window.location.href = '{{ url('don-hang') }}', 1200);
                     } else {
                         Toast.show(data.message || 'Có lỗi xảy ra, vui lòng thử lại', 'error');
+                        resetBtn(btn); // Mở khóa để người dùng thử lại
                     }
                 })
                 .catch(err => {
                     if (err.message !== 'validation') Toast.show('Lỗi kết nối, thử lại sau', 'error');
+                    resetBtn(btn); // Mở khóa để người dùng thử lại
                 });
+        }
+
+        // Hàm phụ: khôi phục nút về trạng thái ban đầu
+        function resetBtn(btn) {
+            btn.disabled = false;
+            btn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        Đặt hàng ngay
+    `;
         }
 
         document.addEventListener('DOMContentLoaded', renderSummary);

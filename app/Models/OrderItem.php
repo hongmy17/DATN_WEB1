@@ -14,8 +14,11 @@ class OrderItem extends Model
         'variant_id',
         'product_name',
         'variant_description',
+        'variant_sku',
+        'product_thumbnail',
         'quantity',
         'unit_price',
+        'compare_price',
         'total_price',
     ];
 

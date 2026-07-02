@@ -54,6 +54,7 @@ class CheckoutController extends Controller
             'cart.*.qty'     => 'required|integer|min:1',
         ]);
 
+        // Nếu chọn địa chỉ đã lưu → lấy thông tin từ DB
         if ($request->address_id) {
             $savedAddr = \App\Models\UserAddress::find($request->address_id);
             if ($savedAddr && $savedAddr->user_id === Auth::id()) {
@@ -71,41 +72,49 @@ class CheckoutController extends Controller
         try {
             $order = DB::transaction(function () use ($request) {
                 $cart = collect($request->cart);
-                $productIds = $cart->pluck('id')->toArray();
+
+                // Lấy variants theo ID từ giỏ hàng
+                // Cart gửi lên id = variant_id (từ variantMap trong show.blade.php)
+                $variantIds = $cart->pluck('id')->toArray();
 
                 $variants = ProductVariant::with(['product', 'attributeValues.attribute'])
-                    ->whereIn('product_id', $productIds)
-                    ->orderBy('id')
+                    ->whereIn('id', $variantIds)  // FIX: dùng id (variant_id) thay vì product_id
                     ->get()
-                    ->unique('product_id')
-                    ->keyBy('product_id');
+                    ->keyBy('id');               // FIX: keyBy 'id' (variant_id)
 
+                // ── Bước 1: Kiểm tra kho + tính tổng tiền ─────────────────
                 $subtotal = 0;
+                $now = now();
 
                 foreach ($cart as $item) {
                     $variant = $variants[$item['id']] ?? null;
 
                     if (!$variant) {
-                        throw new \Exception('Sản phẩm trong giỏ hàng không tồn tại hoặc chưa có biến thể mặc định.');
+                        throw new \Exception(
+                            'Sản phẩm trong giỏ hàng không tồn tại.'
+                        );
                     }
 
-                    if ($variant->stock_quantity < $item['qty']) {
-                        throw new \Exception('Sản phẩm ' . $variant->product->name . ' không đủ tồn kho.');
+                    // Kiểm tra kho (chỉ với hàng quản lý kho)
+                    if ($variant->manage_stock && $variant->stock_quantity < $item['qty']) {
+                        throw new \Exception(
+                            "Sản phẩm \"{$variant->product->name}\" không đủ tồn kho "
+                                . "(còn {$variant->stock_quantity}, cần {$item['qty']})."
+                        );
                     }
 
-                    $unitPrice = $variant->discount_price > 0
-                        ? $variant->discount_price
-                        : $variant->price;
-
+                    // FIX: tính giá đúng theo sale_price + thời gian
+                    $unitPrice = $this->getEffectivePrice($variant, $now);
                     $subtotal += $unitPrice * $item['qty'];
                 }
 
+                // ── Bước 2: Xử lý coupon ──────────────────────────────────
                 $discountAmount = 0;
                 $coupon = null;
+                $couponCode = $request->coupon_code ?? session('coupon_code');
 
-                if ($request->coupon_code) {
-                    $coupon = Coupon::where('coupon_code', $request->coupon_code)->first();
-
+                if ($couponCode) {
+                    $coupon = Coupon::where('coupon_code', strtoupper($couponCode))->first();
                     if ($coupon && $coupon->isValid($subtotal)) {
                         $discountAmount = $coupon->calcDiscount($subtotal);
                         $coupon->increment('used_count');
@@ -115,75 +124,79 @@ class CheckoutController extends Controller
                 }
 
                 $totalAmount = max($subtotal - $discountAmount, 0);
+                $shippingAddress = collect([
+                    $request->address_detail,
+                    $request->ward,
+                    $request->district,
+                    $request->province,
+                ])->filter()->implode(', ');
 
-                $shippingAddress = $request->address_detail . ', '
-                    . $request->ward . ', '
-                    . $request->district . ', '
-                    . $request->province;
-
+                // ── Bước 3: Tạo đơn hàng ──────────────────────────────────
                 $order = Order::create([
-                    'user_id' => Auth::id(),
-                    'address_id' => $request->address_id,
-                    'coupon_id' => $coupon?->id,
-                    'receiver_name' => $request->receiver_name,
-                    'receiver_phone' => $request->receiver_phone,
+                    'user_id'          => Auth::id(),
+                    'address_id'       => $request->address_id,
+                    'coupon_id'        => $coupon?->id,
+                    'coupon_code'      => $coupon?->coupon_code, // FIX: lưu mã coupon vào snapshot
+                    'receiver_name'    => $request->receiver_name,
+                    'receiver_phone'   => $request->receiver_phone,
                     'shipping_address' => $shippingAddress,
-                    'order_status' => Order::STATUS_PENDING,
-                    'subtotal' => $subtotal,
-                    'discount_amount' => $discountAmount,
-                    'total_amount' => $totalAmount,
-                    'note' => $request->note,
+                    'order_status'     => Order::STATUS_PENDING,
+                    'subtotal'         => $subtotal,
+                    'discount_amount'  => $discountAmount,
+                    'total_amount'     => $totalAmount,
+                    'note'             => $request->note,
                 ]);
 
+                // ── Bước 4: Tạo order items với đầy đủ snapshot ───────────
                 foreach ($cart as $item) {
                     $variant = $variants[$item['id']];
+                    $now = now();
+                    $unitPrice = $this->getEffectivePrice($variant, $now);
+
+                    // Mô tả biến thể: "Màu sắc: Đen - Kết nối: Bluetooth"
                     $variantDescription = $variant->attributeValues
-                        ->map(function ($value) {
-                            return $value->attribute->name . ': ' . $value->value;
-                        })
+                        ->sortBy('attribute_id')
+                        ->map(fn($av) => $av->attribute->name . ': ' . $av->value)
                         ->implode(' - ');
 
                     if (!$variantDescription) {
                         $variantDescription = 'Mặc định';
                     }
 
-                    $unitPrice = $variant->discount_price > 0
-                        ? $variant->discount_price
-                        : $variant->price;
+                    // Ảnh: ưu tiên ảnh riêng của variant, fallback thumbnail sản phẩm
+                    $thumbnail = $variant->image
+                        ?? $variant->product->thumbnail
+                        ?? null;
 
                     OrderItem::create([
-                        'order_id' => $order->id,
-                        'variant_id' => $variant->id,
-                        'product_name' => $variant->product->name,
-                        'variant_description' => $variantDescription,
-                        'quantity' => $item['qty'],
-                        'unit_price' => $unitPrice,
-                        'total_price' => $unitPrice * $item['qty'],
+                        'order_id'            => $order->id,
+                        'variant_id'          => $variant->id,
+                        'product_name'        => $variant->product->name,  // snapshot tên
+                        'variant_description' => $variantDescription,       // snapshot phân loại
+                        'variant_sku'         => $variant->sku,             // snapshot SKU
+                        'product_thumbnail'   => $thumbnail,                // snapshot ảnh
+                        'quantity'            => $item['qty'],
+                        'unit_price'          => $unitPrice,                // snapshot giá bán
+                        'compare_price'       => $variant->compare_price,   // snapshot giá gốc
+                        'total_price'         => $unitPrice * $item['qty'],
                     ]);
-
-                    $variant->decrement('stock_quantity', $item['qty']);
                 }
+
+                // Xóa coupon khỏi session
+                session()->forget(['coupon_code', 'coupon_id', 'discount_amount']);
 
                 return $order;
             });
 
-            // ── MỚI: gửi email xác nhận đơn hàng kèm hóa đơn PDF ─────────────
-            // Vì OrderConfirmationMail implements ShouldQueue, Mail::send()
-            // ở đây THỰC CHẤT không gửi ngay — Laravel tự đẩy nó vào bảng
-            // `jobs`, hàm store() trả response về cho khách NGAY LẬP TỨC,
-            // không phải đợi email gửi xong (mất 1-3 giây qua SMTP).
-            //
-            // Email được gửi tới: ưu tiên email tài khoản đang đăng nhập,
-            // nếu khách checkout không đăng nhập (guest) thì bỏ qua gửi mail
-            // (vì checkout hiện tại bắt buộc đăng nhập — middleware 'auth').
+            // Gửi email xác nhận
             if ($order->user && $order->user->email) {
                 Mail::to($order->user->email)->send(new OrderConfirmationMail($order));
             }
 
             return response()->json([
-                'success' => true,
-                'message' => 'Đặt hàng thành công.',
-                'order_id' => $order->id,
+                'success'    => true,
+                'message'    => 'Đặt hàng thành công!',
+                'order_id'   => $order->id,
                 'order_code' => 'NX-' . str_pad($order->id, 6, '0', STR_PAD_LEFT),
             ]);
         } catch (\Exception $e) {
@@ -192,5 +205,27 @@ class CheckoutController extends Controller
                 'message' => $e->getMessage(),
             ], 400);
         }
+    }
+
+    /**
+     * Tính giá thực tế của variant:
+     * - Nếu đang trong thời gian flash sale → dùng sale_price
+     * - Không thì dùng price bình thường
+     *
+     * Giải thích: DB có sale_price, sale_starts_at, sale_ends_at.
+     * Phải kiểm tra cả 3 điều kiện: có giá sale, đã bắt đầu, chưa kết thúc.
+     */
+    private function getEffectivePrice(ProductVariant $variant, \Carbon\Carbon $now): float
+    {
+        if (
+            $variant->sale_price > 0
+            && $variant->sale_starts_at
+            && $variant->sale_ends_at
+            && $now->between($variant->sale_starts_at, $variant->sale_ends_at)
+        ) {
+            return (float) $variant->sale_price;
+        }
+
+        return (float) $variant->price;
     }
 }
