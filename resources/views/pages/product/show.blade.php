@@ -29,13 +29,15 @@
         foreach ($product->variants as $variant) {
             $key = $variant->attributeValues->pluck('id')->sort()->join('-');
             $variantMap[$key] = [
-                'id' => $variant->id,
-                'price' => $variant->price,
-                'compare' => $variant->compare_price,
-                'stock' => $variant->stock_quantity,
-                'sku' => $variant->sku,
-                'is_default' => $variant->is_default,
-                'image' => $variant->image ? asset('storage/' . $variant->image) : null,
+                'id'            => $variant->id,
+                'price'         => $variant->price,
+                'compare'       => $variant->compare_price,
+                'stock'         => $variant->stock_quantity ?? 0,
+                'manage_stock'  => $variant->manage_stock ?? true,
+                'sku'           => $variant->sku,
+                'is_default'    => $variant->is_default,
+                'image'         => $variant->image ? asset('storage/' . $variant->image) : null,
+                'label'         => $variant->attributeValues->pluck('value')->implode(' / '),
             ];
         }
 
@@ -240,12 +242,19 @@
                             </svg>
                         </button>
                     </div>
-                    <span class="qty-stock-note" id="stockNote">Còn {{ $stockQty }} sản phẩm</span>
+                    <span class="qty-stock-note" id="stockNote">
+                        @if($stockQty > 0)
+                            Còn {{ $stockQty }} sản phẩm
+                        @else
+                            Hết hàng
+                        @endif
+                    </span>
                 </div>
 
                 {{-- CTA --}}
                 <div class="cta-row">
-                    <button class="btn-cart" id="btnAddCart">
+                    <button class="btn-cart" id="btnAddCart" {{ $stockQty <= 0 ? 'disabled' : '' }}
+                        style="{{ $stockQty <= 0 ? 'opacity:.5;cursor:not-allowed' : '' }}">
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round">
                             <circle cx="9" cy="21" r="1" />
@@ -556,13 +565,48 @@
             style="max-width:90%;max-height:90%;object-fit:contain">`;
                 }
             }
-            // Qty max
+            // Qty max & tồn kho
             const qtyInput = document.getElementById('qtyInput');
-            if (qtyInput) qtyInput.max = v.stock || 10;
+            const btnCart  = document.getElementById('btnAddCart');
+            const inStock  = !v.manage_stock || v.stock > 0;
 
-            // Cart button
-            document.getElementById('btnAddCart').onclick = () => {
-                const qty = parseInt(document.getElementById('qtyInput')?.value || 1);
+            if (qtyInput) {
+                qtyInput.max     = v.stock || 99;
+                qtyInput.disabled = !inStock;
+            }
+
+            // Cập nhật stockNote chi tiết
+            if (stockNote) {
+                if (!v.manage_stock) {
+                    stockNote.textContent = 'Còn hàng';
+                    stockNote.style.color = 'var(--green, #16a34a)';
+                } else if (v.stock <= 0) {
+                    stockNote.textContent = 'Hết hàng';
+                    stockNote.style.color = 'var(--red, #ef4444)';
+                } else if (v.stock <= 5) {
+                    stockNote.textContent = 'Chỉ còn ' + v.stock + ' sản phẩm';
+                    stockNote.style.color = 'var(--orange, #f97316)';
+                } else {
+                    stockNote.textContent = 'Còn ' + v.stock + ' sản phẩm';
+                    stockNote.style.color = '';
+                }
+            }
+
+            // Disable / enable nút thêm giỏ
+            if (btnCart) {
+                btnCart.disabled            = !inStock;
+                btnCart.style.opacity       = inStock ? '1' : '.5';
+                btnCart.style.cursor        = inStock ? '' : 'not-allowed';
+                btnCart.textContent         = inStock ? 'Thêm vào giỏ' : 'Hết hàng';
+            }
+
+            // Cart button handler
+            if (btnCart) btnCart.onclick = () => {
+                if (!inStock) { Toast.show('Sản phẩm đã hết hàng', 'error'); return; }
+                const qty = parseInt(qtyInput?.value || 1);
+                if (v.manage_stock && qty > v.stock) {
+                    Toast.show('Số lượng vượt quá tồn kho (' + v.stock + ')', 'warning'); return;
+                }
                 Cart.add({
                     variant_id: v.id,
                     id:         {{ $product->id }},
@@ -623,18 +667,37 @@
         }
 
         // Khởi tạo cart button (variant mặc định)
-        document.getElementById('btnAddCart').onclick = () => {
-            const qty = parseInt(document.getElementById('qtyInput')?.value || 1);
-            Cart.add({
-                variant_id: {{ $defaultVariant?->id ?? 0 }},
-                id:         {{ $product->id }},
-                name:       '{{ addslashes($product->name) }}',
-                variant:    '{{ addslashes($defaultVariant?->label ?? '') }}',
-                price:      {{ $currentPrice }},
-                img:        '{{ $product->thumbnail ? asset('storage/' . $product->thumbnail) : '' }}',
-                qty,
-            });
-        };
+        (function() {
+            const btnCart  = document.getElementById('btnAddCart');
+            const qtyInput = document.getElementById('qtyInput');
+            const stock    = {{ $stockQty ?? 0 }};
+            const manage   = {{ $defaultVariant?->manage_stock ? 'true' : 'false' }};
+            const inStock  = !manage || stock > 0;
+
+            if (btnCart && !inStock) {
+                btnCart.disabled      = true;
+                btnCart.style.opacity = '.5';
+                btnCart.style.cursor  = 'not-allowed';
+                btnCart.textContent   = 'Hết hàng';
+            }
+
+            if (btnCart) btnCart.onclick = () => {
+                if (!inStock) { Toast.show('Sản phẩm đã hết hàng', 'error'); return; }
+                const qty = parseInt(qtyInput?.value || 1);
+                if (manage && qty > stock) {
+                    Toast.show('Số lượng vượt quá tồn kho (' + stock + ')', 'warning'); return;
+                }
+                Cart.add({
+                    variant_id: {{ $defaultVariant?->id ?? 0 }},
+                    id:         {{ $product->id }},
+                    name:       '{{ addslashes($product->name) }}',
+                    variant:    '{{ addslashes($defaultVariant?->label ?? '') }}',
+                    price:      {{ $currentPrice }},
+                    img:        '{{ $product->thumbnail ? asset('storage/' . $product->thumbnail) : '' }}',
+                    qty,
+                });
+            };
+        })();
 
         Object.assign(window, {
             selectAttr,

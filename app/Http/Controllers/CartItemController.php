@@ -36,6 +36,19 @@ class CartItemController extends Controller
 
         $qty = (int) $request->input('quantity', 1);
 
+        // Kiểm tra tồn kho
+        if ($variant->manage_stock) {
+            $existingQty = CartItem::where('user_id', Auth::id())
+                ->where('variant_id', $variant->id)
+                ->value('quantity') ?? 0;
+            if ($existingQty + $qty > $variant->stock_quantity) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Chỉ còn {$variant->stock_quantity} sản phẩm trong kho.",
+                ], 422);
+            }
+        }
+
         $item = CartItem::where('user_id', Auth::id())
             ->where('variant_id', $variant->id)
             ->first();
@@ -60,7 +73,19 @@ class CartItemController extends Controller
     {
         abort_if($cartItem->user_id !== Auth::id(), 403);
         $request->validate(['quantity' => 'required|integer|min:1|max:99']);
-        $cartItem->update(['quantity' => (int) $request->quantity]);
+
+        $qty     = (int) $request->quantity;
+        $variant = $cartItem->variant;
+
+        // Kiểm tra tồn kho khi cập nhật
+        if ($variant?->manage_stock && $qty > $variant->stock_quantity) {
+            return response()->json([
+                'success' => false,
+                'message' => "Chỉ còn {$variant->stock_quantity} sản phẩm trong kho.",
+            ], 422);
+        }
+
+        $cartItem->update(['quantity' => $qty]);
         return response()->json(['success' => true]);
     }
 
