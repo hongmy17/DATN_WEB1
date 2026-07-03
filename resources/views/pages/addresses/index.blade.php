@@ -48,7 +48,7 @@
           </div>
           <div class="addr-card__info">
             {{ $addr->address_detail }},<br>
-            {{ $addr->ward }}, {{ $addr->district }},<br>
+            {{ $addr->ward }} {{ $addr->district }}<br>
             {{ $addr->province }}
           </div>
           <div style="display:flex;gap:8px;margin-top:14px">

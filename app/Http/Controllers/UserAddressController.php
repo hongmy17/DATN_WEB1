@@ -26,12 +26,25 @@ class UserAddressController extends Controller
     {
         $request->validate([
             'receiver_name'  => 'required|string|max:100',
-            'receiver_phone' => 'required|string|max:15',
+            'receiver_phone' => 'required|string|max:10',
             'province'       => 'required|string|max:100',
-            'district'       => 'required|string|max:100',
+            'district'       => 'nullable|string|max:100',
             'ward'           => 'required|string|max:100',
             'address_detail' => 'required|string',
+        ], [
+            'receiver_name.required'  => 'Vui lòng nhập họ tên người nhận.',
+            'receiver_name.max'       => 'Họ tên không được vượt quá 100 ký tự.',
+            'receiver_phone.required' => 'Vui lòng nhập số điện thoại.',
+            'receiver_phone.max'      => 'Số điện thoại không được vượt quá 10 ký tự.',
+            'province.required'       => 'Vui lòng chọn Tỉnh/Thành phố.',
+            'district.max'            => 'Quận/Huyện không được vượt quá 100 ký tự.',
+            'ward.required'           => 'Vui lòng chọn Phường/Xã.',
+            'address_detail.required' => 'Vui lòng nhập địa chỉ chi tiết.',
         ]);
+
+        // Quận/Huyện không bắt buộc — nếu để trống thì lưu chuỗi rỗng thay vì null
+        // (giữ nguyên cột DB hiện tại, không cần migration)
+        $request->merge(['district' => $request->district ?? '']);
 
         $isFirst = Auth::user()->addresses()->count() === 0;
 
@@ -70,10 +83,22 @@ class UserAddressController extends Controller
             'receiver_name'  => 'required|string|max:100',
             'receiver_phone' => 'required|string|max:15',
             'province'       => 'required|string|max:100',
-            'district'       => 'required|string|max:100',
+            'district'       => 'nullable|string|max:100',
             'ward'           => 'required|string|max:100',
             'address_detail' => 'required|string',
+        ], [
+            'receiver_name.required'  => 'Vui lòng nhập họ tên người nhận.',
+            'receiver_name.max'       => 'Họ tên không được vượt quá 100 ký tự.',
+            'receiver_phone.required' => 'Vui lòng nhập số điện thoại.',
+            'receiver_phone.max'      => 'Số điện thoại không được vượt quá 15 ký tự.',
+            'province.required'       => 'Vui lòng chọn Tỉnh/Thành phố.',
+            'district.max'            => 'Quận/Huyện không được vượt quá 100 ký tự.',
+            'ward.required'           => 'Vui lòng chọn Phường/Xã.',
+            'address_detail.required' => 'Vui lòng nhập địa chỉ chi tiết.',
         ]);
+
+        // Quận/Huyện không bắt buộc — nếu để trống thì lưu chuỗi rỗng thay vì null
+        $request->merge(['district' => $request->district ?? '']);
 
         $address->update($request->only([
             'receiver_name',
