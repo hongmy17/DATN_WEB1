@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>@yield('title', 'Nexus Store — Công nghệ đỉnh cao')</title>
   <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
   @stack('styles')
@@ -78,9 +79,9 @@
             <div class="navbar__user-avatar">{{ strtoupper(substr(Auth::user()->name,0,1)) }}</div>
             {{ Auth::user()->name }}
           </a>
-          <form method="POST" action="{{ route('logout') }}">
+          <form method="POST" action="{{ route('logout') }}" id="logout-form">
             @csrf
-            <button type="submit" class="btn btn-ghost btn-sm">Đăng xuất</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="handleLogout()">Đăng xuất</button>
           </form>
         </div>
       @endguest
@@ -99,7 +100,19 @@
 @include('layouts.footer')
 
 <div class="toast-wrap" id="toastWrap"></div>
+<script>
+  window.__authUser = @json(auth()->check() ? ['id' => auth()->id()] : null);
+</script>
 <script src="{{ asset('assets/js/main.js') }}"></script>
 @stack('scripts')
+@auth
+<script>
+  function handleLogout() {
+    Cart.clearLocal();
+    localStorage.removeItem('nx_wish');
+    document.getElementById('logout-form').submit();
+  }
+</script>
+@endauth
 </body>
 </html>

@@ -562,11 +562,15 @@
 
             // Cart button
             document.getElementById('btnAddCart').onclick = () => {
+                const qty = parseInt(document.getElementById('qtyInput')?.value || 1);
                 Cart.add({
-                    id: v.id,
-                    name: '{{ addslashes($product->name) }}',
-                    price: v.price,
-                    img: '{{ $mainImageUrl ?? '' }}'
+                    variant_id: v.id,
+                    id:         {{ $product->id }},
+                    name:       '{{ addslashes($product->name) }}',
+                    variant:    v.label || '',
+                    price:      v.price,
+                    img:        v.image || '{{ $product->thumbnail ? asset('storage/' . $product->thumbnail) : '' }}',
+                    qty,
                 });
             };
         }
@@ -618,13 +622,17 @@
             selectStar(0);
         }
 
-        // Khởi tạo cart button
+        // Khởi tạo cart button (variant mặc định)
         document.getElementById('btnAddCart').onclick = () => {
+            const qty = parseInt(document.getElementById('qtyInput')?.value || 1);
             Cart.add({
-                id: {{ $defaultVariant?->id ?? $product->id }},
-                name: '{{ addslashes($product->name) }}',
-                price: {{ $currentPrice }},
-                img: '{{ $mainImageUrl ?? '' }}'
+                variant_id: {{ $defaultVariant?->id ?? 0 }},
+                id:         {{ $product->id }},
+                name:       '{{ addslashes($product->name) }}',
+                variant:    '{{ addslashes($defaultVariant?->label ?? '') }}',
+                price:      {{ $currentPrice }},
+                img:        '{{ $product->thumbnail ? asset('storage/' . $product->thumbnail) : '' }}',
+                qty,
             });
         };
 

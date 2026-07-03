@@ -135,7 +135,7 @@
 
                                 <div class="product-card__actions">
                                     <button class="btn btn-ghost"
-                                        onclick="Cart.add({id:{{ $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $minPrice }},img:'{{ $p->thumbnail ? asset('storage/' . $p->thumbnail) : '' }}'})">
+                                        onclick="Cart.add({variant_id:{{ $p->variants->first()?->id ?? 0 }},id:{{ $p->id }},name:'{{ addslashes($p->name) }}',variant:'',price:{{ $minPrice }},img:'{{ $p->thumbnail ? asset('storage/' . $p->thumbnail) : '' }}'})">
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                                             stroke="currentColor" stroke-width="2" stroke-linecap="round">
                                             <circle cx="9" cy="21" r="1" />

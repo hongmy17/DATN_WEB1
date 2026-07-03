@@ -83,4 +83,14 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{address}',  [UserAddressController::class, 'destroy'])->name('destroy');
         Route::patch('/{address}/mac-dinh', [UserAddressController::class, 'setDefault'])->name('setDefault');
     });
+
+    // ── Giỏ hàng API (session auth) ─────────────────────────────────────────
+    Route::prefix('api/cart')->name('cart.api.')->group(function () {
+        Route::get('/',              [\App\Http\Controllers\CartItemController::class, 'index'])->name('index');
+        Route::post('/sync',         [\App\Http\Controllers\CartItemController::class, 'sync'])->name('sync');
+        Route::post('/',             [\App\Http\Controllers\CartItemController::class, 'store'])->name('store');
+        Route::patch('/{cartItem}',  [\App\Http\Controllers\CartItemController::class, 'update'])->name('update');
+        Route::delete('/{cartItem}', [\App\Http\Controllers\CartItemController::class, 'destroy'])->name('destroy');
+        Route::delete('/',           [\App\Http\Controllers\CartItemController::class, 'clear'])->name('clear');
+    });
 });
