@@ -218,6 +218,7 @@ class VariantsRelationManager extends RelationManager
             FileUpload::make('image')
                 ->label('Ảnh chính biến thể')
                 ->image()
+                ->disk('public')
                 ->directory('products/variants')
                 ->imagePreviewHeight('120')
                 ->nullable()
@@ -264,6 +265,7 @@ class VariantsRelationManager extends RelationManager
             ->columns([
                 ImageColumn::make('image')
                     ->label('Ảnh')
+                    ->disk('public')
                     ->size(48)
                     ->defaultImageUrl(asset('images/no-image.png'))
                     ->extraImgAttributes(['class' => 'rounded']),

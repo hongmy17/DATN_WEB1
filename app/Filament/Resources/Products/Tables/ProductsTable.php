@@ -36,6 +36,7 @@ class ProductsTable
             ->columns([
                 ImageColumn::make('thumbnail')
                     ->label('')
+                    ->disk('public')
                     ->size(52)
                     ->defaultImageUrl(asset('images/no-image.png'))
                     ->extraImgAttributes(['class' => 'rounded-lg object-cover']),

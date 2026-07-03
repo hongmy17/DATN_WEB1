@@ -119,6 +119,7 @@ class ProductForm
                     FileUpload::make('thumbnail')
                         ->label('Ảnh đại diện')
                         ->image()
+                        ->disk('public')
                         ->directory('products/thumbnails')
                         ->imagePreviewHeight('160')
                         ->nullable()

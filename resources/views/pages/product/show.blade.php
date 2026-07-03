@@ -41,6 +41,14 @@
 
         // Ảnh gallery
         $images = $product->images ?? collect();
+
+        // Ảnh chính CTSP: ưu tiên ảnh của variant mặc định, sau đó ảnh is_primary trong
+        // Thư viện ảnh, cuối cùng mới là ảnh đầu tiên trong Thư viện ảnh.
+        // KHÔNG dùng $product->thumbnail ở đây — thumbnail chỉ là ảnh bìa cho trang danh sách.
+        $primaryImage = $images->firstWhere('is_primary', 1) ?? $images->first();
+        $mainImageUrl = $defaultVariant?->image
+            ? asset('storage/' . $defaultVariant->image)
+            : ($primaryImage ? asset('storage/' . $primaryImage->image_url) : null);
     @endphp
 
     <div class="pdp-wrap">
@@ -59,7 +67,7 @@
                     <button class="gallery__wish" id="wishBtn" data-wish-id="{{ $product->id }}"
                         data-wish-name="{{ addslashes($product->name) }}"
                         data-wish-price="{{ $defaultVariant?->price ?? 0 }}" data-wish-slug="{{ $product->slug }}"
-                        data-wish-img="{{ $defaultVariant?->image ?? ($product->thumbnail ?? '') }}" aria-label="Yêu thích">
+                        data-wish-img="{{ $defaultVariant?->image ?? ($primaryImage->image_url ?? '') }}" aria-label="Yêu thích">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                             <path
@@ -68,8 +76,8 @@
                     </button>
 
                     <div id="mainImgWrap">
-                        @if ($product->thumbnail)
-                            <img id="mainImg" src="{{ asset('storage/' . $product->thumbnail) }}"
+                        @if ($mainImageUrl)
+                            <img id="mainImg" src="{{ $mainImageUrl }}"
                                 alt="{{ $product->name }}" style="max-width:90%;max-height:90%;object-fit:contain">
                         @else
                             <div class="gallery__main-placeholder" id="mainImg">
@@ -86,20 +94,14 @@
                 </div>
 
                 <div class="gallery__thumbs">
-                    @if ($product->thumbnail)
-                        <div class="gallery__thumb active"
-                            onclick="selectThumb(this, '{{ asset('storage/' . $product->thumbnail) }}')" title="Ảnh chính">
-                            <img src="{{ asset('storage/' . $product->thumbnail) }}" alt="">
-                        </div>
-                    @endif
                     @foreach ($images as $img)
-                        <div class="gallery__thumb"
+                        <div class="gallery__thumb {{ $primaryImage && $img->id === $primaryImage->id ? 'active' : '' }}"
                             onclick="selectThumb(this, '{{ asset('storage/' . $img->image_url) }}')"
                             title="Ảnh {{ $loop->iteration }}">
                             <img src="{{ asset('storage/' . $img->image_url) }}" alt="">
                         </div>
                     @endforeach
-                    @if (!$product->thumbnail && $images->isEmpty())
+                    @if ($images->isEmpty())
                         @foreach (range(1, 4) as $i)
                             <div class="gallery__thumb {{ $i === 1 ? 'active' : '' }}" onclick="selectThumb(this, null)">
                                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -564,7 +566,7 @@
                     id: v.id,
                     name: '{{ addslashes($product->name) }}',
                     price: v.price,
-                    img: '{{ $product->thumbnail ? asset('storage/' . $product->thumbnail) : '' }}'
+                    img: '{{ $mainImageUrl ?? '' }}'
                 });
             };
         }
@@ -622,7 +624,7 @@
                 id: {{ $defaultVariant?->id ?? $product->id }},
                 name: '{{ addslashes($product->name) }}',
                 price: {{ $currentPrice }},
-                img: '{{ $product->thumbnail ? asset('storage/' . $product->thumbnail) : '' }}'
+                img: '{{ $mainImageUrl ?? '' }}'
             });
         };
 

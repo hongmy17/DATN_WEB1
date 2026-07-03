@@ -84,7 +84,7 @@ class ImagesRelationManager extends RelationManager
                                 ->label("Chọn ảnh (còn thêm được {$canAdd} / tối đa {$this->maxImages})")
                                 ->image()
                                 ->multiple()
-
+                                ->disk('public')
                                 ->directory('products/gallery')
                                 ->imagePreviewHeight('120')
                                 ->reorderable()
