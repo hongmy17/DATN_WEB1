@@ -16,6 +16,7 @@ require __DIR__ . '/auth.php';
 Route::get('/', fn() => view('pages.home'))->name('home');
 
 Route::get('/san-pham', [ProductController::class, 'index'])->name('products.index');
+Route::get('/tim-kiem-goi-y', [ProductController::class, 'suggest'])->name('products.suggest');
 Route::get('/san-pham/{slug}', [ProductController::class, 'show'])->name('products.show');
 
 Route::get('/gio-hang', fn() => view('pages.cart.index'))->name('cart.index');

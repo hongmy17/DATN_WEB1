@@ -14,11 +14,23 @@
         <div class="cat-chips">
             @php
                 $allCats = ['Tất cả' => null] + $categories->pluck('name', 'id')->toArray();
-                $activeCat = request('cat');
+
+                // Chip là kiểu chọn nhanh 1 danh mục — nhưng vẫn giữ nguyên sort/giá đang lọc.
+                // Bấm chip khác sẽ THAY TOÀN BỘ lựa chọn danh mục hiện tại (kể cả từ checkbox sidebar)
+                // bằng đúng 1 danh mục đó, giống hành vi thực tế của các trang thương mại điện tử.
+                $chipUrl = fn ($catId) => route('products.index', array_filter([
+                    'categories' => $catId ? [$catId] : null,
+                    'sort'       => request('sort'),
+                    'price_min'  => request('price_min'),
+                    'price_max'  => request('price_max'),
+                ], fn ($v) => $v !== null && $v !== ''));
+
+                $isChipActive = fn ($catId) => $catId
+                    ? (count($selectedCategories) === 1 && (int) $selectedCategories[0] === (int) $catId)
+                    : empty($selectedCategories);
             @endphp
             @foreach ($allCats as $catId => $catName)
-                <a class="cat-chip {{ $activeCat == $catId || ($catId === null && !$activeCat) ? 'active' : '' }}"
-                    href="{{ $catId ? route('products.index', ['cat' => $catId]) : route('products.index') }}">
+                <a class="cat-chip {{ $isChipActive($catId) ? 'active' : '' }}" href="{{ $chipUrl($catId) }}">
                     {{ $catName }}
                 </a>
             @endforeach
@@ -34,15 +46,16 @@
                     </div>
                     <div class="price-range-wrap">
                         <div class="price-display">
-                            <span id="priceMin">0₫</span>
-                            <span id="priceMax">100.000.000₫</span>
+                            <span id="priceMin">{{ number_format($priceMin, 0, ',', '.') }}₫</span>
+                            <span id="priceMax">{{ number_format($priceMax, 0, ',', '.') }}₫</span>
                         </div>
                         <div class="range-track">
                             <div class="range-fill" id="rangeFill"></div>
-                            <input type="range" class="range-input" id="rangeMin" min="0" max="100000000"
-                                value="0" step="1000000" oninput="updateRange()">
-                            <input type="range" class="range-input" id="rangeMax" min="0" max="100000000"
-                                value="100000000" step="1000000" oninput="updateRange()">
+                            {{-- min/max thật lấy từ giá cao nhất trong DB (xem ProductController), không hard-code --}}
+                            <input type="range" class="range-input" id="rangeMin" min="0" max="{{ $sliderMax }}"
+                                value="{{ $priceMin }}" step="100000" oninput="updateRange(event)">
+                            <input type="range" class="range-input" id="rangeMax" min="0" max="{{ $sliderMax }}"
+                                value="{{ $priceMax }}" step="100000" oninput="updateRange(event)">
                         </div>
                     </div>
                 </div>
@@ -52,8 +65,9 @@
                     @foreach ($categories as $cat)
                         <div class="filter-check">
                             <label>
-                                <input type="checkbox" onchange="applyFilter()"
-                                    {{ $activeCat == $cat->id ? 'checked' : '' }}>
+                                <input type="checkbox" name="categories[]" value="{{ $cat->id }}"
+                                    onchange="applyFilter()"
+                                    {{ in_array((int) $cat->id, $selectedCategories, true) ? 'checked' : '' }}>
                                 {{ $cat->name }}
                             </label>
                             <span class="filter-count">{{ $cat->products_count }}</span>
@@ -74,7 +88,7 @@
             <div>
                 <div class="toolbar">
                     <div class="toolbar-left">
-                        <span class="toolbar-count">Hiển thị <strong>{{ $products->count() }}</strong> sản phẩm</span>
+                        <span class="toolbar-count">Hiển thị <strong>{{ $products->total() }}</strong> sản phẩm</span>
                     </div>
                     <select class="sort-select" onchange="applySort(this.value)">
                         <option value="">Mặc định</option>
@@ -212,26 +226,62 @@
     </div>
 
     <script>
-        function updateRange() {
-            const min = +document.getElementById('rangeMin').value;
-            const max = +document.getElementById('rangeMax').value;
+        // ── Thanh trượt khoảng giá ───────────────────────────────────────────
+        function updateRange(e) {
+            const minInput = document.getElementById('rangeMin');
+            const maxInput = document.getElementById('rangeMax');
+            const sliderMax = +minInput.max; // 2 input luôn cùng max, lấy 1 cái là đủ
+
+            let min = +minInput.value;
+            let max = +maxInput.value;
+
+            // Không cho 2 thanh trượt vượt qua nhau — kẹp lại theo thanh vừa được kéo
+            if (min > max) {
+                if (e && e.target === maxInput) {
+                    min = max;
+                    minInput.value = min;
+                } else {
+                    max = min;
+                    maxInput.value = max;
+                }
+            }
+
             document.getElementById('priceMin').textContent = min.toLocaleString('vi-VN') + '₫';
             document.getElementById('priceMax').textContent = max.toLocaleString('vi-VN') + '₫';
-            const pct1 = min / 100000000 * 100;
-            const pct2 = max / 100000000 * 100;
-            document.getElementById('rangeFill').style.cssText = `left:${pct1}%;right:${100-pct2}%`;
+
+            const pct1 = sliderMax ? (min / sliderMax) * 100 : 0;
+            const pct2 = sliderMax ? (max / sliderMax) * 100 : 100;
+            document.getElementById('rangeFill').style.cssText = `left:${pct1}%;right:${100 - pct2}%`;
         }
 
         function resetPrice() {
+            const sliderMax = +document.getElementById('rangeMin').max;
             document.getElementById('rangeMin').value = 0;
-            document.getElementById('rangeMax').value = 100000000;
+            document.getElementById('rangeMax').value = sliderMax;
             updateRange();
         }
 
+        // ── Áp dụng bộ lọc: gộp danh mục (checkbox) + khoảng giá vào URL,
+        //    giữ nguyên sort đang chọn, rồi điều hướng để server lọc thật ──
         function applyFilter() {
-            Toast.show('Đã áp dụng bộ lọc', 'success');
+            const url = new URL(window.location.origin + window.location.pathname);
+
+            const currentSort = new URLSearchParams(window.location.search).get('sort');
+            if (currentSort) {
+                url.searchParams.set('sort', currentSort);
+            }
+
+            document
+                .querySelectorAll('.filter-check input[type="checkbox"]:checked')
+                .forEach(cb => url.searchParams.append('categories[]', cb.value));
+
+            url.searchParams.set('price_min', document.getElementById('rangeMin').value);
+            url.searchParams.set('price_max', document.getElementById('rangeMax').value);
+
+            window.location = url.toString();
         }
 
+        // ── Sắp xếp: chỉ đổi tham số 'sort', giữ nguyên danh mục + khoảng giá đang lọc ──
         function applySort(v) {
             if (v) {
                 const url = new URL(window.location.href);
@@ -239,6 +289,7 @@
                 window.location = url.toString();
             }
         }
+
         Object.assign(window, {
             updateRange,
             resetPrice,

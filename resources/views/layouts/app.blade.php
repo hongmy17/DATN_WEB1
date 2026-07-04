@@ -6,6 +6,40 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>@yield('title', 'Nexus Store — Công nghệ đỉnh cao')</title>
   <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+  <style>
+    /* ── Gợi ý tìm kiếm trực tiếp (autocomplete) ─────────────────────── */
+    .navbar__search-suggest {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1px solid #e8e6e1;
+      border-radius: 12px;
+      box-shadow: 0 16px 32px rgba(0,0,0,.14);
+      max-height: 380px;
+      overflow-y: auto;
+      z-index: 60;
+    }
+    .navbar__search-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .navbar__search-item:hover,
+    .navbar__search-item.is-active { background: #f6f5f2; }
+    .navbar__search-item img {
+      width: 38px; height: 38px; object-fit: contain; border-radius: 8px;
+      background: #fafaf8; flex-shrink: 0;
+    }
+    .navbar__search-item-name { font-size: 13px; font-weight: 500; line-height: 1.3; }
+    .navbar__search-item-price { font-size: 12px; color: #d9432e; margin-top: 2px; }
+    .navbar__search-empty,
+    .navbar__search-loading { padding: 14px 12px; font-size: 13px; color: #999; text-align: center; }
+  </style>
   @stack('styles')
 </head>
 <body>
@@ -48,12 +82,20 @@
       <a href="{{ url('lien-he') }}" class="navbar__nav-link">Liên hệ</a>
     </nav>
 
-    <div class="navbar__search-wrap">
-      <svg class="navbar__search-btn" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      <input type="text" class="navbar__search-input" placeholder="Tìm sản phẩm...">
-    </div>
+    <form class="navbar__search-wrap" id="navSearchForm" action="{{ route('products.index') }}" method="GET" role="search" style="position:relative">
+      <button type="submit" aria-label="Tìm kiếm" style="background:none;border:none;padding:0;display:flex;align-items:center;cursor:pointer">
+        <svg class="navbar__search-btn" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+      {{-- name="q" khớp đúng với $request->q mà ProductController@index đang đọc.
+           value=request('q') để ô search "nhớ" từ khóa vừa tìm khi đang ở trang kết quả. --}}
+      <input type="text" name="q" id="navSearchInput" class="navbar__search-input" placeholder="Tìm sản phẩm..."
+             value="{{ request('q') }}" autocomplete="off">
+
+      {{-- Dropdown gợi ý — JS tự đổ nội dung vào đây, mặc định ẩn --}}
+      <div id="navSearchSuggest" class="navbar__search-suggest" style="display:none"></div>
+    </form>
 
     <div class="navbar__actions">
       <a href="{{ url('yeu-thich') }}" class="navbar__action-btn" title="Yêu thích">
@@ -104,6 +146,125 @@
   window.__authUser = @json(auth()->check() ? ['id' => auth()->id()] : null);
 </script>
 <script src="{{ asset('assets/js/main.js') }}"></script>
+<script>
+(function () {
+  const form  = document.getElementById('navSearchForm');
+  const input = document.getElementById('navSearchInput');
+  const box   = document.getElementById('navSearchSuggest');
+  if (!form || !input || !box) return;
+
+  const SUGGEST_URL = "{{ route('products.suggest') }}";
+  const DEBOUNCE_MS = 250;
+
+  let debounceTimer = null;
+  let controller     = null; // để hủy request cũ khi gõ nhanh
+  let items           = [];
+  let activeIndex     = -1;
+
+  function esc(str) {
+    return (str ?? '').replace(/[&<>"']/g, m => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
+  }
+
+  function money(v) {
+    return Math.round(v || 0).toLocaleString('vi-VN') + '₫';
+  }
+
+  function highlight() {
+    box.querySelectorAll('.navbar__search-item').forEach((el, i) => {
+      el.classList.toggle('is-active', i === activeIndex);
+    });
+  }
+
+  function render(products) {
+    items = products || [];
+    activeIndex = -1;
+
+    if (!items.length) {
+      box.innerHTML = '<div class="navbar__search-empty">Không tìm thấy sản phẩm phù hợp</div>';
+      box.style.display = 'block';
+      return;
+    }
+
+    box.innerHTML = items.map((p, i) => `
+      <a href="${p.url}" class="navbar__search-item" data-index="${i}">
+        <img src="${esc(p.thumbnail || '')}" onerror="this.style.visibility='hidden'" alt="">
+        <div>
+          <div class="navbar__search-item-name">${esc(p.name)}</div>
+          <div class="navbar__search-item-price">${money(p.price)}</div>
+        </div>
+      </a>
+    `).join('');
+
+    box.style.display = 'block';
+  }
+
+  function close() {
+    box.style.display = 'none';
+    box.innerHTML = '';
+    activeIndex = -1;
+  }
+
+  function fetchSuggestions(keyword) {
+    if (controller) controller.abort(); // hủy request trước đó nếu còn đang chạy
+    controller = new AbortController();
+
+    box.innerHTML = '<div class="navbar__search-loading">Đang tìm…</div>';
+    box.style.display = 'block';
+
+    fetch(SUGGEST_URL + '?q=' + encodeURIComponent(keyword), { signal: controller.signal })
+      .then(res => res.json())
+      .then(render)
+      .catch(err => {
+        if (err.name !== 'AbortError') console.error(err);
+      });
+  }
+
+  // Gõ tới đâu, gợi ý tới đó — không cần bấm Enter
+  input.addEventListener('input', function () {
+    const keyword = this.value.trim();
+    clearTimeout(debounceTimer);
+
+    if (!keyword) {
+      close();
+      return;
+    }
+
+    debounceTimer = setTimeout(() => fetchSuggestions(keyword), DEBOUNCE_MS);
+  });
+
+  // Điều hướng bằng bàn phím: ↑ ↓ chọn dòng, Enter vào sản phẩm đang chọn, Esc đóng
+  input.addEventListener('keydown', function (e) {
+    if (box.style.display !== 'block' || !items.length) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = (activeIndex + 1) % items.length;
+      highlight();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = (activeIndex - 1 + items.length) % items.length;
+      highlight();
+    } else if (e.key === 'Enter' && activeIndex > -1) {
+      e.preventDefault();
+      window.location = items[activeIndex].url;
+    } else if (e.key === 'Escape') {
+      close();
+    }
+  });
+
+  // Focus lại ô search mà vẫn còn kết quả cũ → mở lại dropdown luôn, khỏi gõ lại
+  input.addEventListener('focus', function () {
+    if (this.value.trim() && items.length) box.style.display = 'block';
+  });
+
+  // Bấm ra ngoài form thì đóng dropdown
+  document.addEventListener('click', function (e) {
+    if (!form.contains(e.target)) close();
+  });
+})();
+</script>
 @stack('scripts')
 @auth
 <script>
