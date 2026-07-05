@@ -9,6 +9,7 @@ use App\Http\Controllers\CouponController;
 use App\Http\Controllers\UserAddressController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\OrderController;
 
 require __DIR__ . '/auth.php';
 
@@ -60,11 +61,17 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Đơn hàng
-    Route::get('/don-hang', function () {
-        $orders = Auth::user()->orders()->with('items')->latest()->get();
-        return view('pages.order.index', compact('orders'));
-    })->name('orders.index');
+    // // Đơn hàng
+Route::get('/don-hang', function () {
+    $orders = Auth::user()->orders()->with('items')->latest()->get();
+    return view('pages.order.index', compact('orders'));
+})->name('orders.index');
+
+Route::get('/don-hang/{order}', [\App\Http\Controllers\OrderController::class, 'show'])
+    ->name('orders.show');
+
+Route::post('/don-hang/{order}/huy', [\App\Http\Controllers\OrderController::class, 'cancel'])
+    ->name('orders.cancel');
 
     // Coupon
     Route::post('/coupon/apply',  [CouponController::class, 'apply'])->name('coupon.apply');

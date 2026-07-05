@@ -36,7 +36,7 @@
           <span class="order-code">NX-{{ str_pad($order->id,6,'0',STR_PAD_LEFT) }}</span>
           @php
           $statusMap=[0=>'status-pending',1=>'status-confirmed',2=>'status-shipping',3=>'status-delivered',4=>'status-cancelled'];
-          $statusLabel=[0=>'Chờ xác nhận',1=>'Đã xác nhận',2=>'Đang giao',3=>'Đã giao',4=>'Đã huỷ'];
+          $statusLabel=[0=>'Chờ xác nhận',1=>'Đã xác nhận',2=>'Đang giao',3=>'Hoàn thành',4=>'Đã huỷ'];
           @endphp
           <span class="status {{ $statusMap[$order->order_status] ?? '' }}">{{ $statusLabel[$order->order_status] ?? '' }}</span>
           <span style="font-size:12px;color:var(--ink-muted);margin-left:auto">{{ $order->created_at->format('d/m/Y H:i') }}</span>
@@ -54,7 +54,12 @@
             </div>
             <div class="order-item-price">{{ number_format($item->total_price,0,',','.') }}₫</div>
           </div>
+          
           @endforeach
+          <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+    <span style="font-size:13px;color:var(--ink-muted)">Tổng tiền:</span>
+    <div class="order-total">{{ number_format($order->total_amount,0,',','.') }}₫</div>
+  </div>
         </div>
 
         <div class="order-foot">
@@ -62,7 +67,8 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             {{ $order->shipping_address }}
           </div>
-          <div class="order-total">{{ number_format($order->total_amount,0,',','.') }}₫</div>
+          <!-- <div class="order-total">{{ number_format($order->total_amount,0,',','.') }}₫</div> -->
+          <a href="{{ route('orders.show', $order) }}" class="btn btn-outline btn-sm">Xem chi tiết</a>
         </div>
       </div>
       @empty
