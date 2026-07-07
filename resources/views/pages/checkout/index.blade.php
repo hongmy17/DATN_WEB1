@@ -372,9 +372,10 @@
                     },
                     body: JSON.stringify({
                         cart,
-                        payment_method: payMethod,
-                        note,
-                        ...addrPayload
+                        address_id: addrPayload.address_id,
+                        payment_method: payMethod, 
+                        coupon_code: document.getElementById('couponCode')?.value || '',
+                        note: document.getElementById('orderNote')?.value || '',
                     })
                 })
                 .then(r => {

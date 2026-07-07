@@ -9,6 +9,7 @@ use App\Http\Controllers\CouponController;
 use App\Http\Controllers\UserAddressController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\OrderController;
 
 require __DIR__ . '/auth.php';
@@ -101,4 +102,9 @@ Route::post('/don-hang/{order}/huy', [\App\Http\Controllers\OrderController::cla
         Route::delete('/{cartItem}', [\App\Http\Controllers\CartItemController::class, 'destroy'])->name('destroy');
         Route::delete('/',           [\App\Http\Controllers\CartItemController::class, 'clear'])->name('clear');
     });
+
+    Route::middleware(['auth'])->group(function () {
+    Route::get('/admin-invoice/{order}', [InvoiceController::class, 'download'])
+        ->name('admin.invoice.download');
+});
 });

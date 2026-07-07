@@ -2,14 +2,15 @@
 
 namespace App\Filament\Resources\Orders\Tables;
 
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Placeholder;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 class OrdersTable
 {
@@ -19,7 +20,7 @@ class OrdersTable
             ->columns([
                 TextColumn::make('id')
                     ->label('Mã đơn')
-                    ->formatStateUsing(fn($state) => 'ĐH-' . str_pad($state, 5, '0', STR_PAD_LEFT))
+                    ->formatStateUsing(fn($state) => 'NX-' . str_pad($state, 6, '0', STR_PAD_LEFT))
                     ->searchable()
                     ->sortable(),
 
@@ -32,30 +33,26 @@ class OrdersTable
                     ->label('Số điện thoại')
                     ->searchable(),
 
-                TextColumn::make('shipping_address')
-                    ->label('Địa chỉ')
-                    ->limit(40)
-                    ->wrap(),
-
                 TextColumn::make('total_amount')
                     ->label('Tổng tiền')
                     ->money('VND')
                     ->sortable(),
 
-                TextColumn::make('coupon.coupon_code')
+                TextColumn::make('coupon_code')
                     ->label('Mã giảm giá')
                     ->placeholder('—')
                     ->badge()
                     ->color('success'),
 
+                // FIX: Bỏ emoji trong trạng thái
                 SelectColumn::make('order_status')
                     ->label('Trạng thái')
                     ->options([
-                        0 => '🟡 Chờ xác nhận',
-                        1 => '🔵 Đã xác nhận',
-                        2 => '🟠 Đang giao',
-                        3 => '🟢 Hoàn thành',
-                        4 => '🔴 Đã hủy',
+                        0 => 'Chờ xác nhận',
+                        1 => 'Đã xác nhận',
+                        2 => 'Đang giao',
+                        3 => 'Hoàn thành',
+                        4 => 'Đã hủy',
                     ]),
 
                 TextColumn::make('created_at')
@@ -77,41 +74,30 @@ class OrdersTable
                     ]),
             ])
             ->recordActions([
-                ViewAction::make()
-                    ->label('Xem chi tiết')
-                    ->modalHeading(fn($record) => 'Chi tiết đơn hàng ĐH-' . str_pad($record->id, 5, '0', STR_PAD_LEFT))
+                \Filament\Actions\ViewAction::make()
+                    ->label('Xem')
+                    ->modalHeading(fn($record) => 'Chi tiết đơn hàng NX-' . str_pad($record->id, 6, '0', STR_PAD_LEFT))
                     ->modalWidth('3xl')
                     ->form([
-                        // ── THÔNG TIN NGƯỜI NHẬN ──
-                       Placeholder::make('section_receiver')
-    ->label('')
-    ->hiddenLabel()
-    ->content(new \Illuminate\Support\HtmlString('<div style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;padding:8px 0;border-bottom:2px solid #eee;margin-bottom:4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Thông tin người nhận</div>')),
-                        Placeholder::make('receiver_name')
-                            ->label('Họ và tên')
+                        Placeholder::make('section_receiver')
+                            ->hiddenLabel()
+                            ->content(new HtmlString('<div style="font-weight:800;font-size:14px;padding:8px 0;border-bottom:2px solid #eee;margin-bottom:4px">Thông tin người nhận</div>')),
+
+                        Placeholder::make('receiver_name')->label('Họ và tên')
                             ->content(fn($record) => $record->receiver_name),
-
-                        Placeholder::make('receiver_phone')
-                            ->label('Số điện thoại')
+                        Placeholder::make('receiver_phone')->label('Số điện thoại')
                             ->content(fn($record) => $record->receiver_phone),
-
-                        Placeholder::make('address')
-                            ->label('Địa chỉ giao hàng')
+                        Placeholder::make('address')->label('Địa chỉ')
                             ->content(fn($record) => $record->shipping_address ?: '(Không có)'),
-
-                        Placeholder::make('note')
-                            ->label('Ghi chú')
+                        Placeholder::make('note')->label('Ghi chú')
                             ->content(fn($record) => $record->note ?: '(Không có)'),
 
-                        // ── SẢN PHẨM ──
                         Placeholder::make('section_items')
-    ->label('')
-    ->hiddenLabel()
-    ->content(new \Illuminate\Support\HtmlString('<div style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;padding:8px 0;border-bottom:2px solid #eee;margin-bottom:4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg> Sản phẩm đã đặt</div>')),
+                            ->hiddenLabel()
+                            ->content(new HtmlString('<div style="font-weight:800;font-size:14px;padding:8px 0;border-bottom:2px solid #eee;margin-bottom:4px">Sản phẩm đã đặt</div>')),
 
-                        Placeholder::make('items')
-                            ->label('')
-                            ->content(function($record) {
+                        Placeholder::make('items')->label('')
+                            ->content(function ($record) {
                                 $items = $record->items;
                                 if ($items->isEmpty()) return 'Không có sản phẩm';
                                 $html = '<table style="width:100%;border-collapse:collapse;font-size:13px">
@@ -123,46 +109,50 @@ class OrdersTable
                                         <td style="padding:10px 8px;text-align:right">Thành tiền</td>
                                     </tr>';
                                 foreach ($items as $item) {
-                                    $html .= '<tr style="border-top:1px solid #eee">
-                                        <td style="padding:10px 8px;font-weight:600">'.$item->product_name.'</td>
-                                        <td style="padding:10px 8px;color:#888;font-size:12px">'.$item->variant_description.'</td>
-                                        <td style="padding:10px 8px;text-align:center">'.$item->quantity.'</td>
-                                        <td style="padding:10px 8px;text-align:right">'.number_format($item->unit_price).'₫</td>
-                                        <td style="padding:10px 8px;text-align:right;font-weight:700">'.number_format($item->total_price ?? $item->unit_price * $item->quantity).'₫</td>
-                                    </tr>';
+                                    $sku = $item->variant_sku ? "<div style='font-size:11px;color:#aaa'>SKU: {$item->variant_sku}</div>" : '';
+                                    $html .= "<tr style='border-top:1px solid #eee'>
+                                        <td style='padding:10px 8px;font-weight:600'>{$item->product_name}{$sku}</td>
+                                        <td style='padding:10px 8px;color:#888;font-size:12px'>{$item->variant_description}</td>
+                                        <td style='padding:10px 8px;text-align:center'>{$item->quantity}</td>
+                                        <td style='padding:10px 8px;text-align:right'>" . number_format($item->unit_price) . "₫</td>
+                                        <td style='padding:10px 8px;text-align:right;font-weight:700'>" . number_format($item->total_price ?? $item->unit_price * $item->quantity) . "₫</td>
+                                    </tr>";
                                 }
                                 $html .= '</table>';
-                                return new \Illuminate\Support\HtmlString($html);
+                                return new HtmlString($html);
                             }),
 
-                        // ── THANH TOÁN ──
-                        Placeholder::make('section_payment')
-    ->label('')
-    ->hiddenLabel()
-    ->content(new \Illuminate\Support\HtmlString('<div style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;padding:8px 0;border-bottom:2px solid #eee;margin-bottom:4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Thông tin thanh toán</div>')),
-
+                        // ĐỔI THÀNH — đọc từ database, hiện đúng phương thức khách đã chọn:
                         Placeholder::make('payment_method')
                             ->label('Phương thức thanh toán')
-                            ->content('Thanh toán khi nhận hàng (COD)'),
-
-                        Placeholder::make('coupon')
-                            ->label('Mã giảm giá')
-                            ->content(fn($record) => $record->coupon?->coupon_code ?: '(Không có)'),
-
-                        Placeholder::make('subtotal')
-                            ->label('Tạm tính')
-                            ->content(fn($record) => number_format($record->subtotal ?? 0).'₫'),
-
-                        Placeholder::make('discount_amount')
-                            ->label('Giảm giá')
-                            ->content(fn($record) => '-'.number_format($record->discount_amount ?? 0).'₫'),
-
-                        Placeholder::make('total_amount')
-                            ->label('Tổng cộng')
-                            ->content(fn($record) => new \Illuminate\Support\HtmlString(
-                                '<span style="font-size:18px;font-weight:800;color:#e55a2b">'.number_format($record->total_amount).'₫</span>'
+                            ->content(function ($record) {
+                                return match ($record->payment_method) {
+                                    'Vnpay'          => 'Ví điện tử VNpay',
+                                    'bank_transfer' => 'Chuyển khoản ngân hàng',
+                                    default         => 'Thanh toán khi nhận hàng (COD)',
+                                };
+                            }),
+                        Placeholder::make('coupon')->label('Mã giảm giá')
+                            ->content(fn($record) => $record->coupon_code ?: '(Không có)'),
+                        Placeholder::make('subtotal')->label('Tạm tính')
+                            ->content(fn($record) => number_format($record->subtotal ?? 0) . '₫'),
+                        Placeholder::make('discount_amount')->label('Giảm giá')
+                            ->content(fn($record) => '-' . number_format($record->discount_amount ?? 0) . '₫'),
+                        Placeholder::make('total_amount')->label('Tổng cộng')
+                            ->content(fn($record) => new HtmlString(
+                                '<span style="font-size:18px;font-weight:800;color:#E30019">'
+                                    . number_format($record->total_amount) . '₫</span>'
                             )),
                     ]),
+
+                // ── NÚT IN HÓA ĐƠN PDF ──────────────────────────────────
+                Action::make('print_invoice')
+                    ->label('In hóa đơn')
+                    ->icon('heroicon-o-printer')
+                    ->color('gray')
+                    ->url(fn($record) => route('admin.invoice.download', $record->id))
+                    ->openUrlInNewTab()
+                    ->tooltip('Xuất hóa đơn PDF — mở tab mới, dùng Ctrl+P để in'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
