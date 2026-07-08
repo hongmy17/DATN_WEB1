@@ -21,7 +21,6 @@ class User extends Authenticatable implements FilamentUser, HasName
         'phone',
         'password',
         'avatar',
-        
         'role',
         'status',
     ];
@@ -43,7 +42,6 @@ class User extends Authenticatable implements FilamentUser, HasName
         static::creating(function ($user) {
             if (empty($user->code)) {
                 $lastUser = self::orderByDesc('id')->first();
-
                 if (! $lastUser) {
                     $user->code = 'USER000001';
                 } else {
@@ -53,25 +51,19 @@ class User extends Authenticatable implements FilamentUser, HasName
             }
         });
     }
-    /**
-     * Cho phép đăng nhập Filament.
-     */
+
     public function canAccessPanel(Panel $panel): bool
     {
         return true;
-        // Nếu chỉ admin được vào:
-        // return $this->role === 1;
     }
 
-    /**
-     * Tên hiển thị trên Filament.
-     */
     public function getFilamentName(): string
     {
         return trim((string) ($this->name ?: $this->email ?: $this->code ?: 'User'));
     }
 
-    // ===== Địa chỉ =====
+    // ── Relationships ────────────────────────────────────────
+
     public function addresses()
     {
         return $this->hasMany(UserAddress::class);
@@ -82,8 +74,13 @@ class User extends Authenticatable implements FilamentUser, HasName
         return $this->hasOne(UserAddress::class)->where('is_default', true);
     }
 
-    public function Orders()
-        {
-            return $this->hasMany(\App\Models\Order::class);
-        }
+    public function orders()
+    {
+        return $this->hasMany(\App\Models\Order::class);
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
 }

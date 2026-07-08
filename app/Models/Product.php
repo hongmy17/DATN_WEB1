@@ -136,4 +136,19 @@ class Product extends Model
     {
         return $this->variants()->exists() && $this->images()->exists();
     }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    public function getAvgRatingAttribute(): float
+    {
+        return round($this->reviews()->visible()->avg('rating') ?? 0, 1);
+    }
+
+    public function getReviewCountAttribute(): int
+    {
+        return $this->reviews()->visible()->count();
+    }
 }

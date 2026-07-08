@@ -11,6 +11,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ReviewController;   // ← THÊM
 
 require __DIR__ . '/auth.php';
 
@@ -21,6 +22,10 @@ Route::get('/san-pham', [ProductController::class, 'index'])->name('products.ind
 Route::get('/san-pham/{slug}', [ProductController::class, 'show'])->name('products.show');
 Route::get('/san-pham/suggest', [ProductController::class, 'suggest'])->name('products.suggest');
 
+// ── Review: load AJAX (không cần auth, ai cũng đọc được) ────────────────────
+Route::get('/san-pham/{slug}/danh-gia', [ReviewController::class, 'load'])
+    ->name('products.reviews.load');
+
 Route::get('/gio-hang', fn() => view('pages.cart.index'))->name('cart.index');
 Route::get('/thanh-toan', [CheckoutController::class, 'index'])->name('checkout.index');
 
@@ -28,7 +33,6 @@ Route::get('/khuyen-mai', fn() => view('pages.other.promotions'))->name('promoti
 Route::get('/yeu-thich', fn() => view('pages.other.wishlist'))->name('wishlist');
 Route::get('/lien-he', fn() => view('pages.other.contact'))->name('contact');
 
-// redirect /tai-khoan → /dang-nhap
 Route::redirect('/tai-khoan', '/dang-nhap');
 
 // ─── AUTH (chỉ cho guest) ───────────────────────────────────────────────────
@@ -93,7 +97,15 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{address}/mac-dinh', [UserAddressController::class, 'setDefault'])->name('setDefault');
     });
 
-    // ── Giỏ hàng API ──────────────────────────────────────────────────────
+    // ── Review: gửi đánh giá (cần đăng nhập) ───────────────────────────────
+    Route::post('/san-pham/{slug}/danh-gia', [ReviewController::class, 'store'])
+        ->name('products.reviews.store');
+    Route::put('/san-pham/{slug}/danh-gia/{review}', [ReviewController::class, 'update'])
+        ->name('products.reviews.update');
+    Route::post('/san-pham/{slug}/phan-hoi/{reply}', [ReviewController::class, 'reply'])
+        ->name('products.replies.reply');
+
+    // ── Giỏ hàng API ────────────────────────────────────────────────────────
     Route::prefix('api/cart')->name('cart.api.')->group(function () {
         Route::get('/',              [\App\Http\Controllers\CartItemController::class, 'index'])->name('index');
         Route::post('/sync',         [\App\Http\Controllers\CartItemController::class, 'sync'])->name('sync');

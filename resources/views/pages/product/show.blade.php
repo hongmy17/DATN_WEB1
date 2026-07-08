@@ -29,15 +29,15 @@
         foreach ($product->variants as $variant) {
             $key = $variant->attributeValues->pluck('id')->sort()->join('-');
             $variantMap[$key] = [
-                'id'            => $variant->id,
-                'price'         => $variant->price,
-                'compare'       => $variant->compare_price,
-                'stock'         => $variant->stock_quantity ?? 0,
-                'manage_stock'  => $variant->manage_stock ?? true,
-                'sku'           => $variant->sku,
-                'is_default'    => $variant->is_default,
-                'image'         => $variant->image ? asset('storage/' . $variant->image) : null,
-                'label'         => $variant->attributeValues->pluck('value')->implode(' / '),
+                'id' => $variant->id,
+                'price' => $variant->price,
+                'compare' => $variant->compare_price,
+                'stock' => $variant->stock_quantity ?? 0,
+                'manage_stock' => $variant->manage_stock ?? true,
+                'sku' => $variant->sku,
+                'is_default' => $variant->is_default,
+                'image' => $variant->image ? asset('storage/' . $variant->image) : null,
+                'label' => $variant->attributeValues->pluck('value')->implode(' / '),
             ];
         }
 
@@ -50,7 +50,9 @@
         $primaryImage = $images->firstWhere('is_primary', 1) ?? $images->first();
         $mainImageUrl = $defaultVariant?->image
             ? asset('storage/' . $defaultVariant->image)
-            : ($primaryImage ? asset('storage/' . $primaryImage->image_url) : null);
+            : ($primaryImage
+                ? asset('storage/' . $primaryImage->image_url)
+                : null);
     @endphp
 
     <div class="pdp-wrap">
@@ -69,7 +71,8 @@
                     <button class="gallery__wish" id="wishBtn" data-wish-id="{{ $product->id }}"
                         data-wish-name="{{ addslashes($product->name) }}"
                         data-wish-price="{{ $defaultVariant?->price ?? 0 }}" data-wish-slug="{{ $product->slug }}"
-                        data-wish-img="{{ $defaultVariant?->image ?? ($primaryImage->image_url ?? '') }}" aria-label="Yêu thích">
+                        data-wish-img="{{ $defaultVariant?->image ?? ($primaryImage->image_url ?? '') }}"
+                        aria-label="Yêu thích">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                             <path
@@ -79,8 +82,8 @@
 
                     <div id="mainImgWrap">
                         @if ($mainImageUrl)
-                            <img id="mainImg" src="{{ $mainImageUrl }}"
-                                alt="{{ $product->name }}" style="max-width:90%;max-height:90%;object-fit:contain">
+                            <img id="mainImg" src="{{ $mainImageUrl }}" alt="{{ $product->name }}"
+                                style="max-width:90%;max-height:90%;object-fit:contain">
                         @else
                             <div class="gallery__main-placeholder" id="mainImg">
                                 <svg width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -243,7 +246,7 @@
                         </button>
                     </div>
                     <span class="qty-stock-note" id="stockNote">
-                        @if($stockQty > 0)
+                        @if ($stockQty > 0)
                             Còn {{ $stockQty }} sản phẩm
                         @else
                             Hết hàng
@@ -389,325 +392,567 @@
 
             {{-- REVIEWS --}}
             <div class="tab-panel" id="tab-reviews">
+                @php
+                    // Thống kê rating từ DB — tính ở controller rồi truyền vào
+                    // $reviewStats = ['avg' => 4.5, 'total' => 12, 'dist' => [5=>8,4=>2,3=>1,2=>1,1=>0]]
+                    $avg = $reviewStats['avg'] ?? 0;
+                    $total = $reviewStats['total'] ?? 0;
+                    $dist = $reviewStats['dist'] ?? [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+                @endphp
+
+                {{-- Overview: điểm + thanh % --}}
                 <div class="review-overview">
-                    <div class="review-score" style="text-align:center;flex-shrink:0">
-                        <div class="review-score__num">5.0</div>
+                    <div class="review-score">
+                        <div class="review-score__num">{{ number_format($avg, 1) }}</div>
                         <div class="review-score__stars">
                             @for ($i = 1; $i <= 5; $i++)
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B"
-                                    stroke-width="1">
+                                @php $fill = $i <= round($avg) ? '#F59E0B' : '#E5E3DE'; @endphp
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="{{ $fill }}"
+                                    stroke="{{ $fill }}" stroke-width="1">
                                     <polygon
                                         points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                 </svg>
                             @endfor
                         </div>
-                        <div class="review-score__label">0 đánh giá</div>
+                        <div class="review-score__label">{{ $total }} đánh giá</div>
                     </div>
+
                     <div class="review-bars">
                         @foreach ([5, 4, 3, 2, 1] as $star)
+                            @php $pct = $total > 0 ? round(($dist[$star] ?? 0) / $total * 100) : 0; @endphp
                             <div class="review-bar-row">
-                                <span class="review-bar-row__label">{{ $star }}</span>
+                                <button
+                                    class="review-bar-row__label review-filter-star {{ request('rating') == $star ? 'active' : '' }}"
+                                    data-star="{{ $star }}"
+                                    onclick="filterByStar({{ $star }})">{{ $star }}</button>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="#F59E0B"
                                     style="flex-shrink:0">
                                     <polygon
                                         points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                 </svg>
                                 <div class="review-bar-track">
-                                    <div class="review-bar-fill" style="width:0%"></div>
+                                    <div class="review-bar-fill" style="width:{{ $pct }}%"></div>
                                 </div>
-                                <span class="review-bar-row__count">0</span>
+                                <span class="review-bar-row__count">{{ $dist[$star] ?? 0 }}</span>
                             </div>
                         @endforeach
                     </div>
                 </div>
-                <p style="color:#9A9790;font-size:14px;text-align:center;padding:20px 0">Chưa có đánh giá nào.</p>
 
-                <div class="review-form-wrap">
-                    <h4>Viết đánh giá của bạn</h4>
-                    <div class="star-picker" id="starPicker">
-                        @for ($i = 1; $i <= 5; $i++)
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="#E5E3DE" stroke="#E5E3DE"
-                                stroke-width="1" style="cursor:pointer" onclick="selectStar({{ $i }})"
-                                data-star="{{ $i }}">
-                                <polygon
-                                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                            </svg>
-                        @endfor
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Họ và tên</label>
-                        <input type="text" class="form-input" placeholder="Tên của bạn">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Nội dung đánh giá</label>
-                        <textarea class="form-input" placeholder="Chia sẻ trải nghiệm sử dụng sản phẩm..."></textarea>
-                    </div>
-                    <button class="btn-submit-review" onclick="submitReview()">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                {{-- Bộ lọc --}}
+                <div class="review-filters">
+                    <button class="review-filter-btn active" onclick="filterReviews(null, this)">Tất cả</button>
+                    <button class="review-filter-btn" onclick="filterReviews({has_image:1}, this)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round">
-                            <line x1="22" y1="2" x2="11" y2="13" />
-                            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <polyline points="21 15 16 10 5 21" />
                         </svg>
-                        Gửi đánh giá
+                        Có hình ảnh
                     </button>
-                </div>
-            </div>
-        </div>
-
-        {{-- RELATED --}}
-        @if ($relatedProducts && $relatedProducts->count())
-            <div class="related-section">
-                <div class="section-header">
-                    <div class="section-title">Sản phẩm liên quan</div>
-                    <div class="section-sub">Có thể bạn cũng thích</div>
-                </div>
-                <div class="related-grid">
-                    @foreach ($relatedProducts as $rel)
-                        @php
-                            $relPrice = $rel->variants->min('price');
-                            $relCompare = $rel->variants->max('compare_price');
-                        @endphp
-                        <a class="related-card" href="{{ route('products.show', $rel->slug) }}">
-                            <div class="related-card__img">
-                                @if ($rel->thumbnail)
-                                    <img src="{{ asset('storage/' . $rel->thumbnail) }}" alt="{{ $rel->name }}">
-                                @else
-                                    <svg width="52" height="52" viewBox="0 0 24 24" fill="none"
-                                        stroke="currentColor" stroke-width="1" stroke-linecap="round">
-                                        <rect x="2" y="3" width="20" height="14" rx="2" />
-                                    </svg>
-                                @endif
-                            </div>
-                            <div class="related-card__name">{{ $rel->name }}</div>
-                            <div>
-                                <span class="related-card__price">{{ number_format($relPrice, 0, ',', '.') }}₫</span>
-                                @if ($relCompare && $relCompare > $relPrice)
-                                    <span
-                                        class="related-card__price-old">{{ number_format($relCompare, 0, ',', '.') }}₫</span>
-                                @endif
-                            </div>
-                        </a>
+                    @foreach ([5, 4, 3, 2, 1] as $star)
+                        <button class="review-filter-btn"
+                            onclick="filterReviews({rating:{{ $star }}}, this)">{{ $star }} ★</button>
                     @endforeach
                 </div>
+
+                {{-- Danh sách review (load qua AJAX) --}}
+                <div id="reviewList" class="review-list">
+                    @include('pages.product._review_list', ['reviews' => $reviews])
+                </div>
+
+                {{-- Nút load thêm --}}
+                <div id="reviewLoadMore" style="{{ $reviews->hasMorePages() ? '' : 'display:none' }}">
+                    <button class="btn-load-more" onclick="loadMoreReviews()">Xem thêm đánh giá</button>
+                </div>
+
+                {{-- Form viết đánh giá --}}
+                <div class="review-form-wrap" id="reviewFormWrap">
+                    @auth
+                        @if ($eligibleOrderItems->isNotEmpty())
+                            <h4>Viết đánh giá của bạn</h4>
+
+                            @if (session('review_success'))
+                                <div class="alert alert-success">{{ session('review_success') }}</div>
+                            @endif
+                            @if (session('review_error'))
+                                <div class="alert alert-error">{{ session('review_error') }}</div>
+                            @endif
+
+                            <form method="POST" action="{{ route('products.reviews.store', $product->slug) }}"
+                                enctype="multipart/form-data" id="reviewForm">
+                                @csrf
+
+                                {{-- Chọn sản phẩm đã mua (nếu có nhiều order_item của cùng sản phẩm) --}}
+                                @if ($eligibleOrderItems->count() > 1)
+                                    <div class="form-group">
+                                        <label class="form-label">Chọn lần mua</label>
+                                        <select name="order_item_id" class="form-input" required>
+                                            @foreach ($eligibleOrderItems as $item)
+                                                <option value="{{ $item->id }}">
+                                                    {{ $item->variant_description ?? $item->product_name }}
+                                                    — {{ $item->order->created_at->format('d/m/Y') }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                @else
+                                    <input type="hidden" name="order_item_id"
+                                        value="{{ $eligibleOrderItems->first()->id }}">
+                                @endif
+
+                                {{-- Rating --}}
+                                <div class="form-group">
+                                    <label class="form-label">Đánh giá <span style="color:red">*</span></label>
+                                    <div class="star-picker" id="starPicker">
+                                        @for ($i = 1; $i <= 5; $i++)
+                                            <svg width="28" height="28" viewBox="0 0 24 24" fill="#E5E3DE"
+                                                stroke="#E5E3DE" stroke-width="1" style="cursor:pointer"
+                                                onclick="selectStar({{ $i }})" data-star="{{ $i }}">
+                                                <polygon
+                                                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                            </svg>
+                                        @endfor
+                                    </div>
+                                    <input type="hidden" name="rating" id="ratingInput" value="">
+                                    @error('rating')
+                                        <span class="form-error">{{ $message }}</span>
+                                    @enderror
+                                </div>
+
+                                {{-- Nội dung --}}
+                                <div class="form-group">
+                                    <label class="form-label">Nội dung đánh giá</label>
+                                    <textarea name="comment" class="form-input" rows="4" placeholder="Chia sẻ trải nghiệm sử dụng sản phẩm...">{{ old('comment') }}</textarea>
+                                    @error('comment')
+                                        <span class="form-error">{{ $message }}</span>
+                                    @enderror
+                                </div>
+
+                                {{-- Upload ảnh --}}
+                                <div class="form-group">
+                                    <label class="form-label">Thêm ảnh (tối đa 5 ảnh)</label>
+                                    <input type="file" name="images[]" multiple accept="image/*" class="form-input"
+                                        id="reviewImages" onchange="previewReviewImages(this)">
+                                    <div id="reviewImagePreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+                                    </div>
+                                    @error('images')
+                                        <span class="form-error">{{ $message }}</span>
+                                    @enderror
+                                    @error('images.*')
+                                        <span class="form-error">{{ $message }}</span>
+                                    @enderror
+                                </div>
+
+                                <button type="submit" class="btn-submit-review" id="btnSubmitReview">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                        <line x1="22" y1="2" x2="11" y2="13" />
+                                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                                    </svg>
+                                    Gửi đánh giá
+                                </button>
+                            </form>
+                        @else
+                            <div class="review-no-purchase">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9A9790"
+                                    stroke-width="1.5" stroke-linecap="round">
+                                    <circle cx="9" cy="21" r="1" />
+                                    <circle cx="20" cy="21" r="1" />
+                                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                                </svg>
+                                <p>Bạn cần <strong>mua và nhận hàng thành công</strong> sản phẩm này để có thể đánh giá.</p>
+                                <a href="{{ route('products.index') }}" class="btn-cart"
+                                    style="display:inline-flex;width:auto;padding:0 20px">Mua ngay</a>
+                            </div>
+                        @endif
+                    @else
+                        <div class="review-no-purchase">
+                            <p>Vui lòng <a href="{{ route('login') }}" style="color:var(--primary)">đăng nhập</a> để viết
+                                đánh giá.</p>
+                        </div>
+                    @endauth
+                </div>
             </div>
-        @endif
 
-    </div>
+            {{-- Script riêng cho review — đặt trước @endsection --}}
+            <script>
+                (function() {
+                    // ── Trạng thái filter/pagination ────────────────────────
+                    let currentFilter = {};
+                    let currentPage = 1;
+                    const productSlug = '{{ $product->slug }}';
+                    const loadUrl = '{{ route('products.reviews.load', $product->slug) }}';
 
-    <script>
-        // Variant map từ PHP
-        const variantMap = @json($variantMap);
-        let selectedAttrs = {};
+                    // ── Chọn sao ────────────────────────────────────────────
+                    let selectedStar = 0;
 
-        // Khởi tạo attrs mặc định từ variant is_default
-        @if ($defaultVariant)
-            @foreach ($defaultVariant->attributeValues as $av)
-                selectedAttrs[{{ $av->attribute_id }}] = {{ $av->id }};
-            @endforeach
-        @endif
+                    window.selectStar = function(n) {
+                        selectedStar = n;
+                        document.getElementById('ratingInput').value = n;
+                        document.querySelectorAll('#starPicker svg').forEach((s, i) => {
+                            const on = i < n;
+                            s.setAttribute('fill', on ? '#F59E0B' : '#E5E3DE');
+                            s.setAttribute('stroke', on ? '#F59E0B' : '#E5E3DE');
+                        });
+                    };
 
-        function selectAttr(el, labelId, value, attrValueId) {
-            // Bỏ active các item cùng nhóm
-            el.closest('.color-swatches, .size-chips')
-                ?.querySelectorAll('.color-swatch, .size-chip')
-                .forEach(c => c.classList.remove('active'));
-            el.classList.add('active');
-            document.getElementById(labelId).textContent = value;
+                    // ── Preview ảnh trước khi upload ────────────────────────
+                    window.previewReviewImages = function(input) {
+                        const wrap = document.getElementById('reviewImagePreview');
+                        wrap.innerHTML = '';
+                        const files = Array.from(input.files).slice(0, 5);
+                        files.forEach(file => {
+                            const reader = new FileReader();
+                            reader.onload = e => {
+                                const img = document.createElement('img');
+                                img.src = e.target.result;
+                                img.style.cssText =
+                                    'width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid #e5e3de';
+                                wrap.appendChild(img);
+                            };
+                            reader.readAsDataURL(file);
+                        });
+                    };
 
-            // Tìm attribute_id từ el
+                    // ── Validate form trước khi submit ──────────────────────
+                    const form = document.getElementById('reviewForm');
+                    if (form) {
+                        form.addEventListener('submit', function(e) {
+                            const ratingVal = document.getElementById('ratingInput').value;
+                            if (!ratingVal || ratingVal === '0') {
+                                e.preventDefault();
+                                Toast.show('Vui lòng chọn số sao!', 'error');
+                            }
+                        });
+                    }
 
-            // Cập nhật selectedAttrs bằng attrValueId
-            // Map attrValueId → attribute_id qua PHP
-            const attrMeta = @json(collect($attrGroups)->mapWithKeys(function ($values, $name) {
-                        return collect($values)->mapWithKeys(fn($av) => [$av->id => $av->attribute_id])->toArray();
-                    })->toArray());
-            if (attrMeta[attrValueId]) {
-                selectedAttrs[attrMeta[attrValueId]] = attrValueId;
+                    // ── Filter review ────────────────────────────────────────
+                    window.filterByStar = function(star) {
+                        filterReviews({
+                            rating: star
+                        });
+                    };
+
+                    window.filterReviews = function(params, btn) {
+                        currentFilter = params || {};
+                        currentPage = 1;
+
+                        // Cập nhật active button
+                        document.querySelectorAll('.review-filter-btn, .review-filter-star').forEach(b => b.classList
+                            .remove('active'));
+                        if (btn) btn.classList.add('active');
+
+                        fetchReviews(false);
+                    };
+
+                    // ── Load thêm ────────────────────────────────────────────
+                    window.loadMoreReviews = function() {
+                        currentPage++;
+                        fetchReviews(true);
+                    };
+
+                    // ── Fetch AJAX ───────────────────────────────────────────
+                    function fetchReviews(append) {
+                        const params = new URLSearchParams({
+                            page: currentPage,
+                            ...currentFilter
+                        });
+
+                        fetch(loadUrl + '?' + params.toString(), {
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            })
+                            .then(r => r.json())
+                            .then(data => {
+                                const list = document.getElementById('reviewList');
+                                if (append) {
+                                    list.insertAdjacentHTML('beforeend', data.html);
+                                } else {
+                                    list.innerHTML = data.html;
+                                    list.scrollIntoView({
+                                        behavior: 'smooth',
+                                        block: 'start'
+                                    });
+                                }
+
+                                // Hiện/ẩn nút load more
+                                const loadMoreWrap = document.getElementById('reviewLoadMore');
+                                if (loadMoreWrap) {
+                                    loadMoreWrap.style.display = data.has_more ? '' : 'none';
+                                }
+                            })
+                            .catch(() => Toast.show('Không thể tải đánh giá, vui lòng thử lại.', 'error'));
+                    }
+                })();
+            </script>
+
+
+            {{-- RELATED --}}
+            @if ($relatedProducts && $relatedProducts->count())
+                <div class="related-section">
+                    <div class="section-header">
+                        <div class="section-title">Sản phẩm liên quan</div>
+                        <div class="section-sub">Có thể bạn cũng thích</div>
+                    </div>
+                    <div class="related-grid">
+                        @foreach ($relatedProducts as $rel)
+                            @php
+                                $relPrice = $rel->variants->min('price');
+                                $relCompare = $rel->variants->max('compare_price');
+                            @endphp
+                            <a class="related-card" href="{{ route('products.show', $rel->slug) }}">
+                                <div class="related-card__img">
+                                    @if ($rel->thumbnail)
+                                        <img src="{{ asset('storage/' . $rel->thumbnail) }}" alt="{{ $rel->name }}">
+                                    @else
+                                        <svg width="52" height="52" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="1" stroke-linecap="round">
+                                            <rect x="2" y="3" width="20" height="14" rx="2" />
+                                        </svg>
+                                    @endif
+                                </div>
+                                <div class="related-card__name">{{ $rel->name }}</div>
+                                <div>
+                                    <span class="related-card__price">{{ number_format($relPrice, 0, ',', '.') }}₫</span>
+                                    @if ($relCompare && $relCompare > $relPrice)
+                                        <span
+                                            class="related-card__price-old">{{ number_format($relCompare, 0, ',', '.') }}₫</span>
+                                    @endif
+                                </div>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+        </div>
+
+        <script>
+            // Variant map từ PHP
+            const variantMap = @json($variantMap);
+            let selectedAttrs = {};
+
+            // Khởi tạo attrs mặc định từ variant is_default
+            @if ($defaultVariant)
+                @foreach ($defaultVariant->attributeValues as $av)
+                    selectedAttrs[{{ $av->attribute_id }}] = {{ $av->id }};
+                @endforeach
+            @endif
+
+            function selectAttr(el, labelId, value, attrValueId) {
+                // Bỏ active các item cùng nhóm
+                el.closest('.color-swatches, .size-chips')
+                    ?.querySelectorAll('.color-swatch, .size-chip')
+                    .forEach(c => c.classList.remove('active'));
+                el.classList.add('active');
+                document.getElementById(labelId).textContent = value;
+
+                // Tìm attribute_id từ el
+
+                // Cập nhật selectedAttrs bằng attrValueId
+                // Map attrValueId → attribute_id qua PHP
+                const attrMeta = @json(collect($attrGroups)->mapWithKeys(function ($values, $name) {
+                            return collect($values)->mapWithKeys(fn($av) => [$av->id => $av->attribute_id])->toArray();
+                        })->toArray());
+                if (attrMeta[attrValueId]) {
+                    selectedAttrs[attrMeta[attrValueId]] = attrValueId;
+                }
+
+                updateVariant();
             }
 
-            updateVariant();
-        }
+            function updateVariant() {
+                const key = Object.values(selectedAttrs).sort((a, b) => a - b).join('-');
+                const v = variantMap[key];
+                if (!v) return;
 
-        function updateVariant() {
-            const key = Object.values(selectedAttrs).sort((a, b) => a - b).join('-');
-            const v = variantMap[key];
-            if (!v) return;
+                // Giá
+                document.getElementById('currentPrice').textContent =
+                    v.price.toLocaleString('vi-VN') + '₫';
 
-            // Giá
-            document.getElementById('currentPrice').textContent =
-                v.price.toLocaleString('vi-VN') + '₫';
+                const compareEl = document.getElementById('comparePrice');
+                const saveEl = document.getElementById('saveBadge');
+                if (v.compare && v.compare > v.price) {
+                    if (compareEl) compareEl.textContent = v.compare.toLocaleString('vi-VN') + '₫';
+                    if (saveEl) saveEl.textContent = 'Tiết kiệm ' + (v.compare - v.price).toLocaleString('vi-VN') + '₫';
+                }
 
-            const compareEl = document.getElementById('comparePrice');
-            const saveEl = document.getElementById('saveBadge');
-            if (v.compare && v.compare > v.price) {
-                if (compareEl) compareEl.textContent = v.compare.toLocaleString('vi-VN') + '₫';
-                if (saveEl) saveEl.textContent = 'Tiết kiệm ' + (v.compare - v.price).toLocaleString('vi-VN') + '₫';
-            }
+                // Tồn kho
+                const stockNote = document.getElementById('stockNote');
+                const stockStatus = document.getElementById('stockStatus');
+                if (stockNote) stockNote.textContent = 'Còn ' + v.stock + ' sản phẩm';
+                if (stockStatus) {
+                    stockStatus.textContent = v.stock > 0 ? 'Còn hàng' : 'Hết hàng';
+                    stockStatus.className = 'pdp-stock ' + (v.stock > 0 ? 'in-stock' : 'out-stock');
+                }
 
-            // Tồn kho
-            const stockNote = document.getElementById('stockNote');
-            const stockStatus = document.getElementById('stockStatus');
-            if (stockNote) stockNote.textContent = 'Còn ' + v.stock + ' sản phẩm';
-            if (stockStatus) {
-                stockStatus.textContent = v.stock > 0 ? 'Còn hàng' : 'Hết hàng';
-                stockStatus.className = 'pdp-stock ' + (v.stock > 0 ? 'in-stock' : 'out-stock');
-            }
+                // SKU
+                const skuLabel = document.getElementById('skuLabel');
+                if (skuLabel && v.sku) skuLabel.textContent = 'SKU: ' + v.sku;
 
-            // SKU
-            const skuLabel = document.getElementById('skuLabel');
-            if (skuLabel && v.sku) skuLabel.textContent = 'SKU: ' + v.sku;
-
-            // Đổi ảnh chính theo variant
-            if (v.image) {
-                const wrap = document.getElementById('mainImgWrap');
-                if (wrap) {
-                    wrap.innerHTML = `<img src="${v.image}" alt=""
+                // Đổi ảnh chính theo variant
+                if (v.image) {
+                    const wrap = document.getElementById('mainImgWrap');
+                    if (wrap) {
+                        wrap.innerHTML = `<img src="${v.image}" alt=""
             style="max-width:90%;max-height:90%;object-fit:contain">`;
+                    }
+                }
+                // Qty max & tồn kho
+                const qtyInput = document.getElementById('qtyInput');
+                const btnCart = document.getElementById('btnAddCart');
+                const inStock = !v.manage_stock || v.stock > 0;
+
+                if (qtyInput) {
+                    qtyInput.max = v.stock || 99;
+                    qtyInput.disabled = !inStock;
+                }
+
+                // Cập nhật stockNote chi tiết
+                if (stockNote) {
+                    if (!v.manage_stock) {
+                        stockNote.textContent = 'Còn hàng';
+                        stockNote.style.color = 'var(--green, #16a34a)';
+                    } else if (v.stock <= 0) {
+                        stockNote.textContent = 'Hết hàng';
+                        stockNote.style.color = 'var(--red, #ef4444)';
+                    } else if (v.stock <= 5) {
+                        stockNote.textContent = 'Chỉ còn ' + v.stock + ' sản phẩm';
+                        stockNote.style.color = 'var(--orange, #f97316)';
+                    } else {
+                        stockNote.textContent = 'Còn ' + v.stock + ' sản phẩm';
+                        stockNote.style.color = '';
+                    }
+                }
+
+                // Disable / enable nút thêm giỏ
+                if (btnCart) {
+                    btnCart.disabled = !inStock;
+                    btnCart.style.opacity = inStock ? '1' : '.5';
+                    btnCart.style.cursor = inStock ? '' : 'not-allowed';
+                    btnCart.textContent = inStock ? 'Thêm vào giỏ' : 'Hết hàng';
+                }
+
+                // Cart button handler
+                if (btnCart) btnCart.onclick = () => {
+                    if (!inStock) {
+                        Toast.show('Sản phẩm đã hết hàng', 'error');
+                        return;
+                    }
+                    const qty = parseInt(qtyInput?.value || 1);
+                    if (v.manage_stock && qty > v.stock) {
+                        Toast.show('Số lượng vượt quá tồn kho (' + v.stock + ')', 'warning');
+                        return;
+                    }
+                    Cart.add({
+                        variant_id: v.id,
+                        id: {{ $product->id }},
+                        name: '{{ addslashes($product->name) }}',
+                        variant: v.label || '',
+                        price: v.price,
+                        img: v.image || '{{ $product->thumbnail ? asset('storage/' . $product->thumbnail) : '' }}',
+                        qty,
+                    });
+                };
+            }
+
+            function changeQty(delta) {
+                let input = document.getElementById('qtyInput');
+                let max = parseInt(input.max) || 10;
+                input.value = Math.min(max, Math.max(1, (parseInt(input.value) || 1) + delta));
+            }
+
+            function selectThumb(el, imgSrc) {
+                document.querySelectorAll('.gallery__thumb').forEach(t => t.classList.remove('active'));
+                el.classList.add('active');
+                if (imgSrc) {
+                    const wrap = document.getElementById('mainImgWrap');
+                    wrap.innerHTML = `<img src="${imgSrc}" alt="" style="max-width:90%;max-height:90%;object-fit:contain">`;
                 }
             }
-            // Qty max & tồn kho
-            const qtyInput = document.getElementById('qtyInput');
-            const btnCart  = document.getElementById('btnAddCart');
-            const inStock  = !v.manage_stock || v.stock > 0;
 
-            if (qtyInput) {
-                qtyInput.max     = v.stock || 99;
-                qtyInput.disabled = !inStock;
+            function toggleWish() {
+                const btn = document.getElementById('wishBtn');
+                Wishlist.toggle(btn.dataset.wishId, btn.dataset.wishName, parseInt(btn.dataset.wishPrice), '');
             }
 
-            // Cập nhật stockNote chi tiết
-            if (stockNote) {
-                if (!v.manage_stock) {
-                    stockNote.textContent = 'Còn hàng';
-                    stockNote.style.color = 'var(--green, #16a34a)';
-                } else if (v.stock <= 0) {
-                    stockNote.textContent = 'Hết hàng';
-                    stockNote.style.color = 'var(--red, #ef4444)';
-                } else if (v.stock <= 5) {
-                    stockNote.textContent = 'Chỉ còn ' + v.stock + ' sản phẩm';
-                    stockNote.style.color = 'var(--orange, #f97316)';
-                } else {
-                    stockNote.textContent = 'Còn ' + v.stock + ' sản phẩm';
-                    stockNote.style.color = '';
-                }
+            function switchTab(id, btn) {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('tab-' + id).classList.add('active');
             }
 
-            // Disable / enable nút thêm giỏ
-            if (btnCart) {
-                btnCart.disabled            = !inStock;
-                btnCart.style.opacity       = inStock ? '1' : '.5';
-                btnCart.style.cursor        = inStock ? '' : 'not-allowed';
-                btnCart.textContent         = inStock ? 'Thêm vào giỏ' : 'Hết hàng';
-            }
+            let selectedStar = 0;
 
-            // Cart button handler
-            if (btnCart) btnCart.onclick = () => {
-                if (!inStock) { Toast.show('Sản phẩm đã hết hàng', 'error'); return; }
-                const qty = parseInt(qtyInput?.value || 1);
-                if (v.manage_stock && qty > v.stock) {
-                    Toast.show('Số lượng vượt quá tồn kho (' + v.stock + ')', 'warning'); return;
-                }
-                Cart.add({
-                    variant_id: v.id,
-                    id:         {{ $product->id }},
-                    name:       '{{ addslashes($product->name) }}',
-                    variant:    v.label || '',
-                    price:      v.price,
-                    img:        v.image || '{{ $product->thumbnail ? asset('storage/' . $product->thumbnail) : '' }}',
-                    qty,
+            function selectStar(n) {
+                selectedStar = n;
+                document.getElementById('ratingInput').value = n;
+                document.querySelectorAll('#starPicker svg').forEach((s, i) => {
+                    const on = i < n;
+                    s.setAttribute('fill', on ? '#F59E0B' : '#E5E3DE');
+                    s.setAttribute('stroke', on ? '#F59E0B' : '#E5E3DE');
                 });
-            };
-        }
-
-        function changeQty(delta) {
-            let input = document.getElementById('qtyInput');
-            let max = parseInt(input.max) || 10;
-            input.value = Math.min(max, Math.max(1, (parseInt(input.value) || 1) + delta));
-        }
-
-        function selectThumb(el, imgSrc) {
-            document.querySelectorAll('.gallery__thumb').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-            if (imgSrc) {
-                const wrap = document.getElementById('mainImgWrap');
-                wrap.innerHTML = `<img src="${imgSrc}" alt="" style="max-width:90%;max-height:90%;object-fit:contain">`;
             }
-        }
 
-        function toggleWish() {
-            const btn = document.getElementById('wishBtn');
-            Wishlist.toggle(btn.dataset.wishId, btn.dataset.wishName, parseInt(btn.dataset.wishPrice), '');
-        }
+            function submitReview() {
+                if (!selectedStar) {
+                    Toast.show('Vui lòng chọn số sao!', 'error');
+                    return;
+                }
+                Toast.show('Cảm ơn bạn đã đánh giá!', 'success');
+                selectStar(0);
+            }
 
-        function switchTab(id, btn) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById('tab-' + id).classList.add('active');
-        }
+            // Khởi tạo cart button (variant mặc định)
+            (function() {
+                const btnCart = document.getElementById('btnAddCart');
+                const qtyInput = document.getElementById('qtyInput');
+                const stock = {{ $stockQty ?? 0 }};
+                const manage = {{ $defaultVariant?->manage_stock ? 'true' : 'false' }};
+                const inStock = !manage || stock > 0;
 
-        let selectedStar = 0;
+                if (btnCart && !inStock) {
+                    btnCart.disabled = true;
+                    btnCart.style.opacity = '.5';
+                    btnCart.style.cursor = 'not-allowed';
+                    btnCart.textContent = 'Hết hàng';
+                }
 
-        function selectStar(n) {
-            selectedStar = n;
-            document.querySelectorAll('#starPicker svg').forEach((s, i) => {
-                const on = i < n;
-                s.setAttribute('fill', on ? '#F59E0B' : '#E5E3DE');
-                s.setAttribute('stroke', on ? '#F59E0B' : '#E5E3DE');
+                if (btnCart) btnCart.onclick = () => {
+                    if (!inStock) {
+                        Toast.show('Sản phẩm đã hết hàng', 'error');
+                        return;
+                    }
+                    const qty = parseInt(qtyInput?.value || 1);
+                    if (manage && qty > stock) {
+                        Toast.show('Số lượng vượt quá tồn kho (' + stock + ')', 'warning');
+                        return;
+                    }
+                    Cart.add({
+                        variant_id: {{ $defaultVariant?->id ?? 0 }},
+                        id: {{ $product->id }},
+                        name: '{{ addslashes($product->name) }}',
+                        variant: '{{ addslashes($defaultVariant?->label ?? '') }}',
+                        price: {{ $currentPrice }},
+                        img: '{{ $product->thumbnail ? asset('storage/' . $product->thumbnail) : '' }}',
+                        qty,
+                    });
+                };
+            })();
+
+            Object.assign(window, {
+                selectAttr,
+                changeQty,
+                selectThumb,
+                toggleWish,
+                switchTab,
+                selectStar,
+                submitReview,
+                updateVariant
             });
-        }
-
-        function submitReview() {
-            if (!selectedStar) {
-                Toast.show('Vui lòng chọn số sao!', 'error');
-                return;
-            }
-            Toast.show('Cảm ơn bạn đã đánh giá!', 'success');
-            selectStar(0);
-        }
-
-        // Khởi tạo cart button (variant mặc định)
-        (function() {
-            const btnCart  = document.getElementById('btnAddCart');
-            const qtyInput = document.getElementById('qtyInput');
-            const stock    = {{ $stockQty ?? 0 }};
-            const manage   = {{ $defaultVariant?->manage_stock ? 'true' : 'false' }};
-            const inStock  = !manage || stock > 0;
-
-            if (btnCart && !inStock) {
-                btnCart.disabled      = true;
-                btnCart.style.opacity = '.5';
-                btnCart.style.cursor  = 'not-allowed';
-                btnCart.textContent   = 'Hết hàng';
-            }
-
-            if (btnCart) btnCart.onclick = () => {
-                if (!inStock) { Toast.show('Sản phẩm đã hết hàng', 'error'); return; }
-                const qty = parseInt(qtyInput?.value || 1);
-                if (manage && qty > stock) {
-                    Toast.show('Số lượng vượt quá tồn kho (' + stock + ')', 'warning'); return;
-                }
-                Cart.add({
-                    variant_id: {{ $defaultVariant?->id ?? 0 }},
-                    id:         {{ $product->id }},
-                    name:       '{{ addslashes($product->name) }}',
-                    variant:    '{{ addslashes($defaultVariant?->label ?? '') }}',
-                    price:      {{ $currentPrice }},
-                    img:        '{{ $product->thumbnail ? asset('storage/' . $product->thumbnail) : '' }}',
-                    qty,
-                });
-            };
-        })();
-
-        Object.assign(window, {
-            selectAttr,
-            changeQty,
-            selectThumb,
-            toggleWish,
-            switchTab,
-            selectStar,
-            submitReview,
-            updateVariant
-        });
-    </script>
-@endsection
+        </script>
+    @endsection

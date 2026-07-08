@@ -79,6 +79,11 @@ class OrderItem extends Model
         return $this->belongsTo(ProductVariant::class, 'variant_id');
     }
 
+    public function review()
+    {
+        return $this->hasOne(Review::class);
+    }
+
     // Tính thành tiền
     public function subTotal(): float
     {

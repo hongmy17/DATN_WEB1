@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductVariant;
+use App\Models\Review;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -11,35 +14,44 @@ class ProductController extends Controller
     // ─── Trang danh sách sản phẩm ────────────────────────────
     public function index(Request $request)
     {
+        $maxPriceInDb = (int) ProductVariant::where('status', true)->max('price');
+        $sliderMax    = $maxPriceInDb > 0
+            ? (int) (ceil($maxPriceInDb / 1000000) * 1000000)
+            : 100000000;
+
+        $priceMin = $request->filled('price_min') ? max(0, (int) $request->price_min) : 0;
+        $priceMax = $request->filled('price_max') ? (int) $request->price_max : $sliderMax;
+
+        if ($priceMin > $priceMax) {
+            [$priceMin, $priceMax] = [$priceMax, $priceMin];
+        }
+
+        $selectedCategories = $request->filled('categories')
+            ? collect((array) $request->categories)->map(fn ($id) => (int) $id)->filter()->values()->all()
+            : ($request->filled('cat') ? [(int) $request->cat] : []);
+
         $query = Product::visible()
-            ->with(['category', 'variants'])
-            ->withMin('variants', 'price')
-            ->withMax('variants', 'price');
+            ->with(['category'])
+            ->with(['variants' => fn ($q) => $q->active()->orderBy('price')])
+            ->withMin(['variants as variants_min_price' => fn ($q) => $q->active()], 'price')
+            ->withMax(['variants as variants_max_price' => fn ($q) => $q->active()], 'price')
+            ->whereHas('variants', fn ($q) => $q->active());
 
-        // Lọc theo nhiều danh mục (checkbox sidebar dùng categories[], chip dùng cat)
-        $selectedCategories = array_filter((array) $request->input('categories', []));
-
-        if (!empty($selectedCategories)) {
+        if (! empty($selectedCategories)) {
             $query->whereIn('category_id', $selectedCategories);
         } elseif ($request->filled('cat')) {
             $query->where('category_id', $request->cat);
             $selectedCategories = [$request->cat];
         }
 
-        // Lọc theo từ khóa tìm kiếm
         if ($request->filled('q')) {
             $query->where('name', 'like', '%' . $request->q . '%');
         }
 
-        // Lọc theo khoảng giá
-        if ($request->filled('price_min')) {
-            $query->where('variants_min_price', '>=', (int) $request->price_min);
-        }
-        if ($request->filled('price_max')) {
-            $query->where('variants_min_price', '<=', (int) $request->price_max);
-        }
+        $query->whereHas('variants', function ($q) use ($priceMin, $priceMax) {
+            $q->active()->whereBetween('price', [$priceMin, $priceMax]);
+        });
 
-        // Sắp xếp
         match ($request->sort) {
             'price_asc'  => $query->orderBy('variants_min_price', 'asc'),
             'price_desc' => $query->orderBy('variants_min_price', 'desc'),
@@ -49,7 +61,6 @@ class ProductController extends Controller
 
         $products = $query->paginate(9)->withQueryString();
 
-        // Danh mục để hiển thị chips & sidebar
         $categories = Category::whereNotNull('parent_id')
             ->withCount(['products' => fn($q) => $q->visible()])
             ->orderBy('name')
@@ -66,13 +77,15 @@ class ProductController extends Controller
         ));
     }
 
-    // ─── Gợi ý sản phẩm (search suggest) ──────────────────────
+    // ─── API gợi ý tìm kiếm ──────────────────────────────────
     public function suggest(Request $request)
     {
         $q = $request->input('q', '');
         if (strlen($q) < 2) {
             return response()->json([]);
         }
+
+        $safeKeyword = addcslashes($keyword, '%_');
 
         $products = Product::visible()
             ->where('name', 'like', '%' . $q . '%')
@@ -100,12 +113,12 @@ class ProductController extends Controller
                 'category',
                 'images',
                 'customAttributes.values',
-                'variants' => fn($q) => $q->where('status', 1)
+                'variants' => fn ($q) => $q->where('status', 1)
                                           ->with('attributeValues.attribute'),
             ])
             ->firstOrFail();
 
-        // Sản phẩm liên quan cùng danh mục
+        // Sản phẩm liên quan
         $relatedProducts = Product::visible()
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
@@ -115,6 +128,57 @@ class ProductController extends Controller
             ->limit(4)
             ->get();
 
-        return view('pages.product.show', compact('product', 'relatedProducts'));
+        // ── Review data ──────────────────────────────────────
+
+        // Trang đầu review (5 review mới nhất, đã duyệt)
+        $reviews = $product->reviews()
+            ->visible()
+            ->with(['user', 'replies.user', 'orderItem'])
+            ->latest()
+            ->paginate(5);
+
+        // Thống kê rating
+        $ratingStats = $product->reviews()->visible()
+            ->selectRaw('rating, COUNT(*) as count')
+            ->groupBy('rating')
+            ->pluck('count', 'rating')
+            ->toArray();
+
+        $totalReviews = array_sum($ratingStats);
+        $avgRating    = $totalReviews > 0
+            ? round(collect($ratingStats)->reduce(fn ($carry, $count, $rating) => $carry + $count * $rating, 0) / $totalReviews, 1)
+            : 0;
+
+        $reviewStats = [
+            'avg'   => $avgRating,
+            'total' => $totalReviews,
+            'dist'  => array_replace([5=>0,4=>0,3=>0,2=>0,1=>0], $ratingStats),
+        ];
+
+        // Order items đủ điều kiện review (đơn hoàn tất, chưa review)
+        $eligibleOrderItems = collect();
+        if (auth()->check()) {
+            $reviewedItemIds = $product->reviews()
+                ->where('user_id', auth()->id())
+                ->whereNotNull('order_item_id')
+                ->pluck('order_item_id');
+
+            $eligibleOrderItems = OrderItem::whereHas('order', function ($q) {
+                    $q->where('user_id', auth()->id())
+                      ->where('order_status', 3); // hoàn tất
+                })
+                ->whereHas('variant', fn ($q) => $q->where('product_id', $product->id))
+                ->whereNotIn('id', $reviewedItemIds)
+                ->with('order')
+                ->get();
+        }
+
+        return view('pages.product.show', compact(
+            'product',
+            'relatedProducts',
+            'reviews',
+            'reviewStats',
+            'eligibleOrderItems',
+        ));
     }
 }
