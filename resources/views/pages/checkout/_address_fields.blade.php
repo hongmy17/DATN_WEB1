@@ -19,7 +19,12 @@
       value="{{ $values['province'] ?? old($prefix.'province') }}"
       class="form-control" placeholder="TP. Hồ Chí Minh">
   </div>
-  
+  <div class="form-group">
+    <label class="form-label">Quận / Huyện</label>
+    <input type="text" id="{{ $prefix }}district" name="{{ $prefix }}district"
+      value="{{ $values['district'] ?? old($prefix.'district') }}"
+      class="form-control" placeholder="Quận 1">
+  </div>
 </div>
 <div class="form-row-2">
   <div class="form-group">

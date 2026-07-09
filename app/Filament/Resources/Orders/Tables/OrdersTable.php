@@ -127,21 +127,30 @@ class OrdersTable
                             ->label('Phương thức thanh toán')
                             ->content(function ($record) {
                                 return match ($record->payment_method) {
-                                    'Vnpay'          => 'Ví điện tử VNpay',
+                                    'vnpay'         => 'Ví điện tử VNPay',
+                                    'momo'          => 'Ví MoMo',
+                                    'zalopay'       => 'ZaloPay',
                                     'bank_transfer' => 'Chuyển khoản ngân hàng',
                                     default         => 'Thanh toán khi nhận hàng (COD)',
                                 };
                             }),
-                        Placeholder::make('coupon')->label('Mã giảm giá')
-                            ->content(fn($record) => $record->coupon_code ?: '(Không có)'),
-                        Placeholder::make('subtotal')->label('Tạm tính')
+
+                        Placeholder::make('coupon')
+                            ->label('Mã giảm giá')
+                            ->content(fn($record) => $record->coupon?->coupon_code ?: '(Không có)'),
+
+                        Placeholder::make('subtotal')
+                            ->label('Tạm tính')
                             ->content(fn($record) => number_format($record->subtotal ?? 0) . '₫'),
-                        Placeholder::make('discount_amount')->label('Giảm giá')
+
+                        Placeholder::make('discount_amount')
+                            ->label('Giảm giá')
                             ->content(fn($record) => '-' . number_format($record->discount_amount ?? 0) . '₫'),
-                        Placeholder::make('total_amount')->label('Tổng cộng')
-                            ->content(fn($record) => new HtmlString(
-                                '<span style="font-size:18px;font-weight:800;color:#E30019">'
-                                    . number_format($record->total_amount) . '₫</span>'
+
+                        Placeholder::make('total_amount')
+                            ->label('Tổng cộng')
+                            ->content(fn($record) => new \Illuminate\Support\HtmlString(
+                                '<span style="font-size:18px;font-weight:800;color:#e55a2b">' . number_format($record->total_amount) . '₫</span>'
                             )),
                     ]),
 

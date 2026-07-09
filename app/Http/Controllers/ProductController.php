@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\ProductVariant;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -12,107 +11,81 @@ class ProductController extends Controller
     // ─── Trang danh sách sản phẩm ────────────────────────────
     public function index(Request $request)
     {
-        // Chặn trên thanh trượt giá lấy từ giá cao nhất thật đang có trong DB
-        // (chỉ tính biến thể đang bán — status=1), không hard-code.
-        $maxPriceInDb = (int) ProductVariant::where('status', true)->max('price');
-        $sliderMax    = $maxPriceInDb > 0
-            ? (int) (ceil($maxPriceInDb / 1000000) * 1000000)
-            : 100000000;
-
-        $priceMin = $request->filled('price_min') ? max(0, (int) $request->price_min) : 0;
-        $priceMax = $request->filled('price_max') ? (int) $request->price_max : $sliderMax;
-
-        // Chống trường hợp URL bị chỉnh tay khiến min > max
-        if ($priceMin > $priceMax) {
-            [$priceMin, $priceMax] = [$priceMax, $priceMin];
-        }
-
-        // Hỗ trợ cả 'cat' (chip, chọn 1 danh mục) và 'categories[]' (checkbox sidebar, chọn nhiều)
-        $selectedCategories = $request->filled('categories')
-            ? collect((array) $request->categories)->map(fn ($id) => (int) $id)->filter()->values()->all()
-            : ($request->filled('cat') ? [(int) $request->cat] : []);
-
         $query = Product::visible()
-            ->with(['category'])
-            // FIX: chỉ eager-load + tính min/max theo biến thể ĐANG BÁN (status=1).
-            // Trước đây lấy cả variant đã ẩn → giá min/max hiển thị có thể sai.
-            ->with(['variants' => fn ($q) => $q->active()->orderBy('price')])
-            ->withMin(['variants as variants_min_price' => fn ($q) => $q->active()], 'price')
-            ->withMax(['variants as variants_max_price' => fn ($q) => $q->active()], 'price')
-            // Chỉ hiện sản phẩm có ít nhất 1 biến thể đang bán — tránh thẻ sản phẩm "0đ"
-            ->whereHas('variants', fn ($q) => $q->active());
+            ->with(['category', 'variants'])
+            ->withMin('variants', 'price')
+            ->withMax('variants', 'price');
 
-        // Lọc theo danh mục
-        if (! empty($selectedCategories)) {
+        // Lọc theo nhiều danh mục (checkbox sidebar dùng categories[], chip dùng cat)
+        $selectedCategories = array_filter((array) $request->input('categories', []));
+
+        if (!empty($selectedCategories)) {
             $query->whereIn('category_id', $selectedCategories);
+        } elseif ($request->filled('cat')) {
+            $query->where('category_id', $request->cat);
+            $selectedCategories = [$request->cat];
         }
 
         // Lọc theo từ khóa tìm kiếm
-        // Escape % và _ (ký tự đặc biệt của LIKE) — nếu không, khách gõ đúng dấu %
-        // sẽ vô tình khớp gần như mọi sản phẩm thay vì tìm chữ "%" theo nghĩa đen.
         if ($request->filled('q')) {
-            $keyword = addcslashes(trim($request->q), '%_');
-            $query->where('name', 'like', '%' . $keyword . '%');
+            $query->where('name', 'like', '%' . $request->q . '%');
         }
 
-        // Lọc theo khoảng giá: sản phẩm có ít nhất 1 biến thể đang bán rơi vào khoảng giá đã chọn
-        $query->whereHas('variants', function ($q) use ($priceMin, $priceMax) {
-            $q->active()->whereBetween('price', [$priceMin, $priceMax]);
-        });
+        // Lọc theo khoảng giá
+        if ($request->filled('price_min')) {
+            $query->where('variants_min_price', '>=', (int) $request->price_min);
+        }
+        if ($request->filled('price_max')) {
+            $query->where('variants_min_price', '<=', (int) $request->price_max);
+        }
 
         // Sắp xếp
         match ($request->sort) {
             'price_asc'  => $query->orderBy('variants_min_price', 'asc'),
-            'price_desc' => $query->orderByDesc('variants_max_price'),
-            'newest'     => $query->orderByDesc('created_at'),
-            default      => $query->orderByDesc('created_at'),
+            'price_desc' => $query->orderBy('variants_min_price', 'desc'),
+            'newest'     => $query->orderBy('created_at', 'desc'),
+            default      => $query->orderBy('created_at', 'desc'),
         };
 
-        // withQueryString() để link phân trang tự giữ nguyên cat/categories/price_min/price_max/sort/q
         $products = $query->paginate(9)->withQueryString();
 
-        // Danh mục con để hiển thị chips + checkbox sidebar
+        // Danh mục để hiển thị chips & sidebar
         $categories = Category::whereNotNull('parent_id')
-            ->withCount(['products' => fn ($q) => $q->visible()])
+            ->withCount(['products' => fn($q) => $q->visible()])
             ->orderBy('name')
             ->get();
 
+        // Giá min/max cho slider lọc giá
+        $sliderMax  = (int) (Product::visible()->withMin('variants', 'price')->withMax('variants', 'price')->get()->max('variants_max_price') ?? 50000000);
+        $priceMin   = (int) $request->input('price_min', 0);
+        $priceMax   = (int) $request->input('price_max', $sliderMax);
+
         return view('pages.product.index', compact(
-            'products',
-            'categories',
-            'priceMin',
-            'priceMax',
-            'sliderMax',
-            'selectedCategories',
+            'products', 'categories', 'selectedCategories',
+            'priceMin', 'priceMax', 'sliderMax'
         ));
     }
 
-    // ─── API gợi ý tìm kiếm trực tiếp (autocomplete) ──────────
-    // Trả JSON nhẹ (tối đa 6 sản phẩm) để hiện dropdown ngay dưới ô search
-    // trong lúc gõ, không cần bấm Enter. Gọi từ navbar (app.blade.php).
+    // ─── Gợi ý sản phẩm (search suggest) ──────────────────────
     public function suggest(Request $request)
     {
-        $keyword = trim((string) $request->get('q', ''));
-
-        if ($keyword === '') {
+        $q = $request->input('q', '');
+        if (strlen($q) < 2) {
             return response()->json([]);
         }
 
-        // Escape ký tự đặc biệt của LIKE giống hệt logic trong index()
-        $safeKeyword = addcslashes($keyword, '%_');
-
         $products = Product::visible()
-            ->where('name', 'like', '%' . $safeKeyword . '%')
-            ->whereHas('variants', fn ($q) => $q->active())
-            ->withMin(['variants as variants_min_price' => fn ($q) => $q->active()], 'price')
-            ->orderByDesc('created_at')
+            ->where('name', 'like', '%' . $q . '%')
+            ->with(['variants'])
+            ->withMin('variants', 'price')
             ->limit(6)
             ->get()
-            ->map(fn ($p) => [
-                'name'      => $p->name,
-                'price'     => (float) $p->variants_min_price,
-                'thumbnail' => $p->thumbnail ? asset('storage/' . $p->thumbnail) : null,
-                'url'       => route('products.show', $p->slug),
+            ->map(fn($p) => [
+                'id'    => $p->id,
+                'name'  => $p->name,
+                'slug'  => $p->slug,
+                'price' => $p->variants_min_price,
+                'img'   => $p->thumbnail ? asset('storage/' . $p->thumbnail) : '',
             ]);
 
         return response()->json($products);

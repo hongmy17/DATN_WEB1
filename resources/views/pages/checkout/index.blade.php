@@ -106,7 +106,13 @@
                         Phương thức thanh toán
                     </div>
 
-                    @php $payMethods = [['value' => 'cod', 'label' => 'Thanh toán khi nhận hàng (COD)', 'sub' => 'Trả tiền mặt khi nhận hàng', 'icon' => '<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>'], ['value' => 'momo', 'label' => 'Ví MoMo', 'sub' => 'Thanh toán qua ví điện tử MoMo', 'icon' => 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14l-4-4h3V8h2v4h3z'], ['value' => 'bank', 'label' => 'Chuyển khoản ngân hàng', 'sub' => 'Chuyển khoản qua QR hoặc tài khoản', 'icon' => 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10'], ['value' => 'zalopay', 'label' => 'ZaloPay', 'sub' => 'Thanh toán qua ví ZaloPay', 'icon' => 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z']]; @endphp
+                    @php $payMethods = [
+    ['value' => 'cod',     'label' => 'Thanh toán khi nhận hàng (COD)', 'sub' => 'Trả tiền mặt khi nhận hàng',        'icon' => 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'],
+    ['value' => 'vnpay',   'label' => 'VNPay',                          'sub' => 'Thanh toán qua cổng VNPay',          'icon' => 'M1 4h22v16H1zM1 10h22'],
+    ['value' => 'momo',    'label' => 'Ví MoMo',                        'sub' => 'Thanh toán qua ví điện tử MoMo',     'icon' => 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14l-4-4h3V8h2v4h3z'],
+    ['value' => 'bank',    'label' => 'Chuyển khoản ngân hàng',         'sub' => 'Chuyển khoản qua QR hoặc tài khoản', 'icon' => 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10'],
+    ['value' => 'zalopay', 'label' => 'ZaloPay',                        'sub' => 'Thanh toán qua ví ZaloPay',          'icon' => 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'],
+]; @endphp
 
                     @foreach ($payMethods as $i => $m)
                         <label class="pay-option {{ $i === 0 ? 'selected' : '' }}">
@@ -323,6 +329,7 @@
         }
 
         function placeOrder() {
+            console.log('placeOrder called');
             const btn = document.querySelector('button[onclick="placeOrder()"]');
 
             // FIX: Khóa nút ngay lập tức, tránh bấm 2 lần
@@ -351,14 +358,16 @@
             if (addrType.startsWith('saved_')) {
                 addrPayload.address_id = parseInt(addrType.replace('saved_', ''));
             } else {
-                addrPayload.receiver_name = document.getElementById('new_receiver_name')?.value;
+                addrPayload.receiver_name  = document.getElementById('new_receiver_name')?.value;
                 addrPayload.receiver_phone = document.getElementById('new_receiver_phone')?.value;
-                addrPayload.province = document.getElementById('new_province')?.value;
-                addrPayload.district = document.getElementById('new_district')?.value;
-                addrPayload.ward = document.getElementById('new_ward')?.value;
+                addrPayload.province       = document.getElementById('new_province')?.value;
+                addrPayload.district       = document.getElementById('new_district')?.value;
+                addrPayload.ward           = document.getElementById('new_ward')?.value;
                 addrPayload.address_detail = document.getElementById('new_address_detail')?.value;
-                if (!addrPayload.receiver_name || !addrPayload.receiver_phone || !addrPayload.province) {
+                if (!addrPayload.receiver_name || !addrPayload.receiver_phone ||
+                    !addrPayload.province || !addrPayload.district || !addrPayload.ward) {
                     Toast.show('Vui lòng điền đầy đủ thông tin địa chỉ', 'error');
+                    resetBtn(btn);
                     return;
                 }
             }
@@ -379,10 +388,14 @@
                     })
                 })
                 .then(r => {
+                    if (r.status === 401) {
+                        Toast.show('Vui lòng đăng nhập để đặt hàng', 'error');
+                        setTimeout(() => window.location.href = '{{ route('login') }}', 1200);
+                        throw new Error('unauthenticated');
+                    }
                     if (!r.ok && r.status === 422) {
                         return r.json().then(err => {
-                            const msgs = err.errors ? Object.values(err.errors).flat().join('\n') : (err
-                                .message || 'Dữ liệu không hợp lệ');
+                            const msgs = err.errors ? Object.values(err.errors).flat().join('\n') : (err.message || 'Dữ liệu không hợp lệ');
                             Toast.show(msgs, 'error');
                             throw new Error('validation');
                         });
@@ -391,13 +404,21 @@
                 })
                 .then(data => {
                     if (data.success) {
+                    console.log('Response:', data);
+                        // Nếu là VNPay → redirect sang cổng thanh toán, không xóa giỏ ở đây
+                        if (data.redirect === 'vnpay' && data.payment_url) {
+                            Toast.show('Đang chuyển sang VNPay...', 'info');
+                            setTimeout(() => window.location.href = data.payment_url, 800);
+                            return;
+                        }
+                        // COD hoặc các phương thức khác
                         localStorage.removeItem('nx_cart');
                         Cart.updateUI();
                         Toast.show('Đặt hàng thành công!', 'success');
                         setTimeout(() => window.location.href = '{{ url('don-hang') }}', 1200);
                     } else {
                         Toast.show(data.message || 'Có lỗi xảy ra, vui lòng thử lại', 'error');
-                        resetBtn(btn); // Mở khóa để người dùng thử lại
+                        resetBtn(btn);
                     }
                 })
                 .catch(err => {

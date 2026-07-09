@@ -18,8 +18,8 @@ require __DIR__ . '/auth.php';
 Route::get('/', fn() => view('pages.home'))->name('home');
 
 Route::get('/san-pham', [ProductController::class, 'index'])->name('products.index');
-Route::get('/tim-kiem-goi-y', [ProductController::class, 'suggest'])->name('products.suggest');
 Route::get('/san-pham/{slug}', [ProductController::class, 'show'])->name('products.show');
+Route::get('/san-pham/suggest', [ProductController::class, 'suggest'])->name('products.suggest');
 
 Route::get('/gio-hang', fn() => view('pages.cart.index'))->name('cart.index');
 Route::get('/thanh-toan', [CheckoutController::class, 'index'])->name('checkout.index');
@@ -93,7 +93,7 @@ Route::post('/don-hang/{order}/huy', [\App\Http\Controllers\OrderController::cla
         Route::patch('/{address}/mac-dinh', [UserAddressController::class, 'setDefault'])->name('setDefault');
     });
 
-    // ── Giỏ hàng API (session auth) ─────────────────────────────────────────
+    // ── Giỏ hàng API ──────────────────────────────────────────────────────
     Route::prefix('api/cart')->name('cart.api.')->group(function () {
         Route::get('/',              [\App\Http\Controllers\CartItemController::class, 'index'])->name('index');
         Route::post('/sync',         [\App\Http\Controllers\CartItemController::class, 'sync'])->name('sync');
@@ -103,8 +103,20 @@ Route::post('/don-hang/{order}/huy', [\App\Http\Controllers\OrderController::cla
         Route::delete('/',           [\App\Http\Controllers\CartItemController::class, 'clear'])->name('clear');
     });
 
-    Route::middleware(['auth'])->group(function () {
+ // Route in hóa đơn PDF
+Route::middleware(['auth'])->group(function () {
     Route::get('/admin-invoice/{order}', [InvoiceController::class, 'download'])
         ->name('admin.invoice.download');
 });
-});
+
+// VNPay
+Route::post('/thanh-toan/vnpay/create', [\App\Http\Controllers\PaymentController::class, 'createVNPay'])
+    ->name('vnpay.create');
+
+// IPN VNPay — không cần auth (VNPay server gọi trực tiếp)
+Route::post('/thanh-toan/vnpay/ipn',    [\App\Http\Controllers\PaymentController::class, 'ipnVNPay'])
+    ->name('vnpay.ipn')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
+Route::get('/thanh-toan/vnpay/return',  [\App\Http\Controllers\PaymentController::class, 'returnVNPay'])
+    ->name('vnpay.return');

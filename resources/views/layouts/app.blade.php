@@ -144,8 +144,27 @@
 <div class="toast-wrap" id="toastWrap"></div>
 <script>
   window.__authUser = @json(auth()->check() ? ['id' => auth()->id()] : null);
+  // FIX: sau khi thanh toán VNPay thành công, server đã xóa giỏ hàng trong DB
+  // (CartItem). Phải xóa luôn bản sao trong localStorage ở đây — TRƯỚC khi
+  // main.js chạy Cart.syncToServer() — nếu không, vì localStorage vẫn còn hàng,
+  // syncToServer() sẽ đẩy ngược các sản phẩm đó lên server và "hồi sinh" giỏ hàng.
+  @if (session('clear_cart'))
+    localStorage.removeItem('nx_cart');
+  @endif
 </script>
 <script src="{{ asset('assets/js/main.js') }}"></script>
+@if (session('success') || session('error'))
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      @if (session('success'))
+        Toast.show(@json(session('success')), 'success', 4500);
+      @endif
+      @if (session('error'))
+        Toast.show(@json(session('error')), 'error', 4500);
+      @endif
+    });
+  </script>
+@endif
 <script>
 (function () {
   const form  = document.getElementById('navSearchForm');

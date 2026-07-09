@@ -13,6 +13,8 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
+use App\Models\Payment;
+use App\Services\VNPayService;
 
 class CheckoutController extends Controller
 {
@@ -51,7 +53,8 @@ class CheckoutController extends Controller
             'address_id'     => 'nullable|integer|exists:user_addresses,id',
             'payment_method' => 'nullable|string|in:cod,VNpay,bank_transfer',
             'cart'           => 'required|array|min:1',
-            'cart.*.id'      => 'required|integer',
+            'cart.*.id'         => 'required|integer',
+            'cart.*.variant_id' => 'required|integer',
             'cart.*.qty'     => 'required|integer|min:1',
         ]);
 
@@ -75,8 +78,11 @@ class CheckoutController extends Controller
                 $cart = collect($request->cart);
 
                 // Lấy variants theo ID từ giỏ hàng
-                // Cart gửi lên id = variant_id (từ variantMap trong show.blade.php)
-                $variantIds = $cart->pluck('id')->toArray();
+                // FIX: cart.id thực ra là product_id (Cart.add() gửi id: product.id).
+                // Biến thể thật nằm ở field variant_id (Cart.add({ variant_id: v.id, id: product.id, ... })).
+                // Dùng nhầm 'id' khiến toàn bộ đơn hàng tra sai variant, ném lỗi
+                // "Sản phẩm không tồn tại" và luồng VNPay không bao giờ redirect được.
+                $variantIds = $cart->pluck('variant_id')->toArray();
 
                 $variants = ProductVariant::with(['product', 'attributeValues.attribute'])
                     ->whereIn('id', $variantIds)  // FIX: dùng id (variant_id) thay vì product_id
@@ -88,7 +94,7 @@ class CheckoutController extends Controller
                 $now = now();
 
                 foreach ($cart as $item) {
-                    $variant = $variants[$item['id']] ?? null;
+                    $variant = $variants[$item['variant_id']] ?? null;
 
                     if (!$variant) {
                         throw new \Exception(
@@ -137,7 +143,7 @@ class CheckoutController extends Controller
                     'user_id'          => Auth::id(),
                     'address_id'       => $request->address_id,
                     'coupon_id'        => $coupon?->id,
-                    'coupon_code'      => $coupon?->coupon_code, // FIX: lưu mã coupon vào snapshot
+                    'coupon_code'      => $coupon?->coupon_code,
                     'receiver_name'    => $request->receiver_name,
                     'receiver_phone'   => $request->receiver_phone,
                     'shipping_address' => $shippingAddress,
@@ -147,11 +153,12 @@ class CheckoutController extends Controller
                     'discount_amount'  => $discountAmount,
                     'total_amount'     => $totalAmount,
                     'note'             => $request->note,
+                    'payment_method'   => $request->input('payment_method', 'cod'),
                 ]);
 
                 // ── Bước 4: Tạo order items với đầy đủ snapshot ───────────
                 foreach ($cart as $item) {
-                    $variant = $variants[$item['id']];
+                    $variant = $variants[$item['variant_id']];
                     $now = now();
                     $unitPrice = $this->getEffectivePrice($variant, $now);
 
@@ -190,9 +197,47 @@ class CheckoutController extends Controller
                 return $order;
             });
 
-            // Gửi email xác nhận
-            if ($order->user && $order->user->email) {
-                Mail::to($order->user->email)->send(new OrderConfirmationMail($order));
+            // Gửi email xác nhận (chỉ COD — VNPay gửi sau khi thanh toán thành công)
+            if ($order->payment_method === 'cod') {
+                if ($order->user && $order->user->email) {
+                    Mail::to($order->user->email)->send(new OrderConfirmationMail($order));
+                }
+            }
+
+            // FIX: xóa giỏ hàng trong DB ngay khi đơn được xác nhận (mọi phương thức
+            // trừ VNPay). Trước đây chỉ xóa localStorage ở JS nên giỏ trong DB vẫn còn;
+            // lần load trang kế tiếp Cart.syncToServer() gọi loadFromServer() và kéo
+            // lại y nguyên các sản phẩm vừa mua vào giỏ.
+            // VNPay: giữ nguyên giỏ, chỉ xóa sau khi thanh toán thành công (xem PaymentController::handleSuccess).
+            if ($order->payment_method !== 'vnpay' && Auth::check()) {
+                \App\Models\CartItem::where('user_id', Auth::id())->delete();
+            }
+
+            // Nếu chọn VNPay → tạo URL thanh toán trả về cho JS redirect
+            if ($order->payment_method === 'vnpay') {
+                $vnpay      = new VNPayService();
+                $paymentUrl = $vnpay->createPaymentUrl(
+                    orderId:   $order->id,
+                    amount:    $order->total_amount,
+                    orderInfo: "Thanh toan don hang NX-" . str_pad($order->id, 6, '0', STR_PAD_LEFT),
+                    clientIp:  $request->ip(),
+                );
+
+                // Ghi payment pending
+                Payment::create([
+                    'order_id'         => $order->id,
+                    'payment_gateway'  => 'VNPay',
+                    'amount'           => $order->total_amount,
+                    'status'           => Payment::STATUS_PENDING,
+                    'gateway_response' => null,
+                ]);
+
+                return response()->json([
+                    'success'     => true,
+                    'redirect'    => 'vnpay',
+                    'payment_url' => $paymentUrl,
+                    'order_id'    => $order->id,
+                ]);
             }
 
             return response()->json([
