@@ -74,6 +74,7 @@ class OrdersTable
                         3 => 'Hoàn thành',
                         4 => 'Đã hủy',
                         5 => 'Chờ thanh toán (VNPay)',
+                        6 => 'Chờ xác nhận hủy',
                     ]),
             ])
             ->recordActions([
@@ -95,6 +96,21 @@ class OrdersTable
                             ->content(fn($record) => $record->shipping_address ?: '(Không có)'),
                         Placeholder::make('note')->label('Ghi chú')
                             ->content(fn($record) => $record->note ?: '(Không có)'),
+                        Placeholder::make('cancel_reason')
+                            ->label('Lý do hủy')
+                            ->visible(fn($record) => !empty($record->cancel_reason))
+                            ->content(fn($record) => new \Illuminate\Support\HtmlString(
+                                '<div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;
+                     background:#fee2e2;border-radius:8px;color:#991b1b;font-size:13px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            ' . e($record->cancel_reason) . '
+        </div>'
+                            )),
 
                         Placeholder::make('section_items')
                             ->hiddenLabel()

@@ -1,250 +1,796 @@
 @extends('layouts.app')
 @section('title', 'Chi tiết đơn hàng — Nexus Store')
+
 @push('styles')
-<link rel="stylesheet" href="{{ asset('assets/css/pages/order.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/pages/order.css') }}">
+    <style>
+        /* ── Order Detail Page ───────────────── */
+        .od-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .od-code {
+            font-family: var(--font-display);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        .od-date {
+            font-size: 13px;
+            color: var(--ink-muted);
+            margin-top: 4px;
+        }
+
+        .od-card {
+            background: var(--bg-alt);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--r-xl);
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+
+        .od-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Timeline */
+        .timeline-wrap {
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+        }
+
+        .timeline-line {
+            position: absolute;
+            top: 15px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--border-soft);
+            z-index: 0;
+        }
+
+        .timeline-line-fill {
+            position: absolute;
+            top: 15px;
+            left: 0;
+            height: 2px;
+            background: var(--accent);
+            z-index: 1;
+            transition: .4s;
+        }
+
+        .timeline-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 2;
+            flex: 1;
+        }
+
+        .timeline-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--border);
+            background: var(--surface);
+            transition: .2s;
+        }
+
+        .timeline-dot.done {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .timeline-dot.current {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(227, 0, 25, .12);
+        }
+
+        .timeline-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--ink-muted);
+            text-align: center;
+        }
+
+        .timeline-label.done {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .timeline-label.current {
+            color: var(--ink);
+            font-weight: 700;
+        }
+
+        /* Special status badge */
+        .status-special {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: var(--r-full);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-special.awaiting {
+            background: var(--amber-light);
+            color: var(--amber);
+        }
+
+        .status-special.cancel-req {
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+        .status-special.cancelled {
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+        /* Items */
+        .od-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border-soft);
+        }
+
+        .od-item:last-child {
+            border-bottom: none;
+        }
+
+        .od-item-img {
+            width: 60px;
+            height: 60px;
+            border-radius: var(--r-md);
+            background: var(--surface);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: #C5C3BC;
+            overflow: hidden;
+        }
+
+        .od-item-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 6px;
+        }
+
+        .od-item-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ink);
+            margin-bottom: 3px;
+        }
+
+        .od-item-variant {
+            font-size: 12px;
+            color: var(--ink-muted);
+        }
+
+        .od-item-price {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--ink);
+            white-space: nowrap;
+            margin-left: auto;
+        }
+
+        /* Payment rows */
+        .pay-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-soft);
+        }
+
+        .pay-row:last-child {
+            border-bottom: none;
+        }
+
+        .pay-row-total {
+            font-size: 18px;
+            font-weight: 800;
+            padding: 14px 0 0;
+        }
+
+        /* Cancel modal */
+        .cancel-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .5);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cancel-modal {
+            background: #fff;
+            border-radius: var(--r-2xl);
+            width: 100%;
+            max-width: 520px;
+            max-height: 88vh;
+            overflow-y: auto;
+            margin: 16px;
+        }
+
+        .cancel-modal-head {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-soft);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cancel-modal-body {
+            padding: 20px 24px;
+        }
+
+        .cancel-reason-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-soft);
+            cursor: pointer;
+        }
+
+        .cancel-reason-item:last-child {
+            border-bottom: none;
+        }
+
+        .cancel-reason-item input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent);
+            flex-shrink: 0;
+            margin-top: 2px;
+            cursor: pointer;
+        }
+
+        .cancel-reason-text {
+            font-size: 14px;
+            color: var(--ink-2);
+            line-height: 1.5;
+        }
+    </style>
 @endpush
 
 @section('content')
-<div class="container">
-  <div class="account-layout">
-    {{-- NAV --}}
-    <div class="account-nav">
-      <a href="{{ route('profile.edit') }}" class="account-nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Tài khoản
-      </a>
-      <a href="{{ url('don-hang') }}" class="account-nav-link active">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-        Đơn hàng
-      </a>
-      <a href="{{ url('dia-chi') }}" class="account-nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        Địa chỉ
-      </a>
-      <a href="{{ url('yeu-thich') }}" class="account-nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        Yêu thích
-      </a>
-    </div>
+    <div class="container" style="padding-bottom:80px">
+        <div class="account-layout">
 
-    {{-- CONTENT --}}
-    <div>
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
-        <a href="{{ route('orders.index') }}" style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-muted)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-          Quay lại đơn hàng
-        </a>
-      </div>
-
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
-        <h1 class="h1">Đơn hàng NX-{{ str_pad($order->id, 6, '0', STR_PAD_LEFT) }}</h1>
-        @php
-          $statusMap   = [0=>'status-pending',1=>'status-confirmed',2=>'status-shipping',3=>'status-delivered',4=>'status-cancelled'];
-          $statusLabel = [0=>'Chờ xác nhận',1=>'Đã xác nhận',2=>'Đang giao',3=>'Hoàn thành',4=>'Đã huỷ'];
-        @endphp
-        <span class="status {{ $statusMap[$order->order_status] ?? '' }}">
-          {{ $statusLabel[$order->order_status] ?? '' }}
-        </span>
-      </div>
-
-      {{-- TIMELINE TRẠNG THÁI --}}
-      <div class="order-card" style="margin-bottom:20px;padding:24px">
-        <div style="font-weight:700;font-size:14px;margin-bottom:16px;display:flex;align-items:center;gap:8px">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Theo dõi trạng thái
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;position:relative">
-          <div style="position:absolute;top:16px;left:0;right:0;height:2px;background:var(--border-soft);z-index:0"></div>
-          @php
-            $steps = [
-              ['label' => 'Chờ xác nhận', 'status' => 0],
-              ['label' => 'Đã xác nhận',  'status' => 1],
-              ['label' => 'Đang giao',     'status' => 2],
-              ['label' => 'Hoàn thành',    'status' => 3],
-            ];
-          @endphp
-          @foreach($steps as $step)
-          @php
-            $done    = $order->order_status >= $step['status'] && $order->order_status != 4;
-            $current = $order->order_status == $step['status'];
-          @endphp
-          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;z-index:1;flex:1">
-            <div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-              background:{{ $done ? 'var(--accent)' : 'var(--surface)' }};
-              border:2px solid {{ $done ? 'var(--accent)' : 'var(--border)' }};
-              {{ $current ? 'box-shadow:0 0 0 4px rgba(200,82,42,.15)' : '' }}">
-              @if($done)
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-              @endif
+            {{-- NAV --}}
+            <div class="account-nav">
+                <a href="{{ route('profile.edit') }}" class="account-nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    Tài khoản
+                </a>
+                <a href="{{ route('orders.index') }}" class="account-nav-link active">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round">
+                        <path d="M9 11l3 3L22 4" />
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                    </svg>
+                    Đơn hàng
+                </a>
+                <a href="{{ route('addresses.index') }}" class="account-nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round">
+                        <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                    </svg>
+                    Địa chỉ
+                </a>
+                <a href="{{ route('wishlist') }}" class="account-nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round">
+                        <path
+                            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                    Yêu thích
+                </a>
             </div>
-            <span style="font-size:11px;font-weight:{{ $current ? '700' : '500' }};color:{{ $done ? 'var(--accent)' : 'var(--ink-muted)' }};text-align:center">
-              {{ $step['label'] }}
-            </span>
-          </div>
-          @endforeach
 
-          @if($order->order_status == 4)
-<div style="position:absolute;top:4px;right:0;background:var(--red-light);color:var(--red);border-radius:var(--r-lg);padding:4px 10px;font-size:12px;font-weight:600">
-  Đã huỷ
-</div>
-@elseif($order->order_status == 5)
-<div style="position:absolute;top:4px;right:0;background:#fffbe6;color:#f59e0b;border-radius:var(--r-lg);padding:4px 10px;font-size:12px;font-weight:600">
-  Chờ xác nhận hủy
-</div>
-@endif
-        </div>
-      </div>
+            {{-- CONTENT --}}
+            <div>
 
-      {{-- THÔNG TIN GIAO HÀNG --}}
-      <div class="order-card" style="margin-bottom:20px;padding:24px">
-        <div style="font-weight:700;font-size:14px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          Thông tin giao hàng
-        </div>
-        <p style="font-size:14px;font-weight:600">{{ $order->receiver_name }} — {{ $order->receiver_phone }}</p>
-        <p style="font-size:13px;color:var(--ink-muted);margin-top:4px">{{ $order->shipping_address }}</p>
-        @if($order->note)
-        <p style="font-size:13px;color:var(--ink-muted);margin-top:4px">Ghi chú: {{ $order->note }}</p>
-        @endif
-      </div>
+                {{-- Back + Flash messages --}}
+                <a href="{{ route('orders.index') }}"
+                    style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-muted);margin-bottom:20px;text-decoration:none">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round">
+                        <line x1="19" y1="12" x2="5" y2="12" />
+                        <polyline points="12 19 5 12 12 5" />
+                    </svg>
+                    Quay lại đơn hàng
+                </a>
 
-      {{-- SẢN PHẨM --}}
-      <div class="order-card" style="margin-bottom:20px;padding:24px">
-        <div style="font-weight:700;font-size:14px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-          Sản phẩm đã đặt
-        </div>
-        <div class="order-items-list">
-          @foreach($order->items as $item)
-          <div class="order-item-row">
-            <div class="order-item-img">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            </div>
-            <div style="flex:1">
-              <div class="order-item-name">{{ $item->product_name }}</div>
-              <div class="order-item-variant">{{ $item->variant_description }} × {{ $item->quantity }}</div>
-            </div>
-            <div class="order-item-price">{{ number_format($item->total_price ?? $item->unit_price * $item->quantity, 0, ',', '.') }}₫</div>
-          </div>
-          @endforeach
-        </div>
-      </div>
+                @if (session('success'))
+                    <div
+                        style="padding:12px 16px;background:var(--green-light);color:var(--green);border-radius:var(--r-md);font-size:14px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        {{ session('success') }}
+                    </div>
+                @endif
 
-      {{-- TỔNG TIỀN --}}
-      <div class="order-card" style="margin-bottom:20px;padding:24px">
-        <div style="font-weight:700;font-size:14px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-          Thông tin thanh toán
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:14px;padding:6px 0;border-bottom:1px solid var(--border-soft)">
-  <span style="color:var(--ink-muted)">Phương thức thanh toán</span>
-  <span style="font-weight:600">Thanh toán khi nhận hàng (COD)</span>
-</div>
-        @if($order->discount_amount > 0)
-        <div style="display:flex;justify-content:space-between;font-size:14px;padding:6px 0;border-bottom:1px solid var(--border-soft)">
-          <span style="color:var(--ink-muted)">Giảm giá {{ $order->coupon ? '('.$order->coupon->coupon_code.')' : '' }}</span>
-          <span style="color:var(--green)">-{{ number_format($order->discount_amount, 0, ',', '.') }}₫</span>
-        </div>
-        @endif
-        <div style="display:flex;justify-content:space-between;font-size:14px;padding:6px 0;border-bottom:1px solid var(--border-soft)">
-          <span style="color:var(--ink-muted)">Phí vận chuyển</span>
-          <span style="color:var(--green)">Miễn phí</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:800;padding:12px 0 0">
-          <span>Tổng cộng</span>
-          <span style="color:var(--accent)">{{ number_format($order->total_amount, 0, ',', '.') }}₫</span>
-        </div>
-      </div>
+                @if (session('error'))
+                    <div
+                        style="padding:12px 16px;background:var(--red-light);color:var(--red);border-radius:var(--r-md);font-size:14px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                        {{ session('error') }}
+                    </div>
+                @endif
 
-      {{-- NÚT HỦY ĐƠN --}}
-      @if((int)$order->order_status === 0)
-<div style="margin-top:8px">
-  <button type="button" onclick="openCancelModal()"
-    class="btn btn-ghost" style="color:var(--red);border-color:var(--red)">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-    Yêu cầu hủy đơn
-  </button>
-</div>
+                {{-- ── HEADER ───────────────────────────────── --}}
+                @php
+                    $currentStatus = (int) $order->order_status;
+                    $isAwaiting = $currentStatus === 5;
+                    $isCancelReq = $currentStatus === 6;
+                    $isCancelled = $currentStatus === 4;
 
-{{-- Modal lý do hủy --}}
-<div id="cancelModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:16px;width:100%;max-width:560px;padding:32px;max-height:85vh;overflow-y:auto;margin:16px">
-    
-    {{-- Header --}}
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h3 style="font-size:17px;font-weight:700">Lý Do Hủy</h3>
-      <button onclick="closeCancelModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999">✕</button>
-    </div>
+                    $statusLabel = [
+                        0 => 'Chờ xác nhận',
+                        1 => 'Đã xác nhận',
+                        2 => 'Đang giao',
+                        3 => 'Hoàn thành',
+                        4 => 'Đã hủy',
+                        5 => 'Chờ thanh toán',
+                        6 => 'Chờ xác nhận hủy',
+                    ];
+                    $statusClass = [
+                        0 => 'status-pending',
+                        1 => 'status-confirmed',
+                        2 => 'status-shipping',
+                        3 => 'status-delivered',
+                        4 => 'status-cancelled',
+                        5 => 'status-pending',
+                        6 => 'status-cancelled',
+                    ];
+                @endphp
 
-    {{-- Thông báo --}}
-    <div style="background:#fffbe6;border-radius:8px;padding:12px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <p style="font-size:13px;color:#92400e;line-height:1.6">
-        Nếu bạn xác nhận hủy, toàn bộ đơn hàng sẽ được hủy.<br>
-        Chọn lý do hủy
-    </div>
+                <div class="od-header">
+                    <div>
+                        <div class="od-code">
+                            NX-{{ str_pad($order->id, 6, '0', STR_PAD_LEFT) }}
+                        </div>
+                        <div class="od-date">
+                            Đặt lúc {{ $order->created_at->format('H:i — d/m/Y') }}
+                        </div>
+                    </div>
+                    <span class="status {{ $statusClass[$currentStatus] ?? '' }}">
+                        {{ $statusLabel[$currentStatus] ?? 'Không xác định' }}
+                    </span>
+                </div>
 
-    {{-- Danh sách lý do --}}
-    <form action="{{ route('orders.cancel', $order) }}" method="POST" id="cancelForm">
-      @csrf
-      <div style="display:flex;flex-direction:column;gap:0">
-        @php
-          $reasons = [
-            'Tôi muốn cập nhật địa chỉ/sđt nhận hàng.',
-            'Tôi muốn thêm/thay đổi Mã giảm giá',
-            'Tôi muốn thay đổi sản phẩm (kích thước, màu sắc, số lượng...)',
-            'Thủ tục thanh toán rắc rối',
-            'Tôi tìm thấy chỗ mua khác tốt hơn (Rẻ hơn, uy tín hơn, giao nhanh hơn...)',
-            'Tôi không có nhu cầu mua nữa',
-            'Tôi không tìm thấy lý do hủy phù hợp',
-          ];
-        @endphp
+                {{-- ── TIMELINE ──────────────────────────────── --}}
+                <div class="od-card">
+                    <div class="od-card-title">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        Trạng thái đơn hàng
+                    </div>
 
-        @foreach($reasons as $reason)
-        <label style="display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid #f0f0f0;cursor:pointer">
-          <input type="radio" name="cancel_reason" value="{{ $reason }}"
-            style="width:20px;height:20px;accent-color:var(--accent);flex-shrink:0;margin-top:2px"
-            onchange="document.getElementById('confirmCancelBtn').disabled=false;
-                      document.getElementById('confirmCancelBtn').style.background='var(--accent)'">
-          <span style="font-size:14px;color:#333">{{ $reason }}</span>
-        </label>
-        @endforeach
-      </div>
+                    {{-- Trạng thái đặc biệt: hủy / chờ thanh toán / chờ xác nhận hủy --}}
+                    @if ($isCancelled || $isAwaiting || $isCancelReq)
+                        <div style="margin-bottom:20px">
+                            @if ($isCancelled)
+                                <div class="status-special cancelled">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="15" y1="9" x2="9" y2="15" />
+                                        <line x1="9" y1="9" x2="15" y2="15" />
+                                    </svg>
+                                    Đơn hàng đã bị hủy
+                                    @if ($order->cancel_reason)
+                                        <span style="font-weight:400;margin-left:4px">— {{ $order->cancel_reason }}</span>
+                                    @endif
+                                </div>
+                            @elseif($isAwaiting)
+                                <div class="status-special awaiting">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <polyline points="12 6 12 12 16 14" />
+                                    </svg>
+                                    Đang chờ thanh toán qua VNPay
+                                    — vui lòng hoàn tất thanh toán để xác nhận đơn
+                                </div>
+                            @elseif($isCancelReq)
+                                <div class="status-special cancel-req">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="12" y1="8" x2="12" y2="12" />
+                                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                                    </svg>
+                                    Yêu cầu hủy đang được xem xét — Admin sẽ phản hồi trong 24h
+                                </div>
+                            @endif
+                        </div>
+                    @endif
 
-      {{-- Nút xác nhận --}}
-      <button type="submit" id="confirmCancelBtn" disabled
-        style="width:100%;padding:16px;background:#ccc;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;margin-top:20px;transition:.2s">
-        Xác nhận
-      </button>
-    </form>
-  </div>
-</div>
-@endif
+                    {{-- Timeline steps --}}
+                    @php
+                        $steps = [
+                            ['label' => 'Chờ xác nhận', 'status' => 0],
+                            ['label' => 'Đã xác nhận', 'status' => 1],
+                            ['label' => 'Đang giao', 'status' => 2],
+                            ['label' => 'Hoàn thành', 'status' => 3],
+                        ];
+                        // Tính % fill line
+                        $normalStatus = min($currentStatus, 3);
+                        $fillPercent = $isCancelled || $isAwaiting || $isCancelReq ? 0 : ($normalStatus / 3) * 100;
+                    @endphp
 
-      @if(session('success'))
-      <div style="margin-top:16px;padding:12px 16px;background:var(--green-light);color:var(--green);border-radius:var(--r-lg);font-size:14px;font-weight:600">
-        {{ session('success') }}
-      </div>
-      @endif
+                    <div class="timeline-wrap">
+                        <div class="timeline-line"></div>
+                        <div class="timeline-line-fill" style="width:{{ $fillPercent }}%"></div>
 
-      @if(session('error'))
-      <div style="margin-top:16px;padding:12px 16px;background:var(--red-light);color:var(--red);border-radius:var(--r-lg);font-size:14px;font-weight:600">
-        {{ session('error') }}
-      </div>
-      @endif
-    </div>
-  </div>
-</div>
+                        @foreach ($steps as $step)
+                            @php
+                                $done =
+                                    !$isCancelled && !$isAwaiting && !$isCancelReq && $currentStatus >= $step['status'];
+                                $current =
+                                    $currentStatus === $step['status'] &&
+                                    !$isCancelled &&
+                                    !$isAwaiting &&
+                                    !$isCancelReq;
+                            @endphp
+                            <div class="timeline-step">
+                                <div class="timeline-dot {{ $done ? 'done' : ($current ? 'current' : '') }}">
+                                    @if ($done)
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                            stroke="#fff" stroke-width="3" stroke-linecap="round">
+                                            <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                    @elseif($current)
+                                        <div style="width:10px;height:10px;border-radius:50%;background:var(--accent)">
+                                        </div>
+                                    @endif
+                                </div>
+                                <span class="timeline-label {{ $done ? 'done' : ($current ? 'current' : '') }}">
+                                    {{ $step['label'] }}
+                                </span>
+                            </div>
+                        @endforeach
+                    </div>
 
-<script>
-function openCancelModal() {
-  const modal = document.getElementById('cancelModal');
-  modal.style.display = 'flex';
-}
-function closeCancelModal() {
-  document.getElementById('cancelModal').style.display = 'none';
-}
-window.openCancelModal = openCancelModal;
-window.closeCancelModal = closeCancelModal;
-</script>
+                    {{-- Nút tiếp tục thanh toán VNPay --}}
+                    @if ($isAwaiting)
+                        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border-soft)">
+                            <button type="button" class="btn btn-primary" id="retryPayBtn"
+                                data-order-id="{{ $order->id }}">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <rect x="1" y="4" width="22" height="16" rx="2" />
+                                    <line x1="1" y1="10" x2="23" y2="10" />
+                                </svg>
+                                Tiếp tục thanh toán VNPay
+                            </button>
+                            <span style="font-size:12px;color:var(--ink-muted);margin-left:10px">
+                                Phiên thanh toán hết hạn sau 15 phút
+                            </span>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- ── THÔNG TIN GIAO HÀNG ──────────────────── --}}
+                <div class="od-card">
+                    <div class="od-card-title">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round">
+                            <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
+                        </svg>
+                        Thông tin giao hàng
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                        <div>
+                            <div style="font-size:12px;color:var(--ink-muted);margin-bottom:4px">Người nhận</div>
+                            <div style="font-size:14px;font-weight:600">{{ $order->receiver_name }}</div>
+                            <div style="font-size:13px;color:var(--ink-2);margin-top:2px">{{ $order->receiver_phone }}
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size:12px;color:var(--ink-muted);margin-bottom:4px">Địa chỉ giao hàng</div>
+                            <div style="font-size:13px;color:var(--ink-2);line-height:1.6">{{ $order->shipping_address }}
+                            </div>
+                        </div>
+                    </div>
+                    @if ($order->note)
+                        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border-soft)">
+                            <div style="font-size:12px;color:var(--ink-muted);margin-bottom:4px">Ghi chú</div>
+                            <div style="font-size:13px;color:var(--ink-2)">{{ $order->note }}</div>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- ── SẢN PHẨM ─────────────────────────────── --}}
+                <div class="od-card">
+                    <div class="od-card-title">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round">
+                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                            <line x1="3" y1="6" x2="21" y2="6" />
+                            <path d="M16 10a4 4 0 0 1-8 0" />
+                        </svg>
+                        Sản phẩm đã đặt ({{ $order->items->count() }} sản phẩm)
+                    </div>
+
+                    @foreach ($order->items as $item)
+                        <div class="od-item">
+                            <div class="od-item-img">
+                                @if ($item->product_thumbnail)
+                                    <img src="{{ asset('storage/' . $item->product_thumbnail) }}"
+                                        alt="{{ $item->product_name }}" onerror="this.style.display='none'">
+                                @else
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width=".8" stroke-linecap="round">
+                                        <rect x="2" y="3" width="20" height="14" rx="2" />
+                                        <line x1="8" y1="21" x2="16" y2="21" />
+                                        <line x1="12" y1="17" x2="12" y2="21" />
+                                    </svg>
+                                @endif
+                            </div>
+
+                            <div style="flex:1;min-width:0">
+                                <div class="od-item-name">{{ $item->product_name }}</div>
+                                <div class="od-item-variant">
+                                    {{ $item->variant_description }}
+                                    @if ($item->variant_sku)
+                                        <span style="color:var(--border)">·</span>
+                                        <span style="font-family:monospace;font-size:11px">{{ $item->variant_sku }}</span>
+                                    @endif
+                                </div>
+                                <div style="font-size:12px;color:var(--ink-muted);margin-top:4px">
+                                    {{ number_format($item->unit_price, 0, ',', '.') }}₫ × {{ $item->quantity }}
+                                </div>
+                            </div>
+
+                            <div class="od-item-price">
+                                {{ number_format($item->total_price ?? $item->unit_price * $item->quantity, 0, ',', '.') }}₫
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- ── THANH TOÁN ───────────────────────────── --}}
+                <div class="od-card">
+                    <div class="od-card-title">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round">
+                            <rect x="1" y="4" width="22" height="16" rx="2" />
+                            <line x1="1" y1="10" x2="23" y2="10" />
+                        </svg>
+                        Thông tin thanh toán
+                    </div>
+
+                    <div class="pay-row">
+                        <span style="color:var(--ink-muted)">Phương thức</span>
+                        <span style="font-weight:600">
+                            {{ match ($order->payment_method ?? 'cod') {
+                                'vnpay' => 'Ví điện tử VNPay',
+                                'momo' => 'Ví MoMo',
+                                'zalopay' => 'ZaloPay',
+                                'bank_transfer' => 'Chuyển khoản ngân hàng',
+                                default => 'Thanh toán khi nhận hàng (COD)',
+                            } }}
+                        </span>
+                    </div>
+
+                    <div class="pay-row">
+                        <span style="color:var(--ink-muted)">Tạm tính</span>
+                        <span>{{ number_format($order->subtotal ?? 0, 0, ',', '.') }}₫</span>
+                    </div>
+
+                    @if ($order->discount_amount > 0)
+                        <div class="pay-row">
+                            <span style="color:var(--ink-muted)">
+                                Giảm giá
+                                @if ($order->coupon_code)
+                                    <span
+                                        style="background:var(--green-light);color:var(--green);padding:1px 7px;border-radius:99px;font-size:11px;font-weight:700;margin-left:4px">
+                                        {{ $order->coupon_code }}
+                                    </span>
+                                @endif
+                            </span>
+                            <span style="color:var(--green);font-weight:600">
+                                -{{ number_format($order->discount_amount, 0, ',', '.') }}₫
+                            </span>
+                        </div>
+                    @endif
+
+                    <div class="pay-row">
+                        <span style="color:var(--ink-muted)">Phí vận chuyển</span>
+                        <span style="color:var(--green);font-weight:500">Miễn phí</span>
+                    </div>
+
+                    <div class="pay-row pay-row-total">
+                        <span>Tổng cộng</span>
+                        <span style="color:var(--accent)">
+                            {{ number_format($order->total_amount, 0, ',', '.') }}₫
+                        </span>
+                    </div>
+                </div>
+
+                {{-- ── NÚT HÀNH ĐỘNG ───────────────────────── --}}
+                @if ($currentStatus === \App\Models\Order::STATUS_PENDING)
+                    <div style="display:flex;justify-content:flex-end;margin-top:4px">
+                        <button type="button" onclick="openCancelModal()" class="btn btn-ghost"
+                            style="color:var(--red);border-color:var(--red)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="15" y1="9" x2="9" y2="15" />
+                                <line x1="9" y1="9" x2="15" y2="15" />
+                            </svg>
+                            Yêu cầu hủy đơn
+                        </button>
+                    </div>
+
+                    {{-- MODAL HỦY ĐƠN --}}
+                    <div class="cancel-overlay" id="cancelModal">
+                        <div class="cancel-modal">
+                            <div class="cancel-modal-head">
+                                <span style="font-size:16px;font-weight:700">Chọn lý do hủy đơn</span>
+                                <button onclick="closeCancelModal()"
+                                    style="background:none;border:none;cursor:pointer;padding:4px;color:var(--ink-muted)">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div class="cancel-modal-body">
+                                <div
+                                    style="background:var(--amber-light);border-radius:var(--r-md);padding:12px 14px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                        stroke="var(--amber)" stroke-width="2" stroke-linecap="round"
+                                        style="flex-shrink:0;margin-top:1px">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="12" y1="8" x2="12" y2="12" />
+                                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                                    </svg>
+                                    <p style="font-size:13px;color:var(--amber);line-height:1.6;margin:0">
+                                        Yêu cầu hủy sẽ được admin xem xét trong <strong>24 giờ</strong>. Kho sẽ được hoàn
+                                        lại sau khi admin xác nhận.
+                                    </p>
+                                </div>
+
+                                <form action="{{ route('orders.cancel', $order) }}" method="POST" id="cancelForm">
+                                    @csrf
+                                    @php $reasons = ['Tôi muốn thay đổi địa chỉ / số điện thoại nhận hàng', 'Tôi muốn áp dụng mã giảm giá khác', 'Tôi muốn thay đổi sản phẩm (màu sắc, kích thước...)', 'Thủ tục thanh toán rắc rối', 'Tôi tìm được nơi mua rẻ hơn hoặc uy tín hơn', 'Tôi không còn nhu cầu mua nữa', 'Lý do khác']; @endphp
+
+                                    @foreach ($reasons as $reason)
+                                        <label class="cancel-reason-item">
+                                            <input type="radio" name="cancel_reason" value="{{ $reason }}"
+                                                onchange="document.getElementById('submitCancelBtn').disabled=false">
+                                            <span class="cancel-reason-text">{{ $reason }}</span>
+                                        </label>
+                                    @endforeach
+
+                                    <button type="submit" id="submitCancelBtn" disabled class="btn btn-danger btn-full"
+                                        style="margin-top:20px;opacity:.5" onclick="this.style.opacity='1'"
+                                        {{-- Kích hoạt style khi enabled --}}>
+                                        Xác nhận yêu cầu hủy
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+            </div>{{-- end content --}}
+        </div>{{-- end account-layout --}}
+    </div>{{-- end container --}}
+
+    <script>
+        function openCancelModal() {
+            document.getElementById('cancelModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeCancelModal() {
+            document.getElementById('cancelModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        // Đóng modal khi click ra ngoài
+        document.getElementById('cancelModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closeCancelModal();
+        });
+
+        // Kích hoạt nút xác nhận khi chọn lý do
+        document.querySelectorAll('input[name="cancel_reason"]').forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                const btn = document.getElementById('submitCancelBtn');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                }
+            });
+        });
+
+        // Nút tiếp tục thanh toán VNPay
+        const retryBtn = document.getElementById('retryPayBtn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', function() {
+                this.disabled = true;
+                this.textContent = 'Đang tạo phiên thanh toán...';
+                fetch('{{ route('vnpay.create') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            order_id: this.dataset.orderId
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success && data.payment_url) {
+                            window.location.href = data.payment_url;
+                        } else {
+                            Toast.show(data.message || 'Không thể tạo phiên thanh toán', 'error');
+                            this.disabled = false;
+                            this.textContent = 'Tiếp tục thanh toán VNPay';
+                        }
+                    })
+                    .catch(() => {
+                        Toast.show('Lỗi kết nối, thử lại sau', 'error');
+                        this.disabled = false;
+                        this.textContent = 'Tiếp tục thanh toán VNPay';
+                    });
+            });
+        }
+
+        window.openCancelModal = openCancelModal;
+        window.closeCancelModal = closeCancelModal;
+    </script>
 @endsection

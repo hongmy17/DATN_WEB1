@@ -61,10 +61,10 @@ class PaymentController extends Controller
         );
 
         $url = $this->vnpay->createPaymentUrl(
-            orderId:   $order->id,
-            amount:    $order->total_amount,
+            orderId: $order->id,
+            amount: $order->total_amount,
             orderInfo: "Thanh toan don hang NX-{$order->id}",
-            clientIp:  $request->ip(),
+            clientIp: $request->ip(),
         );
 
         return response()->json(['success' => true, 'payment_url' => $url]);
@@ -103,8 +103,8 @@ class PaymentController extends Controller
 
         // Thanh toán thất bại / bị hủy
         $this->handleFailed($order, $data);
-        return redirect()->route('checkout.index')
-            ->with('error', 'Thanh toán không thành công. Mã lỗi: ' . $responseCode);
+        return redirect()->route('orders.show', $order)
+            ->with('error', 'Thanh toán không thành công. Vui lòng thử lại.');
     }
 
     /* ═══════════════════════════════════════════════════════════
@@ -172,11 +172,6 @@ class PaymentController extends Controller
 
                 // Trừ tồn kho
                 $order->load('items');
-                foreach ($order->items as $item) {
-                    ProductVariant::where('id', $item->variant_id)
-                        ->where('manage_stock', true)
-                        ->decrement('stock_quantity', $item->quantity);
-                }
             }
 
             // Ghi / cập nhật bảng payments

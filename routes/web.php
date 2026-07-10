@@ -19,8 +19,8 @@ require __DIR__ . '/auth.php';
 Route::get('/', fn() => view('pages.home'))->name('home');
 
 Route::get('/san-pham', [ProductController::class, 'index'])->name('products.index');
-Route::get('/san-pham/{slug}', [ProductController::class, 'show'])->name('products.show');
 Route::get('/san-pham/suggest', [ProductController::class, 'suggest'])->name('products.suggest');
+Route::get('/san-pham/{slug}', [ProductController::class, 'show'])->name('products.show');
 
 // ── Review: load AJAX (không cần auth, ai cũng đọc được) ────────────────────
 Route::get('/san-pham/{slug}/danh-gia', [ReviewController::class, 'load'])
@@ -60,7 +60,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/dang-xuat', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
-
+});
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -132,4 +132,3 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/thanh-toan/vnpay/return',  [\App\Http\Controllers\PaymentController::class, 'returnVNPay'])
         ->name('vnpay.return');
-});

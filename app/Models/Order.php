@@ -24,6 +24,7 @@ class Order extends Model
         'discount_amount',
         'total_amount',
         'note',
+        'cancel_reason',
     ];
 
     // Trạng thái đơn hàng
