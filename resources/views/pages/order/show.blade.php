@@ -84,10 +84,14 @@
           @endforeach
 
           @if($order->order_status == 4)
-          <div style="position:absolute;top:4px;right:0;background:var(--red-light);color:var(--red);border-radius:var(--r-lg);padding:4px 10px;font-size:12px;font-weight:600">
-            Đã huỷ
-          </div>
-          @endif
+<div style="position:absolute;top:4px;right:0;background:var(--red-light);color:var(--red);border-radius:var(--r-lg);padding:4px 10px;font-size:12px;font-weight:600">
+  Đã huỷ
+</div>
+@elseif($order->order_status == 5)
+<div style="position:absolute;top:4px;right:0;background:#fffbe6;color:#f59e0b;border-radius:var(--r-lg);padding:4px 10px;font-size:12px;font-weight:600">
+  Chờ xác nhận hủy
+</div>
+@endif
         </div>
       </div>
 
@@ -153,19 +157,69 @@
       </div>
 
       {{-- NÚT HỦY ĐƠN --}}
-      @if($order->order_status === 0)
-      <div style="margin-top:8px">
-        <form action="{{ route('orders.cancel', $order) }}" method="POST"
-          onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này?')">
-          @csrf
-          <button type="submit" class="btn btn-ghost"
-            style="color:var(--red);border-color:var(--red)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-            Yêu cầu hủy đơn
-          </button>
-        </form>
+      @if((int)$order->order_status === 0)
+<div style="margin-top:8px">
+  <button type="button" onclick="openCancelModal()"
+    class="btn btn-ghost" style="color:var(--red);border-color:var(--red)">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    Yêu cầu hủy đơn
+  </button>
+</div>
+
+{{-- Modal lý do hủy --}}
+<div id="cancelModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:560px;padding:32px;max-height:85vh;overflow-y:auto;margin:16px">
+    
+    {{-- Header --}}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="font-size:17px;font-weight:700">Lý Do Hủy</h3>
+      <button onclick="closeCancelModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999">✕</button>
+    </div>
+
+    {{-- Thông báo --}}
+    <div style="background:#fffbe6;border-radius:8px;padding:12px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <p style="font-size:13px;color:#92400e;line-height:1.6">
+        Nếu bạn xác nhận hủy, toàn bộ đơn hàng sẽ được hủy.<br>
+        Chọn lý do hủy
+    </div>
+
+    {{-- Danh sách lý do --}}
+    <form action="{{ route('orders.cancel', $order) }}" method="POST" id="cancelForm">
+      @csrf
+      <div style="display:flex;flex-direction:column;gap:0">
+        @php
+          $reasons = [
+            'Tôi muốn cập nhật địa chỉ/sđt nhận hàng.',
+            'Tôi muốn thêm/thay đổi Mã giảm giá',
+            'Tôi muốn thay đổi sản phẩm (kích thước, màu sắc, số lượng...)',
+            'Thủ tục thanh toán rắc rối',
+            'Tôi tìm thấy chỗ mua khác tốt hơn (Rẻ hơn, uy tín hơn, giao nhanh hơn...)',
+            'Tôi không có nhu cầu mua nữa',
+            'Tôi không tìm thấy lý do hủy phù hợp',
+          ];
+        @endphp
+
+        @foreach($reasons as $reason)
+        <label style="display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid #f0f0f0;cursor:pointer">
+          <input type="radio" name="cancel_reason" value="{{ $reason }}"
+            style="width:20px;height:20px;accent-color:var(--accent);flex-shrink:0;margin-top:2px"
+            onchange="document.getElementById('confirmCancelBtn').disabled=false;
+                      document.getElementById('confirmCancelBtn').style.background='var(--accent)'">
+          <span style="font-size:14px;color:#333">{{ $reason }}</span>
+        </label>
+        @endforeach
       </div>
-      @endif
+
+      {{-- Nút xác nhận --}}
+      <button type="submit" id="confirmCancelBtn" disabled
+        style="width:100%;padding:16px;background:#ccc;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;margin-top:20px;transition:.2s">
+        Xác nhận
+      </button>
+    </form>
+  </div>
+</div>
+@endif
 
       @if(session('success'))
       <div style="margin-top:16px;padding:12px 16px;background:var(--green-light);color:var(--green);border-radius:var(--r-lg);font-size:14px;font-weight:600">
@@ -181,4 +235,16 @@
     </div>
   </div>
 </div>
+
+<script>
+function openCancelModal() {
+  const modal = document.getElementById('cancelModal');
+  modal.style.display = 'flex';
+}
+function closeCancelModal() {
+  document.getElementById('cancelModal').style.display = 'none';
+}
+window.openCancelModal = openCancelModal;
+window.closeCancelModal = closeCancelModal;
+</script>
 @endsection

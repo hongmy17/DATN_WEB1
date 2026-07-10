@@ -27,14 +27,13 @@ class Order extends Model
     ];
 
     // Trạng thái đơn hàng
-    const STATUS_PENDING          = 0;  // Chờ xác nhận (COD, hoặc VNPay đã thanh toán xong)
+    const STATUS_PENDING          = 0;  // Chờ xác nhận (COD hoặc VNPay đã thanh toán xong)
     const STATUS_CONFIRMED        = 1;
     const STATUS_SHIPPING         = 2;
     const STATUS_COMPLETED        = 3;
     const STATUS_CANCELLED        = 4;
-    const STATUS_AWAITING_PAYMENT = 5;  // Chờ thanh toán VNPay (chưa thanh toán / bị gián đoạn)
-
-    // Thời gian hết hạn phiên thanh toán VNPay — khớp với vnp_ExpireDate (15 phút) trong VNPayService
+    const STATUS_AWAITING_PAYMENT = 5;  // Chờ thanh toán VNPay
+    const STATUS_CANCEL_REQUESTED = 6;  // Khách yêu cầu hủy, chờ admin xác nhận
     const PAYMENT_TIMEOUT_MINUTES = 15;
 
     /**
@@ -82,7 +81,10 @@ class Order extends Model
             2 => 'Đang giao',
             3 => 'Hoàn thành',
             4 => 'Đã hủy',
-            5 => $this->isPaymentExpired() ? 'Thanh toán quá hạn' : 'Chờ thanh toán',
+            5 => $this->isPaymentExpired()
+                ? 'Thanh toán quá hạn'
+                : 'Chờ thanh toán',
+            6 => 'Chờ xác nhận hủy',
             default => 'Không xác định',
         };
     }

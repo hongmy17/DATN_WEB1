@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Orders\Tables;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Placeholder;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\SelectColumn;
@@ -46,14 +47,14 @@ class OrdersTable
 
                 // FIX: Bỏ emoji trong trạng thái
                 SelectColumn::make('order_status')
-                    ->label('Trạng thái')
                     ->options([
-                        0 => '🟡 Chờ xác nhận',
-                        1 => '🔵 Đã xác nhận',
-                        2 => '🟠 Đang giao',
-                        3 => '🟢 Hoàn thành',
-                        4 => '🔴 Đã hủy',
-                        5 => '🔷 Chờ thanh toán (VNPay)',
+                        0 => 'Chờ xác nhận',
+                        1 => 'Đã xác nhận',
+                        2 => 'Đang giao',
+                        3 => 'Hoàn thành',
+                        4 => 'Đã hủy',
+                        5 => 'Chờ thanh toán VNPay',  // ← thêm
+                        6 => 'Chờ xác nhận hủy',      // ← thêm
                     ]),
 
                 TextColumn::make('created_at')
@@ -76,9 +77,10 @@ class OrdersTable
                     ]),
             ])
             ->recordActions([
-                \Filament\Actions\ViewAction::make()
-                    ->label('Xem')
-                    ->modalHeading(fn($record) => 'Chi tiết đơn hàng NX-' . str_pad($record->id, 6, '0', STR_PAD_LEFT))
+
+                ViewAction::make()
+                    ->label('Xem chi tiết')
+                    ->modalHeading(fn($record) => 'Chi tiết đơn hàng ĐH-' . str_pad($record->id, 5, '0', STR_PAD_LEFT))
                     ->modalWidth('3xl')
                     ->form([
                         Placeholder::make('section_receiver')

@@ -201,6 +201,8 @@ class CheckoutController extends Controller
                 // Xóa coupon khỏi session
                 session()->forget(['coupon_code', 'coupon_id', 'discount_amount']);
 
+            
+
                 return $order;
             });
 
