@@ -35,10 +35,10 @@
         <div class="order-head">
           <span class="order-code">NX-{{ str_pad($order->id,6,'0',STR_PAD_LEFT) }}</span>
           @php
-          $statusMap=[0=>'status-pending',1=>'status-confirmed',2=>'status-shipping',3=>'status-delivered',4=>'status-cancelled'];
-          $statusLabel=[0=>'Chờ xác nhận',1=>'Đã xác nhận',2=>'Đang giao',3=>'Hoàn thành',4=>'Đã huỷ'];
+          $isExpired = $order->isPaymentExpired();
+          $statusMap=[0=>'status-pending',1=>'status-confirmed',2=>'status-shipping',3=>'status-delivered',4=>'status-cancelled',5=>$isExpired?'status-expired':'status-awaiting'];
           @endphp
-          <span class="status {{ $statusMap[$order->order_status] ?? '' }}">{{ $statusLabel[$order->order_status] ?? '' }}</span>
+          <span class="status {{ $statusMap[$order->order_status] ?? '' }}">{{ $order->statusLabel() }}</span>
           <span style="font-size:12px;color:var(--ink-muted);margin-left:auto">{{ $order->created_at->format('d/m/Y H:i') }}</span>
         </div>
 
@@ -67,9 +67,18 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             {{ $order->shipping_address }}
           </div>
-          <!-- <div class="order-total">{{ number_format($order->total_amount,0,',','.') }}₫</div> -->
-          <a href="{{ route('orders.show', $order) }}" class="btn btn-outline btn-sm">Xem chi tiết</a>
+          <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
+            <div class="order-total">{{ number_format($order->total_amount,0,',','.') }}₫</div>
+          </div>
         </div>
+
+        @if($order->order_status === \App\Models\Order::STATUS_AWAITING_PAYMENT)
+        <div style="padding:0 20px 16px">
+          <button type="button" class="btn btn-primary btn-sm js-retry-payment" data-order-id="{{ $order->id }}">
+            {{ $isExpired ? 'Thanh toán lại' : 'Tiếp tục thanh toán' }}
+          </button>
+        </div>
+        @endif
       </div>
       @empty
       <div style="text-align:center;padding:80px 24px;background:var(--bg-alt);border:1px solid var(--border-soft);border-radius:var(--r-xl)">
@@ -82,4 +91,5 @@
     </div>
   </div>
 </div>
+@include('pages.order._retry_payment_script')
 @endsection

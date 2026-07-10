@@ -139,6 +139,12 @@ class CheckoutController extends Controller
                 ])->filter()->implode(', ');
 
                 // ── Bước 3: Tạo đơn hàng ──────────────────────────────────
+                // FIX: đơn VNPay phải ở trạng thái riêng "Chờ thanh toán"
+                // (STATUS_AWAITING_PAYMENT), KHÔNG dùng chung STATUS_PENDING
+                // với COD — nếu không, đơn VNPay chưa thanh toán (kể cả khi
+                // khách bị gián đoạn: tắt trình duyệt, mất mạng...) sẽ hiển thị
+                // y hệt đơn COD "Chờ xác nhận", gây nhầm lẫn cho cả khách lẫn admin.
+                $paymentMethod = $request->input('payment_method', 'cod');
                 $order = Order::create([
                     'user_id'          => Auth::id(),
                     'address_id'       => $request->address_id,
@@ -147,13 +153,14 @@ class CheckoutController extends Controller
                     'receiver_name'    => $request->receiver_name,
                     'receiver_phone'   => $request->receiver_phone,
                     'shipping_address' => $shippingAddress,
-                    'order_status'     => Order::STATUS_PENDING,
-                    'payment_method'   => $request->payment_method ?? 'cod',
+                    'order_status'     => $paymentMethod === 'vnpay'
+                        ? Order::STATUS_AWAITING_PAYMENT
+                        : Order::STATUS_PENDING,
                     'subtotal'         => $subtotal,
                     'discount_amount'  => $discountAmount,
                     'total_amount'     => $totalAmount,
                     'note'             => $request->note,
-                    'payment_method'   => $request->input('payment_method', 'cod'),
+                    'payment_method'   => $paymentMethod,
                 ]);
 
                 // ── Bước 4: Tạo order items với đầy đủ snapshot ───────────

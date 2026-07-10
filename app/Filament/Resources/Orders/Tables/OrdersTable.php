@@ -48,11 +48,12 @@ class OrdersTable
                 SelectColumn::make('order_status')
                     ->label('Trạng thái')
                     ->options([
-                        0 => 'Chờ xác nhận',
-                        1 => 'Đã xác nhận',
-                        2 => 'Đang giao',
-                        3 => 'Hoàn thành',
-                        4 => 'Đã hủy',
+                        0 => '🟡 Chờ xác nhận',
+                        1 => '🔵 Đã xác nhận',
+                        2 => '🟠 Đang giao',
+                        3 => '🟢 Hoàn thành',
+                        4 => '🔴 Đã hủy',
+                        5 => '🔷 Chờ thanh toán (VNPay)',
                     ]),
 
                 TextColumn::make('created_at')
@@ -71,6 +72,7 @@ class OrdersTable
                         2 => 'Đang giao',
                         3 => 'Hoàn thành',
                         4 => 'Đã hủy',
+                        5 => 'Chờ thanh toán (VNPay)',
                     ]),
             ])
             ->recordActions([

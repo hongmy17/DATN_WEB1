@@ -27,11 +27,28 @@ class Order extends Model
     ];
 
     // Trạng thái đơn hàng
-    const STATUS_PENDING    = 0;
-    const STATUS_CONFIRMED  = 1;
-    const STATUS_SHIPPING   = 2;
-    const STATUS_COMPLETED  = 3;
-    const STATUS_CANCELLED  = 4;
+    const STATUS_PENDING          = 0;  // Chờ xác nhận (COD, hoặc VNPay đã thanh toán xong)
+    const STATUS_CONFIRMED        = 1;
+    const STATUS_SHIPPING         = 2;
+    const STATUS_COMPLETED        = 3;
+    const STATUS_CANCELLED        = 4;
+    const STATUS_AWAITING_PAYMENT = 5;  // Chờ thanh toán VNPay (chưa thanh toán / bị gián đoạn)
+
+    // Thời gian hết hạn phiên thanh toán VNPay — khớp với vnp_ExpireDate (15 phút) trong VNPayService
+    const PAYMENT_TIMEOUT_MINUTES = 15;
+
+    /**
+     * Đơn đang "Chờ thanh toán" nhưng đã quá 15 phút kể từ lúc tạo mà
+     * người dùng chưa quay lại xác nhận (bị gián đoạn: tắt trình duyệt,
+     * mất mạng, đóng tab giữa chừng...) → coi như phiên thanh toán cũ
+     * đã hết hạn bên phía VNPay, cần tạo phiên thanh toán mới.
+     */
+    public function isPaymentExpired(): bool
+    {
+        return (int) $this->order_status === self::STATUS_AWAITING_PAYMENT
+            && $this->created_at
+            && $this->created_at->addMinutes(self::PAYMENT_TIMEOUT_MINUTES)->isPast();
+    }
 
     // ─── Stock hook: hoàn kho khi đơn chuyển sang "Đã hủy" ───────
     // MỚI: chỉ hoàn kho 1 LẦN tại đúng thời điểm order_status chuyển
@@ -59,12 +76,13 @@ class Order extends Model
 
     public function statusLabel(): string
     {
-        return match ($this->order_status) {
+        return match ((int) $this->order_status) {
             0 => 'Chờ xác nhận',
             1 => 'Đã xác nhận',
             2 => 'Đang giao',
             3 => 'Hoàn thành',
             4 => 'Đã hủy',
+            5 => $this->isPaymentExpired() ? 'Thanh toán quá hạn' : 'Chờ thanh toán',
             default => 'Không xác định',
         };
     }

@@ -19,6 +19,14 @@ class PaymentController extends Controller
        POST /thanh-toan/vnpay/create
        Body: { order_id }
     ═══════════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════════════
+       1. TẠO / TIẾP TỤC URL THANH TOÁN VNPAY
+       POST /thanh-toan/vnpay/create
+       Body: { order_id }
+       Dùng cho nút "Tiếp tục thanh toán" / "Thanh toán lại" ở trang
+       đơn hàng — khi khách bị gián đoạn (tắt trình duyệt, mất mạng...)
+       và quay lại sau, hoặc phiên VNPay cũ đã hết hạn (15 phút).
+    ═══════════════════════════════════════════════════════════ */
     public function createVNPay(Request $request)
     {
         $request->validate(['order_id' => 'required|integer|exists:orders,id']);
@@ -30,16 +38,24 @@ class PaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'Không có quyền.'], 403);
         }
 
-        // Chỉ cho phép đơn đang chờ thanh toán
-        if ($order->order_status !== Order::STATUS_PENDING) {
-            return response()->json(['success' => false, 'message' => 'Đơn hàng không hợp lệ.'], 422);
+        // FIX: đơn VNPay chưa thanh toán mang trạng thái STATUS_AWAITING_PAYMENT
+        // (không phải STATUS_PENDING — đó là trạng thái "chờ xác nhận" của đơn
+        // COD / đơn đã thanh toán xong). Check sai status khiến endpoint này
+        // trước giờ luôn trả lỗi 422 nên chưa từng được gắn vào giao diện.
+        if ($order->payment_method !== 'vnpay' || $order->order_status !== Order::STATUS_AWAITING_PAYMENT) {
+            return response()->json(['success' => false, 'message' => 'Đơn hàng không hợp lệ hoặc đã được xử lý.'], 422);
         }
 
-        // Tạo bản ghi payment ở trạng thái chờ
+        // Reset lại đúng bản ghi payment cũ của đơn này về trạng thái chờ
+        // (trước đây match theo cả 'status' => 0 nên nếu payment cũ đang ở
+        // status=2/thất bại thì không match được, updateOrCreate() sẽ tạo
+        // THÊM 1 dòng payment mới thay vì cập nhật — tích luỹ rác qua mỗi lần retry).
         Payment::updateOrCreate(
-            ['order_id' => $order->id, 'payment_gateway' => 'VNPay', 'status' => 0],
+            ['order_id' => $order->id, 'payment_gateway' => 'VNPay'],
             [
                 'amount'           => $order->total_amount,
+                'status'           => Payment::STATUS_PENDING,
+                'transaction_code' => null,
                 'gateway_response' => null,
             ]
         );
@@ -148,8 +164,10 @@ class PaymentController extends Controller
     private function handleSuccess(Order $order, array $data): void
     {
         DB::transaction(function () use ($order, $data) {
-            // Cập nhật trạng thái đơn hàng → Đang xử lý
-            if ($order->order_status === Order::STATUS_PENDING) {
+            // Cập nhật trạng thái đơn hàng: Chờ thanh toán → Đã xác nhận
+            // (thanh toán online xong thì bỏ qua bước "chờ xác nhận" thủ công
+            // như COD, coi như admin đã được đảm bảo có tiền, tiến thẳng vào xử lý)
+            if ((int) $order->order_status === Order::STATUS_AWAITING_PAYMENT) {
                 $order->update(['order_status' => Order::STATUS_CONFIRMED]);
 
                 // Trừ tồn kho
@@ -202,6 +220,7 @@ class PaymentController extends Controller
                 'gateway_response' => $data,
             ]
         );
-        // Giữ nguyên order_status = PENDING để user có thể thử lại
+        // Giữ nguyên order_status = STATUS_AWAITING_PAYMENT để user có thể
+        // bấm "Tiếp tục thanh toán" / "Thanh toán lại" ở trang đơn hàng
     }
 }

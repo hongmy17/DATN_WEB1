@@ -298,6 +298,10 @@ textarea.form-control { resize: vertical; min-height: 96px; }
 .status-delivered::before { background: var(--green); }
 .status-cancelled { background: var(--red-light); color: var(--red); }
 .status-cancelled::before { background: var(--red); }
+.status-awaiting  { background: var(--blue-light); color: var(--blue); }
+.status-awaiting::before  { background: var(--blue); }
+.status-expired   { background: var(--red-light); color: var(--red); }
+.status-expired::before   { background: var(--red); }
 
 /* ── CARDS ──────────────────────────────── */
 .card {
