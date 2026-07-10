@@ -63,16 +63,16 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // // Đơn hàng
-Route::get('/don-hang', function () {
-    $orders = Auth::user()->orders()->with('items')->latest()->get();
-    return view('pages.order.index', compact('orders'));
-})->name('orders.index');
+    Route::get('/don-hang', function () {
+        $orders = Auth::user()->orders()->with('items')->latest()->get();
+        return view('pages.order.index', compact('orders'));
+    })->name('orders.index');
 
-Route::get('/don-hang/{order}', [\App\Http\Controllers\OrderController::class, 'show'])
-    ->name('orders.show');
+    Route::get('/don-hang/{order}', [\App\Http\Controllers\OrderController::class, 'show'])
+        ->name('orders.show');
 
-Route::post('/don-hang/{order}/huy', [\App\Http\Controllers\OrderController::class, 'cancel'])
-    ->name('orders.cancel');
+    Route::post('/don-hang/{order}/huy', [\App\Http\Controllers\OrderController::class, 'cancel'])
+        ->name('orders.cancel');
 
     // Coupon
     Route::post('/coupon/apply',  [CouponController::class, 'apply'])->name('coupon.apply');
@@ -103,20 +103,21 @@ Route::post('/don-hang/{order}/huy', [\App\Http\Controllers\OrderController::cla
         Route::delete('/',           [\App\Http\Controllers\CartItemController::class, 'clear'])->name('clear');
     });
 
- // Route in hóa đơn PDF
-Route::middleware(['auth'])->group(function () {
-    Route::get('/admin-invoice/{order}', [InvoiceController::class, 'download'])
-        ->name('admin.invoice.download');
+    // Route in hóa đơn PDF
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/admin-invoice/{order}', [InvoiceController::class, 'download'])
+            ->name('admin.invoice.download');
+    });
+
+    // VNPay
+    Route::post('/thanh-toan/vnpay/create', [\App\Http\Controllers\PaymentController::class, 'createVNPay'])
+        ->name('vnpay.create');
+
+    // IPN VNPay — không cần auth (VNPay server gọi trực tiếp)
+    Route::post('/thanh-toan/vnpay/ipn', [\App\Http\Controllers\PaymentController::class, 'ipnVNPay'])
+        ->name('vnpay.ipn')
+        ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
+    Route::get('/thanh-toan/vnpay/return',  [\App\Http\Controllers\PaymentController::class, 'returnVNPay'])
+        ->name('vnpay.return');
 });
-
-// VNPay
-Route::post('/thanh-toan/vnpay/create', [\App\Http\Controllers\PaymentController::class, 'createVNPay'])
-    ->name('vnpay.create');
-
-// IPN VNPay — không cần auth (VNPay server gọi trực tiếp)
-Route::post('/thanh-toan/vnpay/ipn',    [\App\Http\Controllers\PaymentController::class, 'ipnVNPay'])
-    ->name('vnpay.ipn')
-    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
-
-Route::get('/thanh-toan/vnpay/return',  [\App\Http\Controllers\PaymentController::class, 'returnVNPay'])
-    ->name('vnpay.return');

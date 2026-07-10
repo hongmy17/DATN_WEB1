@@ -12,7 +12,7 @@ return new class extends Migration
             $table->string('payment_method', 30)
                 ->default('cod')
                 ->after('coupon_code')
-                ->comment('Phương thức thanh toán: cod, VNpay, bank_transfer');
+                ->comment('Phương thức thanh toán: cod, vnpay, momo, bank, zalopay');
         });
     }
 

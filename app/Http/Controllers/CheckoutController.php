@@ -51,7 +51,7 @@ class CheckoutController extends Controller
             'ward'           => 'required_without:address_id|nullable|string|max:100',
             'address_detail' => 'required_without:address_id|nullable|string|max:255',
             'address_id'     => 'nullable|integer|exists:user_addresses,id',
-            'payment_method' => 'nullable|string|in:cod,VNpay,bank_transfer',
+            'payment_method' => 'nullable|string|in:cod,vnpay,bank_transfer',
             'cart'           => 'required|array|min:1',
             'cart.*.id'         => 'required|integer',
             'cart.*.variant_id' => 'required|integer',
