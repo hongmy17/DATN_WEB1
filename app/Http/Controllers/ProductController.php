@@ -27,18 +27,32 @@ class ProductController extends Controller
         }
 
         $selectedCategories = $request->filled('categories')
-            ? collect((array) $request->categories)->map(fn ($id) => (int) $id)->filter()->values()->all()
+            ? collect((array) $request->categories)->map(fn($id) => (int) $id)->filter()->values()->all()
             : ($request->filled('cat') ? [(int) $request->cat] : []);
 
         $query = Product::visible()
             ->with(['category'])
-            ->with(['variants' => fn ($q) => $q->active()->orderBy('price')])
-            ->withMin(['variants as variants_min_price' => fn ($q) => $q->active()], 'price')
-            ->withMax(['variants as variants_max_price' => fn ($q) => $q->active()], 'price')
-            ->whereHas('variants', fn ($q) => $q->active());
+            ->with(['variants' => fn($q) => $q->active()->orderBy('price')])
+            ->withMin(['variants as variants_min_price' => fn($q) => $q->active()], 'price')
+            ->withMax(['variants as variants_max_price' => fn($q) => $q->active()], 'price')
+            ->whereHas('variants', fn($q) => $q->active());
 
         if (! empty($selectedCategories)) {
-            $query->whereIn('category_id', $selectedCategories);
+            // Mở rộng: nếu category được chọn là danh mục CHA
+            // thì tự động thêm cả danh mục CON vào điều kiện lọc
+            $expandedIds = collect($selectedCategories)
+                ->flatMap(function ($id) {
+                    $childIds = \App\Models\Category::where('parent_id', $id)
+                        ->pluck('id')
+                        ->toArray();
+                    // Nếu có danh mục con → dùng danh mục con
+                    // Nếu không có → đây là danh mục con rồi, dùng chính nó
+                    return empty($childIds) ? [$id] : $childIds;
+                })
+                ->unique()
+                ->toArray();
+
+            $query->whereIn('category_id', $expandedIds);
         } elseif ($request->filled('cat')) {
             $query->where('category_id', $request->cat);
             $selectedCategories = [$request->cat];
@@ -61,10 +75,25 @@ class ProductController extends Controller
 
         $products = $query->paginate(9)->withQueryString();
 
+        // Danh mục CON → dùng cho chips filter nhanh ở trên
         $categories = Category::whereNotNull('parent_id')
             ->withCount(['products' => fn($q) => $q->visible()])
             ->orderBy('name')
             ->get();
+
+        // Danh mục CHA kèm danh mục con → dùng cho sidebar nhóm
+        $parentCategories = Category::whereNull('parent_id')
+            ->with(['children' => function ($q) {
+                $q->withCount(['products' => fn($q2) => $q2->visible()])
+                    ->orderBy('name');
+            }])
+            ->orderBy('name')
+            ->get()
+            ->map(function ($parent) {
+                // Tổng số SP của nhóm = tổng SP các danh mục con
+                $parent->total_products = $parent->children->sum('products_count');
+                return $parent;
+            });
 
         // Giá min/max cho slider lọc giá
         $sliderMax  = (int) (Product::visible()->withMin('variants', 'price')->withMax('variants', 'price')->get()->max('variants_max_price') ?? 50000000);
@@ -72,8 +101,13 @@ class ProductController extends Controller
         $priceMax   = (int) $request->input('price_max', $sliderMax);
 
         return view('pages.product.index', compact(
-            'products', 'categories', 'selectedCategories',
-            'priceMin', 'priceMax', 'sliderMax'
+            'products',
+            'categories',
+            'parentCategories',
+            'selectedCategories',
+            'priceMin',
+            'priceMax',
+            'sliderMax'
         ));
     }
 
@@ -113,8 +147,8 @@ class ProductController extends Controller
                 'category',
                 'images',
                 'customAttributes.values',
-                'variants' => fn ($q) => $q->where('status', 1)
-                                          ->with('attributeValues.attribute'),
+                'variants' => fn($q) => $q->where('status', 1)
+                    ->with('attributeValues.attribute'),
             ])
             ->firstOrFail();
 
@@ -146,13 +180,13 @@ class ProductController extends Controller
 
         $totalReviews = array_sum($ratingStats);
         $avgRating    = $totalReviews > 0
-            ? round(collect($ratingStats)->reduce(fn ($carry, $count, $rating) => $carry + $count * $rating, 0) / $totalReviews, 1)
+            ? round(collect($ratingStats)->reduce(fn($carry, $count, $rating) => $carry + $count * $rating, 0) / $totalReviews, 1)
             : 0;
 
         $reviewStats = [
             'avg'   => $avgRating,
             'total' => $totalReviews,
-            'dist'  => array_replace([5=>0,4=>0,3=>0,2=>0,1=>0], $ratingStats),
+            'dist'  => array_replace([5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0], $ratingStats),
         ];
 
         // Order items đủ điều kiện review (đơn hoàn tất, chưa review)
@@ -164,10 +198,10 @@ class ProductController extends Controller
                 ->pluck('order_item_id');
 
             $eligibleOrderItems = OrderItem::whereHas('order', function ($q) {
-                    $q->where('user_id', auth()->id())
-                      ->where('order_status', 3); // hoàn tất
-                })
-                ->whereHas('variant', fn ($q) => $q->where('product_id', $product->id))
+                $q->where('user_id', auth()->id())
+                    ->where('order_status', 3); // hoàn tất
+            })
+                ->whereHas('variant', fn($q) => $q->where('product_id', $product->id))
                 ->whereNotIn('id', $reviewedItemIds)
                 ->with('order')
                 ->get();

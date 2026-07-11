@@ -266,7 +266,9 @@
                         </svg>
                         Thêm vào giỏ
                     </button>
-                    <button class="btn-buy" onclick="Toast.show('Đang chuyển đến thanh toán...','info')">
+                    {{-- FIX: Mua ngay = add cart + redirect checkout --}}
+                    <button class="btn-buy" id="btnBuyNow" onclick="buyNow()" {{ $stockQty <= 0 ? 'disabled' : '' }}
+                        style="{{ $stockQty <= 0 ? 'opacity:.5;cursor:not-allowed' : '' }}">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round">
                             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
@@ -762,12 +764,18 @@
                 }
 
                 updateVariant();
+                window.__defaultVariant = window.__currentVariant;
             }
 
             function updateVariant() {
+                // Lưu variant hiện tại vào window để buyNow() có thể truy cập
                 const key = Object.values(selectedAttrs).sort((a, b) => a - b).join('-');
                 const v = variantMap[key];
                 if (!v) return;
+                window.__currentVariant = v; // lưu lại để buyNow() dùng
+
+                // FIX: lưu variant hiện tại để buyNow() dùng được
+                window.__currentVariant = v;
 
                 // Giá
                 document.getElementById('currentPrice').textContent =
@@ -954,5 +962,73 @@
                 submitReview,
                 updateVariant
             });
+
+            // ── MUA NGAY ───────────────────────────────────────────────────────────────
+            // Nghiệp vụ: thêm SP đang xem vào cart → redirect thẳng đến checkout
+            // Khác "Thêm vào giỏ": không cần F5 hay navigate về giỏ hàng
+            function buyNow() {
+                // Đọc trực tiếp từ DOM thay vì dựa vào window.__currentVariant
+                // để tránh lỗi khi trang mới load mà chưa đổi biến thể
+                const qty = parseInt(document.getElementById('qtyInput')?.value || 1);
+
+                // Lấy SKU từ DOM (đang hiển thị trên trang)
+                const skuEl = document.getElementById('pdpSku') ??
+                    document.querySelector('[id*="sku"], .pdp-sku, [class*="sku"]');
+
+                // Lấy variant từ variantMap theo key hiện tại (các attribute đang selected)
+                const selectedBtns = document.querySelectorAll('.attr-option.selected');
+                let key = '';
+                selectedBtns.forEach(btn => {
+                    key += (key ? '-' : '') + btn.dataset.attrVal;
+                });
+
+                const v = (key && typeof variantMap !== 'undefined') ? variantMap[key] : null;
+
+                // Nếu không tìm được qua key → thử dùng default variant
+                const variant = v ?? window.__currentVariant ?? window.__defaultVariant;
+
+                if (!variant) {
+                    // Thử lấy variant đầu tiên trong variantMap
+                    const firstKey = typeof variantMap !== 'undefined' ?
+                        Object.keys(variantMap)[0] : null;
+                    const fallback = firstKey ? variantMap[firstKey] : null;
+
+                    if (!fallback) {
+                        Toast.show('Vui lòng chọn phân loại sản phẩm', 'error');
+                        return;
+                    }
+
+                    addAndCheckout(fallback, qty);
+                    return;
+                }
+
+                if ((variant.stock ?? 0) <= 0) {
+                    Toast.show('Sản phẩm đã hết hàng', 'error');
+                    return;
+                }
+
+                addAndCheckout(variant, qty);
+            }
+
+            function addAndCheckout(variant, qty) {
+                // FIX: truyền variant_id thay vì id để Cart.add() không báo lỗi
+                const cartItem = {
+                    id: variant.id,
+                    variant_id: variant.id, // ← Cart.add() cần field này
+                    name: '{{ addslashes($product->name) }}',
+                    price: variant.price,
+                    img: '{{ $product->thumbnail ?? '' }}',
+                    slug: '{{ $product->slug }}',
+                    variant: variant.label || 'Mặc định',
+                    qty: qty,
+                };
+
+                // Dùng Cart.add() bình thường vì đã có đủ variant_id
+                Cart.add(cartItem).then(() => {
+                    window.location.href = '{{ route('checkout.index') }}';
+                });
+            }
+            window.buyNow = buyNow;
+            window.addAndCheckout = addAndCheckout;
         </script>
     @endsection

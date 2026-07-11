@@ -369,21 +369,20 @@
 
             <div class="cat-grid">
                 @forelse($categories as $cat)
-                <a href="{{ route('products.index', ['categories' => [$cat->id]]) }}"
-                   class="cat-tile reveal">
-                    <div class="cat-tile__icon">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
-                            <path d="{{ $cat->icon_path }}"/>
-                        </svg>
-                    </div>
-                    <div class="cat-tile__name">{{ $cat->name }}</div>
-                    <div class="cat-tile__count">
-                        {{ $cat->products_count > 0 ? $cat->products_count . ' sản phẩm' : 'Đang cập nhật' }}
-                    </div>
-                </a>
+                    <a href="{{ route('products.index', ['categories' => [$cat->id]]) }}" class="cat-tile reveal">
+                        <div class="cat-tile__icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.7" stroke-linecap="round">
+                                <path d="{{ $cat->icon_path }}" />
+                            </svg>
+                        </div>
+                        <div class="cat-tile__name">{{ $cat->name }}</div>
+                        <div class="cat-tile__count">
+                            {{ $cat->products_count > 0 ? $cat->products_count . ' sản phẩm' : 'Đang cập nhật' }}
+                        </div>
+                    </a>
                 @empty
-                <p style="grid-column:1/-1;text-align:center;color:var(--ink-muted)">Chưa có danh mục.</p>
+                    <p style="grid-column:1/-1;text-align:center;color:var(--ink-muted)">Chưa có danh mục.</p>
                 @endforelse
             </div>
         </div>
@@ -393,21 +392,36 @@
     <section class="section" style="padding-top:0">
         <div class="container">
             <div class="promo-grid">
-                <a href="{{ url('san-pham?cat=laptop') }}" class="promo-card promo-card--dark"
-                    style="text-decoration:none">
-                    <div class="promo-card__orb" style="width:300px;height:300px;top:-80px;right:-80px;"></div>
-                    <div class="promo-card__product">
-                        <svg width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width=".5" stroke-linecap="round">
-                            <rect x="2" y="3" width="20" height="14" rx="2" />
-                            <line x1="8" y1="21" x2="16" y2="21" />
-                            <line x1="12" y1="17" x2="12" y2="21" />
-                        </svg>
-                    </div>
-                    <div class="promo-card__eyebrow">MacBook Pro</div>
-                    <h3 class="promo-card__title">Hiệu năng M3 Pro<br>đột phá giới hạn</h3>
-                    <span class="btn btn-accent btn-sm" style="width:fit-content">Mua ngay</span>
-                </a>
+                {{-- FIX: SP nổi bật nhất từ DB --}}
+                @isset($topProduct)
+                    <a href="{{ route('products.show', $topProduct->slug) }}" class="promo-card promo-card--dark"
+                        style="text-decoration:none">
+                        <div class="promo-card__orb" style="width:300px;height:300px;top:-80px;right:-80px;"></div>
+                        <div class="promo-card__product">
+                            @if ($topProduct->thumbnail)
+                                <img src="{{ asset('storage/' . $topProduct->thumbnail) }}" alt="{{ $topProduct->name }}"
+                                    style="width:160px;height:160px;object-fit:contain;opacity:.85;margin:auto">
+                            @else
+                                <svg width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width=".5" stroke-linecap="round" style="color:rgba(255,255,255,.3)">
+                                    <path
+                                        d="{{ $topProduct->category?->icon_path ?? 'M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z' }}" />
+                                </svg>
+                            @endif
+                        </div>
+                        <div class="promo-card__eyebrow">{{ $topProduct->category?->name ?? 'Nổi bật' }}</div>
+                        <h3 class="promo-card__title">{{ $topProduct->name }}</h3>
+                        <span class="btn btn-accent btn-sm" style="width:fit-content">Mua ngay</span>
+                    </a>
+                @else
+                    <a href="{{ route('products.index') }}" class="promo-card promo-card--dark"
+                        style="text-decoration:none">
+                        <div class="promo-card__orb" style="width:300px;height:300px;top:-80px;right:-80px;"></div>
+                        <div class="promo-card__eyebrow">Khám phá ngay</div>
+                        <h3 class="promo-card__title">Phụ kiện công nghệ<br>chính hãng giá tốt</h3>
+                        <span class="btn btn-accent btn-sm" style="width:fit-content">Xem sản phẩm</span>
+                    </a>
+                @endisset
 
                 <a href="{{ url('khuyen-mai') }}" class="promo-card promo-card--accent" style="text-decoration:none">
                     <div class="promo-card__orb"
@@ -437,68 +451,95 @@
                     <h2 class="section-title reveal">Sản phẩm bán chạy</h2>
                 </div>
                 <div class="tabs-nav">
-                    @foreach (['Tất cả', 'Laptop', 'Điện thoại', 'Tai nghe'] as $t)
-                        <button class="tab-pill {{ $loop->first ? 'active' : '' }}"
-                            onclick="switchTab(this)">{{ $t }}</button>
-                    @endforeach
+                    <button class="tab-pill active" onclick="switchTab(this,'all')" data-cat="all">
+                        Tất cả
+                    </button>
+                    @if (isset($tabCategories) && $tabCategories->isNotEmpty())
+                        @foreach ($tabCategories as $tc)
+                            @php $childIds = $tc->children->pluck('id')->implode(','); @endphp
+                            <button class="tab-pill" onclick="switchTab(this,'{{ $childIds }}')"
+                                data-cat="{{ $childIds }}">
+                                {{ $tc->name }}
+                                @if ($tc->products_count > 0)
+                                    <span style="font-size:11px;opacity:.6">({{ $tc->products_count }})</span>
+                                @endif
+                            </button>
+                        @endforeach
+                    @endif
                 </div>
             </div>
 
             <div class="grid-4">
                 @forelse($featuredProducts as $p)
-                @php
-                    $minPrice  = $p->variants->min('price') ?? 0;
-                    $oldPrice  = $p->variants->max('compare_price');
-                    $discount  = ($oldPrice && $oldPrice > $minPrice) ? round((1 - $minPrice / $oldPrice) * 100) : 0;
-                    $thumbnail = $p->thumbnail ? asset('storage/' . $p->thumbnail) : null;
-                    $defVar    = $p->variants->first();
-                @endphp
-                <div class="product-card reveal">
-                    <div class="product-card__thumb">
-                        @if($discount >= 5)
-                        <div class="product-card__badges">
-                            <span class="badge badge-sale">-{{ $discount }}%</span>
-                        </div>
-                        @endif
-                        <button class="product-card__wish"
-                            data-wish-id="{{ $p->id }}"
-                            data-wish-name="{{ addslashes($p->name) }}"
-                            data-wish-price="{{ $minPrice }}"
-                            data-wish-slug="{{ $p->slug }}"
-                            data-wish-img="{{ $p->thumbnail ?? '' }}"
-                            aria-label="Yêu thích">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06 a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                            </svg>
-                        </button>
-                        <div class="product-card__img" style="display:flex;align-items:center;justify-content:center">
-                            @if($thumbnail)
-                            <img src="{{ $thumbnail }}" alt="{{ $p->name }}" style="width:100%;height:100%;object-fit:contain;padding:12px" onerror="this.style.display='none'">
-                            @else
-                            <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=".7" stroke-linecap="round" style="color:#C5C3BC"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    @php
+                        $minPrice = $p->variants->min('price') ?? 0;
+                        $oldPrice = $p->variants->max('compare_price');
+                        $discount = $oldPrice && $oldPrice > $minPrice ? round((1 - $minPrice / $oldPrice) * 100) : 0;
+                        $thumbnail = $p->thumbnail ? asset('storage/' . $p->thumbnail) : null;
+                        $defVar = $p->variants->first();
+                    @endphp
+                    <div class="product-card reveal" data-cat="{{ $p->category_id }}">
+                        <div class="product-card__thumb">
+                            @if ($discount >= 5)
+                                <div class="product-card__badges">
+                                    <span class="badge badge-sale">-{{ $discount }}%</span>
+                                </div>
                             @endif
-                        </div>
-                        <div class="product-card__actions">
-                            <button class="btn btn-ghost" onclick="Cart.add({id:{{ $defVar?->id ?? $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $minPrice }},img:'{{ $p->thumbnail ?? '' }}',slug:'{{ $p->slug }}'})">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                                Giỏ hàng
+                            <button class="product-card__wish" data-wish-id="{{ $p->id }}"
+                                data-wish-name="{{ addslashes($p->name) }}" data-wish-price="{{ $minPrice }}"
+                                data-wish-slug="{{ $p->slug }}" data-wish-img="{{ $p->thumbnail ?? '' }}"
+                                aria-label="Yêu thích">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                                    <path
+                                        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06 a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                </svg>
                             </button>
-                            <a href="{{ route('products.show', $p->slug) }}" class="btn btn-primary">Xem ngay</a>
+                            <div class="product-card__img" style="display:flex;align-items:center;justify-content:center">
+                                @if ($thumbnail)
+                                    <img src="{{ $thumbnail }}" alt="{{ $p->name }}"
+                                        style="width:100%;height:100%;object-fit:contain;padding:12px"
+                                        onerror="this.style.display='none'">
+                                @else
+                                    <svg width="72" height="72" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width=".7" stroke-linecap="round"
+                                        style="color:#C5C3BC">
+                                        <rect x="2" y="3" width="20" height="14" rx="2" />
+                                        <line x1="8" y1="21" x2="16" y2="21" />
+                                        <line x1="12" y1="17" x2="12" y2="21" />
+                                    </svg>
+                                @endif
+                            </div>
+                            <div class="product-card__actions">
+                                <button class="btn btn-ghost"
+                                    onclick="Cart.add({id:{{ $defVar?->id ?? $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $minPrice }},img:'{{ $p->thumbnail ?? '' }}',slug:'{{ $p->slug }}'})">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                        <circle cx="9" cy="21" r="1" />
+                                        <circle cx="20" cy="21" r="1" />
+                                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                                    </svg>
+                                    Giỏ hàng
+                                </button>
+                                <a href="{{ route('products.show', $p->slug) }}" class="btn btn-primary">Xem ngay</a>
+                            </div>
+                        </div>
+                        <div class="product-card__body">
+                            <div class="product-card__brand">{{ $p->category?->name ?? '' }}</div>
+                            <div class="product-card__name"><a
+                                    href="{{ route('products.show', $p->slug) }}">{{ $p->name }}</a></div>
+                            <div class="product-card__price">
+                                <span
+                                    class="product-card__price-current">{{ number_format($minPrice, 0, ',', '.') }}₫</span>
+                                @if ($oldPrice && $oldPrice > $minPrice)
+                                    <span
+                                        class="product-card__price-old">{{ number_format($oldPrice, 0, ',', '.') }}₫</span>
+                                @endif
+                            </div>
                         </div>
                     </div>
-                    <div class="product-card__body">
-                        <div class="product-card__brand">{{ $p->category?->name ?? '' }}</div>
-                        <div class="product-card__name"><a href="{{ route('products.show', $p->slug) }}">{{ $p->name }}</a></div>
-                        <div class="product-card__price">
-                            <span class="product-card__price-current">{{ number_format($minPrice,0,',','.') }}₫</span>
-                            @if($oldPrice && $oldPrice > $minPrice)
-                            <span class="product-card__price-old">{{ number_format($oldPrice,0,',','.') }}₫</span>
-                            @endif
-                        </div>
-                    </div>
-                </div>
                 @empty
-                <p style="grid-column:1/-1;text-align:center;color:var(--ink-muted)">Chưa có sản phẩm.</p>
+                    <p style="grid-column:1/-1;text-align:center;color:var(--ink-muted)">Chưa có sản phẩm.</p>
                 @endforelse
             </div>
 
@@ -546,8 +587,44 @@
                 <h2 class="section-title">Được tin dùng bởi hàng chục nghìn khách hàng</h2>
             </div>
             <div class="testimonials-grid">
-                @php $reviews = [['name' => 'Nguyễn Thị Lan', 'role' => 'Kỹ sư phần mềm', 'stars' => 5, 'text' => 'Mua MacBook Pro tại Nexus, hàng chính hãng, seal mới hoàn toàn. Giao hàng đúng hẹn, tư vấn nhiệt tình. Sẽ tiếp tục ủng hộ!'], ['name' => 'Trần Văn Minh', 'role' => 'Nhà thiết kế đồ họa', 'stars' => 5, 'text' => 'iPhone 15 Pro Max mua tại đây giá tốt hơn nhiều so với các cửa hàng khác. Bảo hành uy tín, hỗ trợ sau bán hàng rất chu đáo.'], ['name' => 'Lê Thị Hương', 'role' => 'Giáo viên', 'stars' => 5, 'text' => 'Lần đầu mua đã tin tưởng ngay vì website chuyên nghiệp. Sản phẩm đúng mô tả, đóng gói cẩn thận. Rất hài lòng!']]; @endphp
-                @foreach ($reviews as $r)
+                @php
+                    // FIX: Review thật từ DB (được truyền từ home route)
+                    // Fallback về dữ liệu mẫu phù hợp web bán phụ kiện nếu chưa có review thật
+                    $reviewList =
+                        isset($reviews) && $reviews->count() > 0
+                            ? $reviews->map(
+                                fn($r) => [
+                                    'name' => $r->user?->name ?? 'Khách hàng',
+                                    'role' => 'Khách hàng Nexus Store',
+                                    'stars' => $r->rating,
+                                    'text' => $r->comment,
+                                ],
+                            )
+                            : collect([
+                                [
+                                    'name' => 'Nguyễn Thị Lan',
+                                    'role' => 'Kỹ sư phần mềm',
+                                    'stars' => 5,
+                                    'text' =>
+                                        'Mua Sony WH-1000XM5 tại Nexus, seal nguyên vẹn, giao siêu nhanh. Âm thanh tuyệt vời, chống ồn cực tốt. Tư vấn nhiệt tình. Sẽ ủng hộ dài dài!',
+                                ],
+                                [
+                                    'name' => 'Trần Văn Minh',
+                                    'role' => 'Nhà thiết kế đồ họa',
+                                    'stars' => 5,
+                                    'text' =>
+                                        'Logitech MX Master 3S chính hãng, giá tốt hơn thị trường. Chuột cực mượt, click yên tĩnh, pin trâu 70 ngày. Đóng gói kỹ, giao đúng hẹn!',
+                                ],
+                                [
+                                    'name' => 'Lê Thị Hương',
+                                    'role' => 'Giáo viên',
+                                    'stars' => 5,
+                                    'text' =>
+                                        'AirPods Pro 2 mua tại đây chính hãng Apple, hộp seal đầy đủ. Website chuyên nghiệp, đặt dễ, giao trong ngày. Chống ồn rất tốt khi dạy online!',
+                                ],
+                            ]);
+                @endphp
+                @foreach ($reviewList as $r)
                     <div class="testimonial-card reveal">
                         <div class="testimonial-stars">
                             @for ($s = 1; $s <= 5; $s++)
@@ -576,10 +653,36 @@
     {{-- ── CTA ─────────────────────────────── --}}
 
     <script>
-        function switchTab(btn) {
+        function switchTab(btn, catIds) {
+            // Cập nhật active tab
             document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+
+            const cards = document.querySelectorAll('.product-card[data-cat]');
+
+            if (!catIds || catIds === 'all') {
+                cards.forEach(c => c.style.display = '');
+                return;
+            }
+
+            // FIX: parse childIds thành Set số nguyên để so sánh chính xác
+            const allowedIds = new Set(
+                catIds.split(',').map(id => parseInt(id.trim())).filter(Boolean)
+            );
+
+            cards.forEach(card => {
+                // data-cat trên card là số nguyên (category_id của danh mục con)
+                const cardCatId = parseInt(card.dataset.cat);
+                card.style.display = allowedIds.has(cardCatId) ? '' : 'none';
+            });
+
+            // Nếu lọc xong không có SP nào → hiện tất cả
+            const anyVisible = [...cards].some(c => c.style.display !== 'none');
+            if (!anyVisible) {
+                cards.forEach(c => c.style.display = '');
+            }
         }
         window.switchTab = switchTab;
+        window.filterProducts = switchTab;
     </script>
 @endsection

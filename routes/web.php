@@ -21,19 +21,69 @@ require __DIR__ . '/auth.php';
 
 // FIX: Home truyền categories thật + sản phẩm nổi bật thật
 Route::get('/', function () {
+    // Danh mục cha: đếm sản phẩm qua danh mục CON (products.category_id → child categories)
     $categories = \App\Models\Category::whereNull('parent_id')
-        ->withCount(['products' => fn($q) => $q->visible()])
+        ->withCount([
+            // Đếm sản phẩm visible trong các danh mục CON
+            'products as products_count' => fn($q) => $q->visible(),
+        ])
         ->orderBy('name')
-        ->get();
+        ->get()
+        ->map(function ($cat) {
+            // Nếu danh mục cha không có SP trực tiếp, đếm SP qua danh mục con
+            if ($cat->products_count === 0) {
+                $childIds = \App\Models\Category::where('parent_id', $cat->id)->pluck('id');
+                $cat->products_count = \App\Models\Product::visible()
+                    ->whereIn('category_id', $childIds)
+                    ->count();
+            }
+            return $cat;
+        });
 
-    $featuredProducts = \App\Models\Product::visible()
-        ->with(['variants' => fn($q) => $q->active()->orderBy('price'), 'category'])
-        ->whereHas('variants', fn($q) => $q->active())
+    // 8 sản phẩm nổi bật mới nhất có biến thể active
+    $featuredProducts = collect();
+
+    $childCats = \App\Models\Category::whereNotNull('parent_id')->pluck('id');
+
+    foreach ($childCats as $catId) {
+        $sps = \App\Models\Product::visible()
+            ->where('category_id', $catId)
+            ->with(['variants' => fn($q) => $q->active()->orderBy('price'), 'category'])
+            ->whereHas('variants', fn($q) => $q->active())
+            ->latest()
+            ->limit(2)
+            ->get();
+        $featuredProducts = $featuredProducts->merge($sps);
+    }
+
+    // Shuffle để không hiện theo thứ tự danh mục
+    $featuredProducts = $featuredProducts->shuffle()->take(8);
+
+    // Sản phẩm nổi bật nhất = sản phẩm có giá cao nhất
+    $topProduct = $featuredProducts
+        ->sortByDesc(fn($p) => optional($p->variants->first())->price ?? 0)
+        ->first();
+
+    // Reviews thật từ DB (rating >= 4), fallback về mẫu phù hợp web phụ kiện
+    $reviews = \App\Models\Review::with('user')
+        ->where('rating', '>=', 4)
         ->latest()
-        ->limit(8)
+        ->limit(3)
+        ->get();
+    $tabCategories = \App\Models\Category::whereNull('parent_id')
+        ->with('children') // load danh mục con để lấy childIds cho tab filter
+        ->orderBy('name')
+        ->limit(4)
         ->get();
 
-    return view('pages.home', compact('categories', 'featuredProducts'));
+    // Đếm SP qua danh mục con (vì SP gắn với con, không phải cha)
+    $tabCategories->each(function ($cat) {
+        $childIds = $cat->children->pluck('id');
+        $cat->products_count = \App\Models\Product::visible()
+            ->whereIn('category_id', $childIds)
+            ->count();
+    });
+    return view('pages.home', compact('categories', 'featuredProducts', 'topProduct', 'reviews', 'tabCategories'));
 })->name('home');
 
 Route::get('/san-pham/suggest', [ProductController::class, 'suggest'])->name('products.suggest');

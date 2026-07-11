@@ -88,47 +88,18 @@
                         </svg>
                     </a>
                     <div class="navbar__dropdown-menu">
+                        {{-- FIX: Dropdown từ DB (danh mục cha thật) --}}
                         @php
-                            $cats = [
-                                ['slug' => 'laptop', 'label' => 'Laptop', 'path' => 'M2 3h20v14H2zM8 21h8M12 17v4'],
-                                [
-                                    'slug' => 'phone',
-                                    'label' => 'Điện thoại',
-                                    'path' =>
-                                        'M12 18h.01M8 21h8a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1z',
-                                ],
-                                [
-                                    'slug' => 'tablet',
-                                    'label' => 'Máy tính bảng',
-                                    'path' =>
-                                        'M18 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1zM12 17h.01',
-                                ],
-                                [
-                                    'slug' => 'audio',
-                                    'label' => 'Tai nghe',
-                                    'path' =>
-                                        'M3 18v-6a9 9 0 0 1 18 0v6M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z',
-                                ],
-                                [
-                                    'slug' => 'watch',
-                                    'label' => 'Smartwatch',
-                                    'path' => 'M12 12m-3 0a3 3 0 1 0 6 0 3 3 0 1 0-6 0M12 7V5M12 19v-2M7 12H5M19 12h-2',
-                                ],
-                                [
-                                    'slug' => 'accessory',
-                                    'label' => 'Phụ kiện',
-                                    'path' => 'M12 22V8M5 12H2a10 10 0 0 0 20 0h-3',
-                                ],
-                            ];
+                            $navCategories = \App\Models\Category::whereNull('parent_id')->orderBy('name')->get();
                         @endphp
-                        @foreach ($cats as $cat)
-                            <a href="{{ url('san-pham?cat=' . $cat['slug']) }}" class="navbar__dropdown-link">
+                        @foreach ($navCategories as $navCat)
+                            <a href="{{ route('products.index', ['categories' => [$navCat->id]]) }}"
+                                class="navbar__dropdown-link">
                                 <svg class="navbar__dropdown-icon" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <path d="{{ $cat['path'] }}" />
+                                    stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+                                    <path d="{{ $navCat->icon_path }}" />
                                 </svg>
-                                {{ $cat['label'] }}
+                                {{ $navCat->name }}
                             </a>
                         @endforeach
                     </div>
