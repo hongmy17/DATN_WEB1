@@ -22,6 +22,23 @@ Route::get('/san-pham', [ProductController::class, 'index'])->name('products.ind
 Route::get('/san-pham/suggest', [ProductController::class, 'suggest'])->name('products.suggest');
 Route::get('/san-pham/{slug}', [ProductController::class, 'show'])->name('products.show');
 
+Route::get('/chinh-sach/{slug}', function ($slug) {
+    $policies = [
+        'doi-tra'     => ['title' => 'Chính sách đổi trả',    'icon' => 'M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8 M3 3v5h5'],
+        'bao-hanh'    => ['title' => 'Chính sách bảo hành',   'icon' => 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'],
+        'van-chuyen'  => ['title' => 'Chính sách vận chuyển', 'icon' => 'M1 3h15v13H1zM16 8h4l3 3v4h-7V8z M5.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM18.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z'],
+        'bao-mat'     => ['title' => 'Chính sách bảo mật',    'icon' => 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4'],
+        'mua-hang'    => ['title' => 'Hướng dẫn mua hàng',    'icon' => 'M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'],
+    ];
+
+    if (!isset($policies[$slug])) abort(404);
+
+    return view('pages.other.policy', [
+        'slug'   => $slug,
+        'title'  => $policies[$slug]['title'],
+        'icon'   => $policies[$slug]['icon'],
+    ]);
+})->name('policy');
 // ── Review: load AJAX (không cần auth, ai cũng đọc được) ────────────────────
 Route::get('/san-pham/{slug}/danh-gia', [ReviewController::class, 'load'])
     ->name('products.reviews.load');
@@ -32,6 +49,23 @@ Route::get('/thanh-toan', [CheckoutController::class, 'index'])->name('checkout.
 Route::get('/khuyen-mai', fn() => view('pages.other.promotions'))->name('promotions');
 Route::get('/yeu-thich', fn() => view('pages.other.wishlist'))->name('wishlist');
 Route::get('/lien-he', fn() => view('pages.other.contact'))->name('contact');
+Route::get('/chinh-sach/{slug}', function ($slug) {
+    $policies = [
+        'doi-tra'     => ['title' => 'Chính sách đổi trả',    'icon' => 'M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8 M3 3v5h5'],
+        'bao-hanh'    => ['title' => 'Chính sách bảo hành',   'icon' => 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'],
+        'van-chuyen'  => ['title' => 'Chính sách vận chuyển', 'icon' => 'M1 3h15v13H1zM16 8h4l3 3v4h-7V8z M5.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM18.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z'],
+        'bao-mat'     => ['title' => 'Chính sách bảo mật',    'icon' => 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4'],
+        'mua-hang'    => ['title' => 'Hướng dẫn mua hàng',    'icon' => 'M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'],
+    ];
+
+    if (!isset($policies[$slug])) abort(404);
+
+    return view('pages.other.policy', [
+        'slug'   => $slug,
+        'title'  => $policies[$slug]['title'],
+        'icon'   => $policies[$slug]['icon'],
+    ]);
+})->name('policy');
 
 Route::redirect('/tai-khoan', '/dang-nhap');
 

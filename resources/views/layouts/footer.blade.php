@@ -79,14 +79,35 @@
                         style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
                       color:#fff;margin-bottom:16px">
                         Hỗ trợ</div>
-                    @foreach (['Liên hệ', 'Chính sách đổi trả', 'Chính sách bảo hành', 'Hướng dẫn mua hàng', 'Câu hỏi thường gặp'] as $link)
-                        <a href="{{ url('lien-he') }}"
-                            style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);
-                    margin-bottom:10px;text-decoration:none;transition:.2s"
-                            onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">
-                            {{ $link }}
-                        </a>
-                    @endforeach
+                    <a href="{{ route('contact') }}"
+                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;">
+                        Liên hệ
+                    </a>
+
+                    <a href="{{ route('policy', 'doi-tra') }}"
+                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;">
+                        Chính sách đổi trả
+                    </a>
+
+                    <a href="{{ route('policy', 'bao-hanh') }}"
+                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;">
+                        Chính sách bảo hành
+                    </a>
+
+                    <a href="{{ route('policy', 'mua-hang') }}"
+                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;">
+                        Hướng dẫn mua hàng
+                    </a>
+
+                    <a href="{{ route('policy', 'van-chuyen') }}"
+                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;">
+                        Chính sách vận chuyển
+                    </a>
+
+                    <a href="{{ route('policy', 'bao-mat') }}"
+                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;">
+                        Chính sách bảo mật
+                    </a>
                 </div>
 
                 {{-- Cột 4: Newsletter + Hotline --}}
