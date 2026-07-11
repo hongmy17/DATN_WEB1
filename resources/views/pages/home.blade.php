@@ -368,20 +368,23 @@
             </div>
 
             <div class="cat-grid">
-                @php $cats = [['slug' => 'laptop', 'label' => 'Laptop', 'count' => '124 sản phẩm', 'path' => 'M2 3h20v14H2zM8 21h8M12 17v4'], ['slug' => 'phone', 'label' => 'Điện thoại', 'count' => '89 sản phẩm', 'path' => 'M12 18h.01M8 21h8a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1z'], ['slug' => 'tablet', 'label' => 'Máy tính bảng', 'count' => '56 sản phẩm', 'path' => 'M18 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1zM12 17h.01'], ['slug' => 'audio', 'label' => 'Tai nghe', 'count' => '78 sản phẩm', 'path' => 'M3 18v-6a9 9 0 0 1 18 0v6M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z'], ['slug' => 'watch', 'label' => 'Smartwatch', 'count' => '43 sản phẩm', 'path' => 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 6v6l4 2'], ['slug' => 'accessory', 'label' => 'Phụ kiện', 'count' => '200+ sản phẩm', 'path' => 'M12 22V8M5 12H2a10 10 0 0 0 20 0h-3']]; @endphp
-
-                @foreach ($cats as $i => $cat)
-                    <a href="{{ url('san-pham?cat=' . $cat['slug']) }}" class="cat-tile reveal">
-                        <div class="cat-tile__icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="1.7" stroke-linecap="round">
-                                <path d="{{ $cat['path'] }}" />
-                            </svg>
-                        </div>
-                        <div class="cat-tile__name">{{ $cat['label'] }}</div>
-                        <div class="cat-tile__count">{{ $cat['count'] }}</div>
-                    </a>
-                @endforeach
+                @forelse($categories as $cat)
+                <a href="{{ route('products.index', ['categories' => [$cat->id]]) }}"
+                   class="cat-tile reveal">
+                    <div class="cat-tile__icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+                            <path d="{{ $cat->icon_path }}"/>
+                        </svg>
+                    </div>
+                    <div class="cat-tile__name">{{ $cat->name }}</div>
+                    <div class="cat-tile__count">
+                        {{ $cat->products_count > 0 ? $cat->products_count . ' sản phẩm' : 'Đang cập nhật' }}
+                    </div>
+                </a>
+                @empty
+                <p style="grid-column:1/-1;text-align:center;color:var(--ink-muted)">Chưa có danh mục.</p>
+                @endforelse
             </div>
         </div>
     </section>
@@ -442,71 +445,61 @@
             </div>
 
             <div class="grid-4">
-                @php $products = [['id' => 1, 'name' => 'MacBook Pro 14" M3 Pro', 'brand' => 'Apple', 'price' => 42990000, 'old' => 48490000, 'badge' => ''], ['id' => 2, 'name' => 'iPhone 15 Pro Max', 'brand' => 'Apple', 'price' => 32990000, 'old' => 36990000, 'badge' => 'Hot'], ['id' => 3, 'name' => 'Samsung Galaxy S24 Ultra', 'brand' => 'Samsung', 'price' => 29990000, 'old' => 33990000, 'badge' => '-11%'], ['id' => 6, 'name' => 'Sony WH-1000XM5', 'brand' => 'Sony', 'price' => 8490000, 'old' => 9990000, 'badge' => 'Best']]; @endphp
-
-                @foreach ($products as $p)
-                    <div class="product-card reveal">
-                        <div class="product-card__thumb">
-                            @if ($p['badge'])
-                                <div class="product-card__badges">
-                                    <span
-                                        class="badge {{ str_starts_with($p['badge'], '-') ? 'badge-sale' : ($p['badge'] === 'Hot' ? 'badge-hot' : 'badge-best') }}">
-                                        {{ $p['badge'] }}
-                                    </span>
-                                </div>
-                            @endif
-
-                            <button class="product-card__wish" data-wish-id="{{ $p['id'] }}"
-                                data-wish-name="{{ $p['name'] }}" data-wish-price="{{ $p['price'] }}"
-                                data-wish-slug="" aria-label="Yêu thích">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06
-                                             a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78
-                                             1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                                </svg>
-                            </button>
-
-                            <div class="product-card__img" style="display:flex;align-items:center;justify-content:center">
-                                <svg width="72" height="72" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" stroke-width=".7" stroke-linecap="round">
-                                    <rect x="2" y="3" width="20" height="14" rx="2" />
-                                    <line x1="8" y1="21" x2="16" y2="21" />
-                                    <line x1="12" y1="17" x2="12" y2="21" />
-                                </svg>
-                            </div>
-
-                            <div class="product-card__actions">
-                                <button class="btn btn-ghost"
-                                    onclick="Cart.add({id:{{ $p['id'] }},name:'{{ addslashes($p['name']) }}',price:{{ $p['price'] }},img:''})">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                        stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                        <circle cx="9" cy="21" r="1" />
-                                        <circle cx="20" cy="21" r="1" />
-                                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                                    </svg>
-                                    Giỏ hàng
-                                </button>
-                                <a href="{{ url('san-pham') }}" class="btn btn-primary">Xem ngay</a>
-                            </div>
+                @forelse($featuredProducts as $p)
+                @php
+                    $minPrice  = $p->variants->min('price') ?? 0;
+                    $oldPrice  = $p->variants->max('compare_price');
+                    $discount  = ($oldPrice && $oldPrice > $minPrice) ? round((1 - $minPrice / $oldPrice) * 100) : 0;
+                    $thumbnail = $p->thumbnail ? asset('storage/' . $p->thumbnail) : null;
+                    $defVar    = $p->variants->first();
+                @endphp
+                <div class="product-card reveal">
+                    <div class="product-card__thumb">
+                        @if($discount >= 5)
+                        <div class="product-card__badges">
+                            <span class="badge badge-sale">-{{ $discount }}%</span>
                         </div>
-
-                        <div class="product-card__body">
-                            <div class="product-card__brand">{{ $p['brand'] }}</div>
-                            <div class="product-card__name">
-                                <a href="{{ url('san-pham') }}">{{ $p['name'] }}</a>
-                            </div>
-                            <div class="product-card__price">
-                                <span
-                                    class="product-card__price-current">{{ number_format($p['price'], 0, ',', '.') }}₫</span>
-                                @if ($p['old'])
-                                    <span
-                                        class="product-card__price-old">{{ number_format($p['old'], 0, ',', '.') }}₫</span>
-                                @endif
-                            </div>
+                        @endif
+                        <button class="product-card__wish"
+                            data-wish-id="{{ $p->id }}"
+                            data-wish-name="{{ addslashes($p->name) }}"
+                            data-wish-price="{{ $minPrice }}"
+                            data-wish-slug="{{ $p->slug }}"
+                            data-wish-img="{{ $p->thumbnail ?? '' }}"
+                            aria-label="Yêu thích">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06 a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                        </button>
+                        <div class="product-card__img" style="display:flex;align-items:center;justify-content:center">
+                            @if($thumbnail)
+                            <img src="{{ $thumbnail }}" alt="{{ $p->name }}" style="width:100%;height:100%;object-fit:contain;padding:12px" onerror="this.style.display='none'">
+                            @else
+                            <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=".7" stroke-linecap="round" style="color:#C5C3BC"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                            @endif
+                        </div>
+                        <div class="product-card__actions">
+                            <button class="btn btn-ghost" onclick="Cart.add({id:{{ $defVar?->id ?? $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $minPrice }},img:'{{ $p->thumbnail ?? '' }}',slug:'{{ $p->slug }}'})">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                                Giỏ hàng
+                            </button>
+                            <a href="{{ route('products.show', $p->slug) }}" class="btn btn-primary">Xem ngay</a>
                         </div>
                     </div>
-                @endforeach
+                    <div class="product-card__body">
+                        <div class="product-card__brand">{{ $p->category?->name ?? '' }}</div>
+                        <div class="product-card__name"><a href="{{ route('products.show', $p->slug) }}">{{ $p->name }}</a></div>
+                        <div class="product-card__price">
+                            <span class="product-card__price-current">{{ number_format($minPrice,0,',','.') }}₫</span>
+                            @if($oldPrice && $oldPrice > $minPrice)
+                            <span class="product-card__price-old">{{ number_format($oldPrice,0,',','.') }}₫</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                @empty
+                <p style="grid-column:1/-1;text-align:center;color:var(--ink-muted)">Chưa có sản phẩm.</p>
+                @endforelse
             </div>
 
             <div style="text-align:center;margin-top:36px">

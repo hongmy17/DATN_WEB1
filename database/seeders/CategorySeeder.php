@@ -9,102 +9,58 @@ class CategorySeeder extends Seeder
 {
     public function run(): void
     {
+        DB::table('categories')->truncate();
         $now = now();
 
-        // Danh mục cha
+        // ── 4 DANH MỤC CHA ───────────────────────────────────────────────
         $parents = [
-            [
-                'name' => 'Thiết Bị Ngoại Vi',
-                'slug' => 'thiet-bi-ngoai-vi',
-                'description' => 'Chuột, bàn phím, tai nghe và các thiết bị ngoại vi máy tính',
-            ],
-            [
-                'name' => 'Thiết Bị Crypto',
-                'slug' => 'thiet-bi-crypto',
-                'description' => 'Ví lạnh, khóa bảo mật và thiết bị lưu trữ tài sản số',
-            ],
-            [
-                'name' => 'Phụ Kiện Công Nghệ',
-                'slug' => 'phu-kien-cong-nghe',
-                'description' => 'Cáp, túi đựng, phụ kiện bảo vệ thiết bị',
-            ],
+            ['name' => 'Âm thanh',              'slug' => 'am-thanh',              'description' => 'Tai nghe, loa di động và thiết bị âm thanh cao cấp'],
+            ['name' => 'Phụ kiện PC & Laptop',  'slug' => 'phu-kien-pc-laptop',    'description' => 'Chuột, bàn phím, webcam và phụ kiện máy tính'],
+            ['name' => 'Sạc & Cáp',             'slug' => 'sac-va-cap',            'description' => 'Sạc nhanh, pin dự phòng, cáp và hub kết nối'],
+            ['name' => 'Thiết bị đeo',          'slug' => 'thiet-bi-deo',          'description' => 'Smartwatch và vòng tay thể thao thông minh'],
         ];
 
-        foreach ($parents as $parent) {
+        foreach ($parents as $p) {
             DB::table('categories')->insert([
-                'name' => $parent['name'],
-                'slug' => $parent['slug'],
+                'name' => $p['name'],
+                'slug' => $p['slug'],
                 'parent_id' => null,
-                'description' => $parent['description'],
+                'description' => $p['description'],
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
         }
 
-        $ngoaiViId = DB::table('categories')
-            ->where('slug', 'thiet-bi-ngoai-vi')
-            ->value('id');
+        $amThanh    = DB::table('categories')->where('slug', 'am-thanh')->value('id');
+        $ngoaiVi    = DB::table('categories')->where('slug', 'phu-kien-pc-laptop')->value('id');
+        $sacCap     = DB::table('categories')->where('slug', 'sac-va-cap')->value('id');
+        $thietBiDeo = DB::table('categories')->where('slug', 'thiet-bi-deo')->value('id');
 
-        $cryptoId = DB::table('categories')
-            ->where('slug', 'thiet-bi-crypto')
-            ->value('id');
-
-        $phuKienId = DB::table('categories')
-            ->where('slug', 'phu-kien-cong-nghe')
-            ->value('id');
-
-        // Danh mục con
+        // ── 11 DANH MỤC CON ──────────────────────────────────────────────
         $children = [
-            [
-                'name' => 'Chuột',
-                'slug' => 'chuot',
-                'parent_id' => $ngoaiViId,
-                'description' => 'Chuột văn phòng, chuột gaming, chuột không dây',
-            ],
-            [
-                'name' => 'Tai Nghe',
-                'slug' => 'tai-nghe',
-                'parent_id' => $ngoaiViId,
-                'description' => 'Tai nghe gaming, tai nghe không dây, tai nghe chống ồn',
-            ],
-            [
-                'name' => 'Bàn Phím',
-                'slug' => 'ban-phim',
-                'parent_id' => $ngoaiViId,
-                'description' => 'Bàn phím cơ, bàn phím không dây, bàn phím gaming',
-            ],
-            [
-                'name' => 'Ví Lạnh',
-                'slug' => 'vi-lanh',
-                'parent_id' => $cryptoId,
-                'description' => 'Ví lạnh Ledger, Trezor, SafePal dùng lưu trữ tiền điện tử',
-            ],
-            [
-                'name' => 'Seed Backup',
-                'slug' => 'seed-backup',
-                'parent_id' => $cryptoId,
-                'description' => 'Thiết bị lưu trữ seed phrase bằng kim loại',
-            ],
-            [
-                'name' => 'Security Key',
-                'slug' => 'security-key',
-                'parent_id' => $cryptoId,
-                'description' => 'Khóa bảo mật đăng nhập hai lớp như YubiKey',
-            ],
-            [
-                'name' => 'Cáp Kết Nối',
-                'slug' => 'cap-ket-noi',
-                'parent_id' => $phuKienId,
-                'description' => 'Cáp USB-A, USB-C, cáp sạc và truyền dữ liệu',
-            ],
+            // Âm thanh
+            ['name' => 'Tai nghe chống ồn',      'slug' => 'tai-nghe-chong-on',     'parent_id' => $amThanh,    'description' => 'Tai nghe over-ear chống ồn chủ động — Sony, Bose, Jabra'],
+            ['name' => 'Tai nghe true wireless',  'slug' => 'tai-nghe-true-wireless', 'parent_id' => $amThanh,    'description' => 'Tai nghe không dây hoàn toàn — AirPods, Sony, Samsung Buds'],
+            ['name' => 'Loa di động',             'slug' => 'loa-di-dong',            'parent_id' => $amThanh,    'description' => 'Loa Bluetooth di động chống nước — JBL, Marshall, Bose'],
+            // Ngoại vi
+            ['name' => 'Chuột',                   'slug' => 'chuot',                  'parent_id' => $ngoaiVi,    'description' => 'Chuột văn phòng và gaming — Logitech, Razer, Apple'],
+            ['name' => 'Bàn phím',                'slug' => 'ban-phim',               'parent_id' => $ngoaiVi,    'description' => 'Bàn phím cơ và membrane — Logitech, Apple, Keychron'],
+            ['name' => 'Webcam & Micro',          'slug' => 'webcam-micro',           'parent_id' => $ngoaiVi,    'description' => 'Webcam và micro dành cho streaming, họp online'],
+            // Sạc & Cáp
+            ['name' => 'Sạc nhanh',               'slug' => 'sac-nhanh',              'parent_id' => $sacCap,     'description' => 'Củ sạc GaN tốc độ cao — Anker, Apple, Samsung'],
+            ['name' => 'Pin dự phòng',            'slug' => 'pin-du-phong',           'parent_id' => $sacCap,     'description' => 'Pin dự phòng dung lượng lớn — Anker, Xiaomi, Baseus'],
+            ['name' => 'Cáp & Hub USB-C',         'slug' => 'cap-hub-usb-c',          'parent_id' => $sacCap,     'description' => 'Cáp sạc, cáp dữ liệu và hub đa năng — Anker, Ugreen'],
+            // Thiết bị đeo
+            ['name' => 'Smartwatch',              'slug' => 'smartwatch',             'parent_id' => $thietBiDeo, 'description' => 'Đồng hồ thông minh — Apple Watch, Samsung Galaxy Watch'],
+            ['name' => 'Vòng tay thể thao',      'slug' => 'vong-tay-the-thao',     'parent_id' => $thietBiDeo, 'description' => 'Vòng tay theo dõi sức khỏe — Xiaomi Band, Fitbit'],
         ];
 
-        foreach ($children as $child) {
+        foreach ($children as $c) {
             DB::table('categories')->insert([
-                'name' => $child['name'],
-                'slug' => $child['slug'],
-                'parent_id' => $child['parent_id'],
-                'description' => $child['description'],
+                'name' => $c['name'],
+                'slug' => $c['slug'],
+                'parent_id' => $c['parent_id'],
+                'description' => $c['description'],
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
