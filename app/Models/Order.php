@@ -72,6 +72,44 @@ class Order extends Model
                     ->increment('stock_quantity', $item->quantity);
             });
         });
+
+        // ─── COD hook: đồng bộ Payment status theo Order status ──────
+        // Đơn COD không đi qua cổng thanh toán nào nên trạng thái thu
+        // tiền hoàn toàn phụ thuộc vào order_status do admin/shipper
+        // cập nhật thủ công. Mỗi khi order_status đổi, Payment tương
+        // ứng sẽ tự động đồng bộ theo bảng ánh xạ bên dưới — kể cả khi
+        // đổi XUÔI (Chờ xác nhận → Hoàn thành) lẫn đổi NGƯỢC (Hoàn
+        // thành → Đang giao, do sửa nhầm hoặc test lại).
+        //
+        // CHỈ áp dụng cho đơn payment_method = 'cod'. Đơn vnpay/
+        // bank_transfer có Payment do chính cổng thanh toán / IPN cập
+        // nhật (xem PaymentController), KHÔNG được suy diễn từ
+        // order_status kẻo ghi đè sai kết quả thật của cổng.
+        static::updated(function (Order $order) {
+            if (! $order->wasChanged('order_status') || $order->payment_method !== 'cod') {
+                return;
+            }
+
+            $payment = $order->payment;
+            if (! $payment) {
+                return;
+            }
+
+            $targetStatus = match ((int) $order->order_status) {
+                self::STATUS_COMPLETED => Payment::STATUS_SUCCESS,
+                self::STATUS_CANCELLED => Payment::STATUS_FAILED,
+                default                => Payment::STATUS_PENDING, // Chờ xác nhận / Đã xác nhận / Đang giao / Chờ xác nhận hủy
+            };
+
+            if ((int) $payment->status === $targetStatus) {
+                return; // đã đúng trạng thái rồi, khỏi update tránh vòng lặp thừa
+            }
+
+            $payment->update([
+                'status'  => $targetStatus,
+                'paid_at' => $targetStatus === Payment::STATUS_SUCCESS ? now() : null,
+            ]);
+        });
     }
 
     public function statusLabel(): string
@@ -109,5 +147,10 @@ class Order extends Model
     public function items()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function payment()
+    {
+        return $this->hasOne(Payment::class);
     }
 }

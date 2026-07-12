@@ -47,6 +47,8 @@ class OrdersTable
 
                 // FIX: Bỏ emoji trong trạng thái
                 SelectColumn::make('order_status')
+                ->label('Trạng thái đơn hàng')
+                 ->selectablePlaceholder(false)
                     ->options([
                         0 => 'Chờ xác nhận',
                         1 => 'Đã xác nhận',
@@ -56,6 +58,32 @@ class OrdersTable
                         5 => 'Chờ thanh toán VNPay',  // ← thêm
                         6 => 'Chờ xác nhận hủy',      // ← thêm
                     ]),
+
+                TextColumn::make('payment_method')
+                    ->label('PTTT')
+                    ->formatStateUsing(fn($state) => match ($state) {
+                        'vnpay'         => 'VNPay',
+                        'bank_transfer' => 'Chuyển khoản',
+                        default         => 'COD',
+                    })
+                    ->badge()
+                    ->color(fn($state) => $state === 'cod' ? 'warning' : 'info'),
+
+                TextColumn::make('payment.status')
+                    ->label('Trạng thái thanh toán')
+                    ->formatStateUsing(fn($state) => match ((int) $state) {
+                        1       => 'Đã thu tiền',
+                        2       => 'Thất bại',
+                        3       => 'Hoàn tiền',
+                        default => 'Chờ thu tiền',
+                    })
+                    ->badge()
+                    ->color(fn($state) => match ((int) $state) {
+                        1       => 'success',
+                        2       => 'danger',
+                        3       => 'gray',
+                        default => 'warning',
+                    }),
 
                 TextColumn::make('created_at')
                     ->label('Ngày đặt')
