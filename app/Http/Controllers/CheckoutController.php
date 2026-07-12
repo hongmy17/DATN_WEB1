@@ -206,8 +206,20 @@ class CheckoutController extends Controller
                 return $order;
             });
 
-            // Gửi email xác nhận (chỉ COD — VNPay gửi sau khi thanh toán thành công)
+            // ── COD: luồng đặt hàng KHÔNG đi qua cổng thanh toán nào ──
+            // Vẫn tạo 1 bản ghi Payment để đồng bộ dữ liệu với VNPay/Momo...,
+            // nhưng ở trạng thái STATUS_PENDING vì tiền chưa thực thu — chỉ
+            // thu khi shipper giao hàng thành công (xem Order::booted() —
+            // tự động chuyển sang STATUS_SUCCESS khi order_status = COMPLETED).
             if ($order->payment_method === 'cod') {
+                Payment::create([
+                    'order_id'         => $order->id,
+                    'payment_gateway'  => 'COD',
+                    'amount'           => $order->total_amount,
+                    'status'           => Payment::STATUS_PENDING,
+                    'gateway_response' => null,
+                ]);
+
                 if ($order->user && $order->user->email) {
                     Mail::to($order->user->email)->send(new OrderConfirmationMail($order));
                 }
