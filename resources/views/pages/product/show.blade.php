@@ -10,7 +10,7 @@
     @php
         // Variant mặc định: is_default=1 hoặc variant đầu tiên
         $defaultVariant = $product->variants->firstWhere('is_default', 1) ?? $product->variants->first();
-        $currentPrice = $defaultVariant?->price ?? 0;
+        $currentPrice = $defaultVariant?->current_price ?? 0; // dùng current_price (đã tính sale)
         $comparePrice = $defaultVariant?->compare_price ?? 0;
         $stockQty = $defaultVariant?->stock_quantity ?? 0;
         $discount =
@@ -29,15 +29,19 @@
         foreach ($product->variants as $variant) {
             $key = $variant->attributeValues->pluck('id')->sort()->join('-');
             $variantMap[$key] = [
-                'id' => $variant->id,
-                'price' => $variant->price,
-                'compare' => $variant->compare_price,
-                'stock' => $variant->stock_quantity ?? 0,
-                'manage_stock' => $variant->manage_stock ?? true,
-                'sku' => $variant->sku,
-                'is_default' => $variant->is_default,
-                'image' => $variant->image ? asset('storage/' . $variant->image) : null,
-                'label' => $variant->attributeValues->pluck('value')->implode(' / '),
+                'id'            => $variant->id,
+                'price'         => $variant->price,
+                'current_price' => $variant->current_price,   // giá thực tế (đã tính sale)
+                'compare'       => $variant->compare_price,
+                'sale_price'    => $variant->sale_price,
+                'sale_active'   => $variant->is_sale_active,
+                'sale_ends_at'  => $variant->sale_ends_at?->timestamp, // unix timestamp cho JS countdown
+                'stock'         => $variant->stock_quantity ?? 0,
+                'manage_stock'  => $variant->manage_stock ?? true,
+                'sku'           => $variant->sku,
+                'is_default'    => $variant->is_default,
+                'image'         => $variant->image ? asset('storage/' . $variant->image) : null,
+                'label'         => $variant->attributeValues->pluck('value')->implode(' / '),
             ];
         }
 
@@ -150,15 +154,16 @@
                 <div class="pdp-rating">
                     <div class="stars">
                         @for ($i = 1; $i <= 5; $i++)
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B"
+                            @php $fill = $i <= round($reviewStats['avg'] ?? 0) ? '#F59E0B' : '#E5E3DE'; @endphp
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="{{ $fill }}" stroke="{{ $fill }}"
                                 stroke-width="1.5">
                                 <polygon
                                     points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                             </svg>
                         @endfor
                     </div>
-                    <span class="pdp-rating__score">5.0</span>
-                    <span class="pdp-rating__count">0 đánh giá</span>
+                    <span class="pdp-rating__score">{{ number_format($reviewStats['avg'] ?? 0, 1) }}</span>
+                    <span class="pdp-rating__count">{{ $reviewStats['total'] ?? 0 }} đánh giá</span>
                     <div class="pdp-rating__sep"></div>
                     <div class="pdp-stock {{ $stockQty > 0 ? 'in-stock' : 'out-stock' }}" id="stockStatus">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -171,16 +176,61 @@
 
                 {{-- PRICE --}}
                 <div class="price-block">
+                    {{-- Flash sale badge --}}
+                    @if ($defaultVariant?->is_sale_active)
+                        <div class="flash-sale-badge" id="flashSaleBadge">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                            FLASH SALE
+                        </div>
+                    @else
+                        <div class="flash-sale-badge" id="flashSaleBadge" style="display:none"></div>
+                    @endif
+
                     <div class="price-block__row">
-                        <span class="price-block__current"
-                            id="currentPrice">{{ number_format($currentPrice, 0, ',', '.') }}₫</span>
+                        <span class="price-block__current" id="currentPrice">{{ number_format($currentPrice, 0, ',', '.') }}₫</span>
+
+                        {{-- Giá gốc (compare_price) --}}
                         @if ($comparePrice && $comparePrice > $currentPrice)
-                            <span class="price-block__old"
-                                id="comparePrice">{{ number_format($comparePrice, 0, ',', '.') }}₫</span>
-                            <span class="price-block__save" id="saveBadge">Tiết kiệm
-                                {{ number_format($comparePrice - $currentPrice, 0, ',', '.') }}₫</span>
+                            <span class="price-block__old" id="comparePrice">{{ number_format($comparePrice, 0, ',', '.') }}₫</span>
+                            <span class="price-block__save" id="saveBadge">Tiết kiệm {{ number_format($comparePrice - $currentPrice, 0, ',', '.') }}₫</span>
+                        @else
+                            <span class="price-block__old" id="comparePrice" style="display:none"></span>
+                            <span class="price-block__save" id="saveBadge" style="display:none"></span>
+                        @endif
+
+                        {{-- Giá trước khi sale (chỉ hiện khi đang flash sale) --}}
+                        @if ($defaultVariant?->is_sale_active)
+                            <span class="price-block__original" id="originalPrice">{{ number_format($defaultVariant->price, 0, ',', '.') }}₫</span>
+                        @else
+                            <span class="price-block__original" id="originalPrice" style="display:none"></span>
                         @endif
                     </div>
+
+                    {{-- Đồng hồ đếm ngược flash sale --}}
+                    @if ($defaultVariant?->is_sale_active && $defaultVariant?->sale_ends_at)
+                        <div class="countdown-wrap" id="countdownWrap">
+                            <span class="countdown-label">Kết thúc sau:</span>
+                            <div class="countdown-timer">
+                                <div class="countdown-unit"><span id="cdHours">00</span><small>giờ</small></div>
+                                <span class="countdown-sep">:</span>
+                                <div class="countdown-unit"><span id="cdMinutes">00</span><small>phút</small></div>
+                                <span class="countdown-sep">:</span>
+                                <div class="countdown-unit"><span id="cdSeconds">00</span><small>giây</small></div>
+                            </div>
+                        </div>
+                    @else
+                        <div class="countdown-wrap" id="countdownWrap" style="display:none">
+                            <span class="countdown-label">Kết thúc sau:</span>
+                            <div class="countdown-timer">
+                                <div class="countdown-unit"><span id="cdHours">00</span><small>giờ</small></div>
+                                <span class="countdown-sep">:</span>
+                                <div class="countdown-unit"><span id="cdMinutes">00</span><small>phút</small></div>
+                                <span class="countdown-sep">:</span>
+                                <div class="countdown-unit"><span id="cdSeconds">00</span><small>giây</small></div>
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="price-block__installment">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round">
@@ -266,9 +316,7 @@
                         </svg>
                         Thêm vào giỏ
                     </button>
-                    {{-- FIX: Mua ngay = add cart + redirect checkout --}}
-                    <button class="btn-buy" id="btnBuyNow" onclick="buyNow()" {{ $stockQty <= 0 ? 'disabled' : '' }}
-                        style="{{ $stockQty <= 0 ? 'opacity:.5;cursor:not-allowed' : '' }}">
+                    <button class="btn-buy" onclick="Toast.show('Đang chuyển đến thanh toán...','info')">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round">
                             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
@@ -764,28 +812,74 @@
                 }
 
                 updateVariant();
-                window.__defaultVariant = window.__currentVariant;
+            }
+
+            // Đồng hồ đếm ngược
+            let _countdownTimer = null;
+            function startCountdown(endTs) {
+                if (_countdownTimer) clearInterval(_countdownTimer);
+                const wrap = document.getElementById('countdownWrap');
+                if (!endTs || !wrap) return;
+
+                function tick() {
+                    const diff = endTs * 1000 - Date.now();
+                    if (diff <= 0) {
+                        clearInterval(_countdownTimer);
+                        // Hết sale → reload để cập nhật giá thường
+                        location.reload();
+                        return;
+                    }
+                    const h = Math.floor(diff / 3600000);
+                    const m = Math.floor((diff % 3600000) / 60000);
+                    const s = Math.floor((diff % 60000) / 1000);
+                    document.getElementById('cdHours').textContent   = String(h).padStart(2,'0');
+                    document.getElementById('cdMinutes').textContent = String(m).padStart(2,'0');
+                    document.getElementById('cdSeconds').textContent = String(s).padStart(2,'0');
+                }
+                tick();
+                _countdownTimer = setInterval(tick, 1000);
+                wrap.style.display = '';
             }
 
             function updateVariant() {
-                // Lưu variant hiện tại vào window để buyNow() có thể truy cập
                 const key = Object.values(selectedAttrs).sort((a, b) => a - b).join('-');
                 const v = variantMap[key];
                 if (!v) return;
-                window.__currentVariant = v; // lưu lại để buyNow() dùng
 
-                // FIX: lưu variant hiện tại để buyNow() dùng được
-                window.__currentVariant = v;
-
-                // Giá
+                // Giá — dùng current_price (đã tính sale nếu đang active)
+                const displayPrice = v.current_price ?? v.price;
                 document.getElementById('currentPrice').textContent =
-                    v.price.toLocaleString('vi-VN') + '₫';
+                    displayPrice.toLocaleString('vi-VN') + '₫';
+
+                // Flash sale UI
+                const flashBadge   = document.getElementById('flashSaleBadge');
+                const origPriceEl  = document.getElementById('originalPrice');
+                const countdownWrap = document.getElementById('countdownWrap');
+
+                if (v.sale_active && v.sale_price) {
+                    // Đang flash sale
+                    if (flashBadge) { flashBadge.style.display = ''; }
+                    if (origPriceEl) {
+                        origPriceEl.textContent = v.price.toLocaleString('vi-VN') + '₫';
+                        origPriceEl.style.display = '';
+                    }
+                    startCountdown(v.sale_ends_at);
+                } else {
+                    // Không có flash sale
+                    if (flashBadge)   flashBadge.style.display = 'none';
+                    if (origPriceEl)  origPriceEl.style.display = 'none';
+                    if (countdownWrap) countdownWrap.style.display = 'none';
+                    if (_countdownTimer) clearInterval(_countdownTimer);
+                }
 
                 const compareEl = document.getElementById('comparePrice');
-                const saveEl = document.getElementById('saveBadge');
-                if (v.compare && v.compare > v.price) {
-                    if (compareEl) compareEl.textContent = v.compare.toLocaleString('vi-VN') + '₫';
-                    if (saveEl) saveEl.textContent = 'Tiết kiệm ' + (v.compare - v.price).toLocaleString('vi-VN') + '₫';
+                const saveEl    = document.getElementById('saveBadge');
+                if (v.compare && v.compare > displayPrice) {
+                    if (compareEl) { compareEl.textContent = v.compare.toLocaleString('vi-VN') + '₫'; compareEl.style.display = ''; }
+                    if (saveEl)    { saveEl.textContent = 'Tiết kiệm ' + (v.compare - displayPrice).toLocaleString('vi-VN') + '₫'; saveEl.style.display = ''; }
+                } else {
+                    if (compareEl) compareEl.style.display = 'none';
+                    if (saveEl)    saveEl.style.display = 'none';
                 }
 
                 // Tồn kho
@@ -898,7 +992,6 @@
 
             function selectStar(n) {
                 selectedStar = n;
-                document.getElementById('ratingInput').value = n;
                 document.querySelectorAll('#starPicker svg').forEach((s, i) => {
                     const on = i < n;
                     s.setAttribute('fill', on ? '#F59E0B' : '#E5E3DE');
@@ -915,7 +1008,12 @@
                 selectStar(0);
             }
 
-            // Khởi tạo cart button (variant mặc định)
+            // Khởi tạo countdown cho variant mặc định
+        @if ($defaultVariant?->is_sale_active && $defaultVariant?->sale_ends_at)
+        startCountdown({{ $defaultVariant->sale_ends_at->timestamp }});
+        @endif
+
+        // Khởi tạo cart button (variant mặc định)
             (function() {
                 const btnCart = document.getElementById('btnAddCart');
                 const qtyInput = document.getElementById('qtyInput');
@@ -962,73 +1060,5 @@
                 submitReview,
                 updateVariant
             });
-
-            // ── MUA NGAY ───────────────────────────────────────────────────────────────
-            // Nghiệp vụ: thêm SP đang xem vào cart → redirect thẳng đến checkout
-            // Khác "Thêm vào giỏ": không cần F5 hay navigate về giỏ hàng
-            function buyNow() {
-                // Đọc trực tiếp từ DOM thay vì dựa vào window.__currentVariant
-                // để tránh lỗi khi trang mới load mà chưa đổi biến thể
-                const qty = parseInt(document.getElementById('qtyInput')?.value || 1);
-
-                // Lấy SKU từ DOM (đang hiển thị trên trang)
-                const skuEl = document.getElementById('pdpSku') ??
-                    document.querySelector('[id*="sku"], .pdp-sku, [class*="sku"]');
-
-                // Lấy variant từ variantMap theo key hiện tại (các attribute đang selected)
-                const selectedBtns = document.querySelectorAll('.attr-option.selected');
-                let key = '';
-                selectedBtns.forEach(btn => {
-                    key += (key ? '-' : '') + btn.dataset.attrVal;
-                });
-
-                const v = (key && typeof variantMap !== 'undefined') ? variantMap[key] : null;
-
-                // Nếu không tìm được qua key → thử dùng default variant
-                const variant = v ?? window.__currentVariant ?? window.__defaultVariant;
-
-                if (!variant) {
-                    // Thử lấy variant đầu tiên trong variantMap
-                    const firstKey = typeof variantMap !== 'undefined' ?
-                        Object.keys(variantMap)[0] : null;
-                    const fallback = firstKey ? variantMap[firstKey] : null;
-
-                    if (!fallback) {
-                        Toast.show('Vui lòng chọn phân loại sản phẩm', 'error');
-                        return;
-                    }
-
-                    addAndCheckout(fallback, qty);
-                    return;
-                }
-
-                if ((variant.stock ?? 0) <= 0) {
-                    Toast.show('Sản phẩm đã hết hàng', 'error');
-                    return;
-                }
-
-                addAndCheckout(variant, qty);
-            }
-
-            function addAndCheckout(variant, qty) {
-                // FIX: truyền variant_id thay vì id để Cart.add() không báo lỗi
-                const cartItem = {
-                    id: variant.id,
-                    variant_id: variant.id, // ← Cart.add() cần field này
-                    name: '{{ addslashes($product->name) }}',
-                    price: variant.price,
-                    img: '{{ $product->thumbnail ?? '' }}',
-                    slug: '{{ $product->slug }}',
-                    variant: variant.label || 'Mặc định',
-                    qty: qty,
-                };
-
-                // Dùng Cart.add() bình thường vì đã có đủ variant_id
-                Cart.add(cartItem).then(() => {
-                    window.location.href = '{{ route('checkout.index') }}';
-                });
-            }
-            window.buyNow = buyNow;
-            window.addAndCheckout = addAndCheckout;
         </script>
     @endsection

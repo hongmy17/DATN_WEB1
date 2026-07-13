@@ -223,3 +223,169 @@
         .sku-label { font-size: 11px; color: #9A9790; margin-bottom: 12px; font-family: monospace; }
         @media (max-width: 1024px) { .pdp-grid { grid-template-columns: 1fr; gap: 32px; } .gallery { position: static; } .related-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 640px) { .pdp-grid { padding: 24px 0 40px; } .trust-grid { grid-template-columns: 1fr 1fr; } .review-overview { flex-direction: column; gap: 20px; } .related-grid { grid-template-columns: repeat(2, 1fr); } }
+
+
+
+        /* ═══════════════════════════════════════════════════════════
+   FLASH SALE — badge, countdown, giá
+   Thêm vào cuối products.css
+   ═══════════════════════════════════════════════════════════ */
+
+/* Badge "⚡ Flash Sale" trên card danh sách — CỰC nổi bật */
+.badge-flash {
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, #ff3d3d, #ff7043);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .4px;
+    padding: 4px 9px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    border: 1px solid rgba(255, 255, 255, .6);
+    box-shadow: 0 0 0 0 rgba(255, 61, 61, .55), 0 4px 12px rgba(255, 61, 61, .5);
+    animation:
+        flashWobble 1.2s ease-in-out infinite,
+        flashRing 1.2s ease-out infinite;
+}
+
+/* Vệt sáng quét ngang qua badge */
+.badge-flash::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255, 255, 255, .8), transparent);
+    animation: flashShine 1.6s ease-in-out infinite;
+}
+
+/* Phóng to + lắc nhẹ hai bên — bắt mắt hơn hẳn kiểu chỉ mờ/tỏ */
+@keyframes flashWobble {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    25%      { transform: scale(1.12) rotate(-3deg); }
+    50%      { transform: scale(1.05) rotate(3deg); }
+    75%      { transform: scale(1.12) rotate(-2deg); }
+}
+
+/* Vòng sóng đỏ lan ra ngoài rồi tan biến — kiểu radar ping */
+@keyframes flashRing {
+    0%   { box-shadow: 0 0 0 0   rgba(255, 61, 61, .55), 0 4px 12px rgba(255, 61, 61, .5); }
+    70%  { box-shadow: 0 0 0 8px rgba(255, 61, 61, 0),    0 4px 12px rgba(255, 61, 61, .5); }
+    100% { box-shadow: 0 0 0 0   rgba(255, 61, 61, 0),    0 4px 12px rgba(255, 61, 61, .5); }
+}
+
+@keyframes flashShine {
+    0%   { left: -60%; }
+    50%  { left: 130%; }
+    100% { left: 130%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .badge-flash,
+    .badge-flash::after {
+        animation: none;
+    }
+}
+
+
+
+/* ── Trang chi tiết sản phẩm ────────────────────────────── */
+
+/* Badge "⚡ FLASH SALE" trên price-block */
+.flash-sale-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg, #ff4d4f, #ff7043);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    animation: flashPulse 1.8s ease-in-out infinite;
+}
+
+/* Giá gốc (trước sale) — gạch ngang màu xám nhạt */
+.price-block__original {
+    font-size: 14px;
+    color: var(--ink-3, #9a9790);
+    text-decoration: line-through;
+    margin-left: 6px;
+}
+
+/* Đồng hồ đếm ngược */
+.countdown-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0 4px;
+    padding: 10px 14px;
+    background: #fff5f5;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+}
+
+.countdown-label {
+    font-size: 12px;
+    color: #ef4444;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.countdown-timer {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.countdown-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #ef4444;
+    color: #fff;
+    border-radius: 6px;
+    padding: 4px 8px;
+    min-width: 42px;
+}
+
+.countdown-unit span {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+
+.countdown-unit small {
+    font-size: 9px;
+    font-weight: 500;
+    opacity: .85;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+}
+
+.countdown-sep {
+    font-size: 20px;
+    font-weight: 700;
+    color: #ef4444;
+    line-height: 1;
+    margin-bottom: 10px;
+}
+
+
+
+
+
+
+
+
+

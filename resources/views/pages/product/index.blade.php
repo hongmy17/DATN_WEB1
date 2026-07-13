@@ -333,7 +333,7 @@
         }
     </style>
 @endpush
-
+<link rel="stylesheet" href="{{ asset('assets/css/pages/products.css') }}">
 @section('content')
     <div class="container shop-wrap">
 
@@ -501,23 +501,33 @@
                 <div class="products-grid" id="productsGrid">
                     @forelse($products as $p)
                         @php
-                            $minPrice = $p->variants->min('price') ?? 0;
-                            $maxPrice = $p->variants->max('price') ?? 0;
-                            $comparePrice = $p->variants->max('compare_price');
-                            $discount =
-                                $comparePrice && $comparePrice > $minPrice
-                                    ? round((1 - $minPrice / $comparePrice) * 100)
-                                    : 0;
-                            $thumbnail = $p->thumbnail ? asset('storage/' . $p->thumbnail) : null;
-                            $defVariant = $p->variants->first();
+                            // Variant mặc định để tính giá
+                            $defaultV     = $p->variants->firstWhere('is_default', true) ?? $p->variants->first();
+                            $defVariant   = $defaultV;
+                            $isFlash      = $defaultV?->is_sale_active ?? false;
+                            $thumbnail    = $p->thumbnail ? asset('storage/' . $p->thumbnail) : null;
+
+                            // Giá hiển thị: flash sale → current_price, không → min/max
+                            $minPrice     = $isFlash ? ($defaultV->current_price ?? $defaultV->price) : ($p->variants->min('price') ?? 0);
+                            $maxPrice     = $isFlash ? ($defaultV->current_price ?? $defaultV->price) : ($p->variants->max('price') ?? 0);
+                            $comparePrice = $isFlash ? $defaultV->price : $p->variants->max('compare_price');
+                            $discount     = $comparePrice && $comparePrice > $minPrice ? round((1 - $minPrice / $comparePrice) * 100) : 0;
                         @endphp
 
                         <div class="product-card reveal">
                             <div class="product-card__thumb">
-                                {{-- Badge giảm giá --}}
-                                @if ($discount >= 5)
+                                {{-- Badge giảm giá / flash sale --}}
+
+                                @if ($isFlash || $discount >= 5)
                                     <div class="product-card__badges">
-                                        <span class="badge badge-sale">-{{ $discount }}%</span>
+                                        @if ($isFlash)
+                                            <span class="badge badge-flash">
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                                Flash Sale
+                                            </span>
+                                        @elseif ($discount >= 5)
+                                            <span class="badge badge-sale">-{{ $discount }}%</span>
+                                        @endif
                                     </div>
                                 @endif
 
