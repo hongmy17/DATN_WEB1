@@ -38,16 +38,14 @@ class ProductController extends Controller
             ->whereHas('variants', fn($q) => $q->active());
 
         if (! empty($selectedCategories)) {
-            // Mở rộng: nếu category được chọn là danh mục CHA
-            // thì tự động thêm cả danh mục CON vào điều kiện lọc
+            // FIX: trước đây chỉ gom con TRỰC TIẾP (1 cấp), và nếu danh mục có con thì
+            // BỎ SÓT LUÔN sản phẩm gắn trực tiếp vào chính danh mục cha đó. Giờ dùng
+            // selfAndDescendantIds() để gom đệ quy toàn bộ mọi cấp con/cháu + chính nó,
+            // khớp với việc danh mục giờ hỗ trợ đa cấp không giới hạn.
             $expandedIds = collect($selectedCategories)
                 ->flatMap(function ($id) {
-                    $childIds = \App\Models\Category::where('parent_id', $id)
-                        ->pluck('id')
-                        ->toArray();
-                    // Nếu có danh mục con → dùng danh mục con
-                    // Nếu không có → đây là danh mục con rồi, dùng chính nó
-                    return empty($childIds) ? [$id] : $childIds;
+                    $category = \App\Models\Category::find($id);
+                    return $category ? $category->selfAndDescendantIds() : [$id];
                 })
                 ->unique()
                 ->toArray();
@@ -78,16 +76,16 @@ class ProductController extends Controller
         // Danh mục CON → dùng cho chips filter nhanh ở trên
         $categories = Category::whereNotNull('parent_id')
             ->withCount(['products' => fn($q) => $q->visible()])
-            ->orderBy('name')
+            ->orderBy('sort_order')
             ->get();
 
         // Danh mục CHA kèm danh mục con → dùng cho sidebar nhóm
         $parentCategories = Category::whereNull('parent_id')
             ->with(['children' => function ($q) {
                 $q->withCount(['products' => fn($q2) => $q2->visible()])
-                    ->orderBy('name');
+                    ->orderBy('sort_order');
             }])
-            ->orderBy('name')
+            ->orderBy('sort_order')
             ->get()
             ->map(function ($parent) {
                 // Tổng số SP của nhóm = tổng SP các danh mục con

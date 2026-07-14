@@ -38,19 +38,26 @@ class CategoryForm
             Select::make('parent_id')
                 ->label('Danh mục cha')
                 ->options(function (?Category $record) {
-                    // Loại bỏ chính nó và con của nó khỏi danh sách
-                    $query = Category::whereNull('parent_id')->orderBy('name');
+                    // FIX: trước đây chỉ cho chọn danh mục GỐC làm cha (whereNull('parent_id')),
+                    // nên thực chất chỉ tạo được tối đa 2 cấp. Giờ cho chọn BẤT KỲ danh mục
+                    // nào làm cha (đa cấp không giới hạn), chỉ loại trừ chính nó + toàn bộ
+                    // hậu duệ của nó (để không tạo vòng lặp cha-con vô hạn).
+                    $query = Category::orderBy('name');
 
                     if ($record?->id) {
-                        $query->where('id', '!=', $record->id);
+                        $excludeIds = array_merge([$record->id], $record->descendantIds());
+                        $query->whereNotIn('id', $excludeIds);
                     }
 
-                    return $query->pluck('name', 'id');
+                    // Thụt lề theo cấp để nhìn rõ cây phân cấp ngay trong dropdown
+                    return $query->get()->mapWithKeys(fn (Category $cat) => [
+                        $cat->id => str_repeat('— ', $cat->depth()) . $cat->name,
+                    ]);
                 })
                 ->searchable()
                 ->nullable()
                 ->placeholder('— Là danh mục gốc —')
-                ->helperText('Chỉ danh mục gốc mới có thể làm cha.'),
+                ->helperText('Chọn bất kỳ danh mục nào làm cha — hỗ trợ đa cấp không giới hạn.'),
 
             Textarea::make('description')
                 ->label('Mô tả')

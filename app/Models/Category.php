@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Category extends Model
 {
-    protected $fillable = ['name', 'slug', 'parent_id', 'description'];
+    protected $fillable = ['name', 'slug', 'parent_id', 'description', 'sort_order'];
 
     public function parent()
     {
@@ -21,6 +21,50 @@ class Category extends Model
     public function products()
     {
         return $this->hasMany(Product::class);
+    }
+
+    /**
+     * Lấy toàn bộ ID của các danh mục CON, CHÁU, CHẮT... (đệ quy không giới hạn cấp).
+     * Dùng để: (1) chặn không cho chọn 1 danh mục con làm cha của chính tổ tiên nó
+     * (tránh vòng lặp vô hạn cha-con), (2) lọc sản phẩm theo danh mục cha phải gồm
+     * luôn sản phẩm của TẤT CẢ hậu duệ, không chỉ con trực tiếp.
+     */
+    public function descendantIds(): array
+    {
+        $ids = [];
+        $stack = $this->children()->pluck('id')->all();
+
+        while (! empty($stack)) {
+            $id = array_pop($stack);
+            if (in_array($id, $ids, true)) {
+                continue; // đã duyệt qua rồi, tránh lặp vô hạn nếu dữ liệu có vòng lặp lạ
+            }
+            $ids[] = $id;
+            $stack = array_merge($stack, static::where('parent_id', $id)->pluck('id')->all());
+        }
+
+        return $ids;
+    }
+
+    /** ID của chính nó + toàn bộ hậu duệ — tiện dùng khi lọc sản phẩm theo 1 danh mục cha. */
+    public function selfAndDescendantIds(): array
+    {
+        return array_merge([$this->id], $this->descendantIds());
+    }
+
+    /** Số cấp từ gốc tới danh mục này (gốc = 0) — dùng để thụt lề hiển thị trong dropdown/cây danh mục. */
+    public function depth(): int
+    {
+        $depth = 0;
+        $node = $this;
+        while ($node->parent_id) {
+            $depth++;
+            $node = $node->parent;
+            if (! $node || $depth > 20) {
+                break; // chống vòng lặp vô hạn nếu dữ liệu lỗi
+            }
+        }
+        return $depth;
     }
 
     /**

@@ -15,22 +15,24 @@ class EditCategory extends EditRecord
         return [
             DeleteAction::make()
                 ->before(function ($record, $action) {
+                    // FIX: xem giải thích ở CategoriesTable.php — halt() phải gọi SAU
+                    // khi đã send() notification, không phải trước.
                     if ($record->children()->exists()) {
-                        $action->halt();
                         \Filament\Notifications\Notification::make()
                             ->title('Không thể xóa!')
                             ->body('Danh mục đang có danh mục con.')
                             ->danger()
                             ->send();
+                        $action->halt();
                     }
 
                     if ($record->products()->exists()) {
-                        $action->halt();
                         \Filament\Notifications\Notification::make()
                             ->title('Không thể xóa!')
                             ->body('Danh mục đang có sản phẩm.')
                             ->danger()
                             ->send();
+                        $action->halt();
                     }
                 }),
         ];

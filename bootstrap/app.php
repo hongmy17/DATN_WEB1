@@ -14,6 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Bypass ngrok browser warning (chặn CSS/JS load)
         $middleware->append(\App\Http\Middleware\NgrokBypass::class);
+
+        // FIX: chặn cache toàn site (không chỉ nhóm route 'auth'), vì navbar hiển thị
+        // trạng thái đăng nhập ("Xin chào, tên bạn") ở MỌI trang, kể cả trang công khai
+        // như trang chủ. Nếu chỉ áp cho nhóm 'auth', bấm Back về lại trang chủ (nằm
+        // ngoài nhóm đó) sau khi đăng xuất vẫn thấy bản cache cũ lúc còn đăng nhập.
+        $middleware->append(\App\Http\Middleware\PreventBackHistoryCache::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
 

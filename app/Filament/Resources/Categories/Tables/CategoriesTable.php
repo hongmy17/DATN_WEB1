@@ -67,27 +67,32 @@ class CategoriesTable
                     ->relationship('parent', 'name')
                     ->placeholder('Tất cả'),
             ])
-            ->defaultSort('id', 'asc')
+            ->defaultSort('sort_order', 'asc')
+            ->reorderable('sort_order')
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make()
                     ->before(function ($record, $action) {
+                        // FIX: halt() ném exception ngay lập tức để dừng action — nên phải
+                        // gọi Notification::send() TRƯỚC halt(), không phải sau. Code cũ đặt
+                        // halt() trước khiến notification phía dưới trở thành dead code,
+                        // không bao giờ chạy tới (xóa vẫn bị chặn đúng, nhưng không có thông báo).
                         if ($record->children()->exists()) {
-                            $action->halt(); // dừng action
                             \Filament\Notifications\Notification::make()
                                 ->title('Không thể xóa!')
                                 ->body('Danh mục đang có danh mục con.')
                                 ->danger()
                                 ->send();
+                            $action->halt();
                         }
 
                         if ($record->products()->exists()) {
-                            $action->halt();
                             \Filament\Notifications\Notification::make()
                                 ->title('Không thể xóa!')
                                 ->body('Danh mục đang có sản phẩm.')
                                 ->danger()
                                 ->send();
+                            $action->halt();
                         }
                     }),
             ])

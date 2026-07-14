@@ -32,7 +32,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         return redirect()->intended(route('home'))
-            ->with('success', 'Chao mung ban tro lai!');
+            ->with('success', 'Chào mừng bạn trở lại!');
     }
 
     public function destroy(Request $request): RedirectResponse
@@ -43,6 +43,6 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login')
-            ->with('success', 'Ban da dang xuat thanh cong.');
+            ->with('success', 'Bạn đã đăng xuất thành công.');
     }
 }

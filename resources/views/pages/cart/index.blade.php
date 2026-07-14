@@ -246,7 +246,15 @@
             const input = e.target.closest('.qty-ctrl__input');
             if (!input) return;
             const qty = parseInt(input.value);
-            if (qty > 0) { await Cart.updateQty(input.dataset.vid, qty); renderCart(); }
+            // FIX: trước đây nhập 0/âm/không hợp lệ thì không làm gì cả — không lưu,
+            // không báo lỗi, ô input vẫn hiển thị số vừa gõ (trông như đã nhập được
+            // nhưng thực ra chưa lưu gì) — rất dễ gây hiểu nhầm cho người dùng.
+            if (qty > 0) {
+                await Cart.updateQty(input.dataset.vid, qty);
+            } else {
+                Toast.show('Số lượng tối thiểu là 1.', 'error');
+            }
+            renderCart(); // luôn render lại để ô input trả về đúng số lượng đang lưu thực tế
         });
 
         /* ── Modal xoá tất cả ── */

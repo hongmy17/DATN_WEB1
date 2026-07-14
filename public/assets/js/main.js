@@ -72,7 +72,7 @@ const Cart = {
         const item = c[idx];
         if (window.__authUser && item.cart_item_id) {
             const res = await cartApi('DELETE', `/${item.cart_item_id}`);
-            if (!res.success) { Toast.show('Xoá thất bại', 'error'); return; }
+            if (!res.success) { Toast.show(res.message || 'Xoá thất bại, vui lòng thử lại.', 'error'); return; }
         }
         c.splice(idx, 1);
         Cart._save(c);
@@ -86,7 +86,10 @@ const Cart = {
         if (idx < 0) return;
         if (window.__authUser && c[idx].cart_item_id) {
             const res = await cartApi('PATCH', `/${c[idx].cart_item_id}`, { quantity: qty });
-            if (!res.success) { Toast.show('Cập nhật thất bại', 'error'); return; }
+            // FIX: trước đây bỏ qua res.message, luôn hiện cứng "Cập nhật thất bại"
+            // chung chung — khách không biết vì sao. Backend đã trả sẵn lý do rõ ràng
+            // (VD "Chỉ còn 3 sản phẩm trong kho."), giờ ưu tiên hiện đúng message đó.
+            if (!res.success) { Toast.show(res.message || 'Cập nhật thất bại, vui lòng thử lại.', 'error'); return; }
         }
         c[idx].qty = qty;
         Cart._save(c);
