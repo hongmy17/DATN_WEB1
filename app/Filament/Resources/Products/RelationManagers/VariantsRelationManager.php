@@ -21,6 +21,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -53,97 +55,142 @@ class VariantsRelationManager extends RelationManager
     {
         return $schema->components([
 
-            // ── SKU ───────────────────────────────────────────────────────────
-            TextInput::make('sku')
-                ->label('Mã SKU')
-                ->required()
-                ->unique(ignoreRecord: true)
-                ->placeholder('VD: IPHONE-DEN-512GB')
-                ->default(function () {
-                    $product = $this->getOwnerRecord();
-                    return $product->base_sku
-                        ? strtoupper($product->base_sku) . '-'
-                        : null;
-                }),
+            Section::make('Thông tin cơ bản')
+                ->icon('heroicon-o-identification')
+                ->description('Mã SKU và thuộc tính để phân biệt biến thể này')
+                ->schema([
+                    Grid::make(2)->schema([
+                        // ── SKU ───────────────────────────────────────────────
+                        TextInput::make('sku')
+                            ->label('Mã SKU')
+                            ->required()
+                            ->unique(ignoreRecord: true)
+                            ->placeholder('VD: IPHONE-DEN-512GB')
+                            ->default(function () {
+                                $product = $this->getOwnerRecord();
+                                return $product->base_sku
+                                    ? strtoupper($product->base_sku) . '-'
+                                    : null;
+                            }),
 
-            // ── Giá ───────────────────────────────────────────────────────────
-            TextInput::make('price')
-                ->label('Giá bán (₫)')
-                ->required()
-                ->numeric()
-                ->prefix('₫')
-                ->minValue(0),
+                        Toggle::make('status')
+                            ->label('Đang bán')
+                            ->default(true)
+                            ->inline(false),
+                    ]),
+                ])
+                ->columnSpanFull(),
 
-            TextInput::make('compare_price')
-                ->label('Giá gốc (₫)')
-                ->numeric()
-                ->prefix('₫')
-                ->nullable()
-                ->helperText('Phải lớn hơn giá bán để % giảm có ý nghĩa. Để trống nếu không cần gạch ngang.')
-                ->rules([
-                    fn(callable $get) => function (string $attribute, $value, $fail) use ($get) {
-                        if ($value === null || $value === '') {
-                            return;
-                        }
-                        if (! self::isValidComparePrice((float) $value, (float) ($get('price') ?? 0))) {
-                            $fail('Giá gốc phải lớn hơn giá bán.');
-                        }
-                    },
-                ]),
+            Section::make('Giá bán')
+                ->icon('heroicon-o-banknotes')
+                ->description('Giá gốc, giá niêm yết và khuyến mãi (nếu có)')
+                ->schema([
+                    Grid::make(2)->schema([
+                        // ── Giá ───────────────────────────────────────────────
+                        TextInput::make('price')
+                            ->label('Giá bán (₫)')
+                            ->required()
+                            ->numeric()
+                            ->prefix('₫')
+                            ->minValue(0)
+                            ->live(onBlur: true),
+
+                        TextInput::make('compare_price')
+                            ->label('Giá gốc (₫)')
+                            ->numeric()
+                            ->prefix('₫')
+                            ->nullable()
+                            ->helperText('Phải lớn hơn giá bán để % giảm có ý nghĩa. Để trống nếu không cần gạch ngang.')
+                            ->rules([
+                                fn(callable $get) => function (string $attribute, $value, $fail) use ($get) {
+                                    if ($value === null || $value === '') {
+                                        return;
+                                    }
+                                    if (! self::isValidComparePrice((float) $value, (float) ($get('price') ?? 0))) {
+                                        $fail('Giá gốc phải lớn hơn giá bán.');
+                                    }
+                                },
+                            ]),
+                    ]),
+                ])
+                ->columnSpanFull(),
 
             // ── Flash sale ────────────────────────────────────────────────────
-            TextInput::make('sale_price')
-                ->label('Giá khuyến mãi (₫)')
-                ->numeric()
-                ->prefix('₫')
-                ->nullable()
-                ->helperText('Giá tạm thời áp dụng trong khoảng thời gian bên dưới. Để trống nếu không có.')
-                ->rules([
-                    fn(callable $get) => function (string $attribute, $value, $fail) use ($get) {
-                        if ($value === null || $value === '') {
-                            return;
-                        }
-                        if ((float) $value >= (float) ($get('price') ?? 0)) {
-                            $fail('Giá khuyến mãi phải nhỏ hơn giá bán.');
-                        }
-                    },
-                ]),
+            Section::make('Khuyến mãi tạm thời (Flash sale)')
+                ->icon('heroicon-o-bolt')
+                ->description('Bỏ trống nếu biến thể này không chạy khuyến mãi theo thời gian')
+                ->collapsible()
+                ->collapsed(fn($record) => blank($record?->sale_price))
+                ->schema([
+                    TextInput::make('sale_price')
+                        ->label('Giá khuyến mãi (₫)')
+                        ->numeric()
+                        ->prefix('₫')
+                        ->nullable()
+                        ->live()
+                        ->helperText('Giá tạm thời áp dụng trong khoảng thời gian bên dưới. Để trống nếu không có.')
+                        ->rules([
+                            fn(callable $get) => function (string $attribute, $value, $fail) use ($get) {
+                                if ($value === null || $value === '') {
+                                    return;
+                                }
+                                if ((float) $value >= (float) ($get('price') ?? 0)) {
+                                    $fail('Giá khuyến mãi phải nhỏ hơn giá bán.');
+                                }
+                            },
+                        ]),
 
-            DateTimePicker::make('sale_starts_at')
-                ->label('Bắt đầu khuyến mãi')
-                ->nullable()
-                ->native(false),
+                    Grid::make(2)->schema([
+                        DateTimePicker::make('sale_starts_at')
+                            ->label('Bắt đầu khuyến mãi')
+                            ->nullable()
+                            ->native(false),
 
-            DateTimePicker::make('sale_ends_at')
-                ->label('Kết thúc khuyến mãi')
-                ->nullable()
-                ->native(false)
-                ->afterOrEqual('sale_starts_at')
-                ->rules([
-                    fn(callable $get) => function (string $attribute, $value, $fail) use ($get) {
-                        if ($value && $get('sale_price') && now()->greaterThan($value)) {
-                            $fail('Thời gian kết thúc đã qua — khuyến mãi sẽ không có hiệu lực.');
-                        }
-                    },
-                ]),
+                        DateTimePicker::make('sale_ends_at')
+                            ->label('Kết thúc khuyến mãi')
+                            ->nullable()
+                            ->native(false)
+                            ->afterOrEqual('sale_starts_at')
+                            ->rules([
+                                fn(callable $get) => function (string $attribute, $value, $fail) use ($get) {
+                                    if ($value && $get('sale_price') && now()->greaterThan($value)) {
+                                        $fail('Thời gian kết thúc đã qua — khuyến mãi sẽ không có hiệu lực.');
+                                    }
+                                },
+                            ]),
+                    ]),
+                ])
+                ->columnSpanFull(),
 
             // ── Kho ───────────────────────────────────────────────────────────
-            Toggle::make('manage_stock')
-                ->label('Quản lý tồn kho')
-                ->default(true)
-                ->live()
-                ->helperText('Tắt với hàng đặt trước / dịch vụ — luôn coi như còn hàng'),
+            Section::make('Tồn kho')
+                ->icon('heroicon-o-archive-box')
+                ->schema([
+                    Grid::make(2)->schema([
+                        Toggle::make('manage_stock')
+                            ->label('Quản lý tồn kho')
+                            ->default(true)
+                            ->live()
+                            ->inline(false)
+                            ->helperText('Tắt với hàng đặt trước / dịch vụ — luôn coi như còn hàng'),
 
-            TextInput::make('stock_quantity')
-                ->label('Tồn kho')
-                ->numeric()
-                ->default(0)
-                ->minValue(0)
-                ->visible(fn(callable $get) => (bool) $get('manage_stock'))
-                ->required(fn(callable $get) => (bool) $get('manage_stock')),
+                        TextInput::make('stock_quantity')
+                            ->label('Tồn kho')
+                            ->numeric()
+                            ->default(0)
+                            ->minValue(0)
+                            ->visible(fn(callable $get) => (bool) $get('manage_stock'))
+                            ->required(fn(callable $get) => (bool) $get('manage_stock')),
+                    ]),
+                ])
+                ->columnSpanFull(),
 
-            // ── Thuộc tính ────────────────────────────────────────────────────
-            Select::make('attributeValues')
+            // ── Thuộc tính, ảnh, mô tả ────────────────────────────────────────
+            Section::make('Thuộc tính & Hình ảnh')
+                ->icon('heroicon-o-swatch')
+                ->schema([
+                    // ── Thuộc tính ────────────────────────────────────────────────────
+                    Select::make('attributeValues')
                 ->label('Thuộc tính (màu / size...)')
                 ->multiple()
                 ->options(function () {
@@ -212,43 +259,50 @@ class VariantsRelationManager extends RelationManager
                             }
                         };
                     },
-                ]),
+                ])
+                ->columnSpanFull(),
 
-            // ── Ảnh ───────────────────────────────────────────────────────────
-            FileUpload::make('image')
-                ->label('Ảnh chính biến thể')
-                ->image()
-                ->disk('public')
-                ->directory('products/variants')
-                ->imagePreviewHeight('120')
-                ->nullable()
-                ->live()
-                ->helperText(function (callable $get) {
-                    $colorImg = $this->findColorLinkedImage(
-                        $this->getOwnerRecord(),
-                        $get('attributeValues') ?? []
-                    );
-                    return $colorImg
-                        ? new \Illuminate\Support\HtmlString('💡 Biến thể cùng màu đã có ảnh — sẽ tự kế thừa nếu bạn không upload.')
-                        : 'Để trống sẽ dùng ảnh đại diện sản phẩm khi hiển thị.';
-                }),
+                    // ── Ảnh ───────────────────────────────────────────────────
+                    FileUpload::make('image')
+                        ->label('Ảnh chính biến thể')
+                        ->image()
+                        ->disk('public')
+                        ->directory('products/variants')
+                        ->imagePreviewHeight('120')
+                        ->nullable()
+                        ->live()
+                        ->helperText(function (callable $get) {
+                            $colorImg = $this->findColorLinkedImage(
+                                $this->getOwnerRecord(),
+                                $get('attributeValues') ?? []
+                            );
+                            return $colorImg
+                                ? new \Illuminate\Support\HtmlString('💡 Biến thể cùng màu đã có ảnh — sẽ tự kế thừa nếu bạn không upload.')
+                                : 'Để trống sẽ dùng ảnh đại diện sản phẩm khi hiển thị.';
+                        })
+                        ->columnSpanFull(),
+                ])
+                ->columnSpanFull(),
 
+            // ── Mô tả & tuỳ chọn khác ───────────────────────────────────────────
+            Section::make('Mô tả & tuỳ chọn')
+                ->icon('heroicon-o-document-text')
+                ->collapsible()
+                ->schema([
+                    Textarea::make('description')
+                        ->label('Mô tả ngắn riêng biến thể')
+                        ->rows(2)
+                        ->nullable()
+                        ->placeholder('VD: Bản 512GB tặng thêm ốp bảo vệ')
+                        ->columnSpanFull(),
 
-            // ── Mô tả & trạng thái ────────────────────────────────────────────
-            Textarea::make('description')
-                ->label('Mô tả ngắn riêng biến thể')
-                ->rows(2)
-                ->nullable()
-                ->placeholder('VD: Bản 512GB tặng thêm ốp bảo vệ'),
-
-            Toggle::make('is_default')
-                ->label('Biến thể mặc định')
-                ->default(false)
-                ->helperText('Hiển thị đầu tiên khi khách vào trang sản phẩm'),
-
-            Toggle::make('status')
-                ->label('Đang bán')
-                ->default(true),
+                    Toggle::make('is_default')
+                        ->label('Biến thể mặc định')
+                        ->default(false)
+                        ->inline(false)
+                        ->helperText('Hiển thị đầu tiên khi khách vào trang sản phẩm'),
+                ])
+                ->columnSpanFull(),
         ]);
     }
 

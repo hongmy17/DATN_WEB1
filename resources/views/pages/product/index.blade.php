@@ -501,17 +501,29 @@
                 <div class="products-grid" id="productsGrid">
                     @forelse($products as $p)
                         @php
-                            // Variant mặc định để tính giá
-                            $defaultV     = $p->variants->firstWhere('is_default', true) ?? $p->variants->first();
-                            $defVariant   = $defaultV;
-                            $isFlash      = $defaultV?->is_sale_active ?? false;
-                            $thumbnail    = $p->thumbnail ? asset('storage/' . $p->thumbnail) : null;
+                            // Variant mặc định — chỉ dùng để add-to-cart nhanh & ảnh, KHÔNG dùng để tính flash sale
+                            $defaultV   = $p->variants->firstWhere('is_default', true) ?? $p->variants->first();
+                            $defVariant = $defaultV;
+                            $thumbnail  = $p->thumbnail ? asset('storage/' . $p->thumbnail) : null;
 
-                            // Giá hiển thị: flash sale → current_price, không → min/max
-                            $minPrice     = $isFlash ? ($defaultV->current_price ?? $defaultV->price) : ($p->variants->min('price') ?? 0);
-                            $maxPrice     = $isFlash ? ($defaultV->current_price ?? $defaultV->price) : ($p->variants->max('price') ?? 0);
-                            $comparePrice = $isFlash ? $defaultV->price : $p->variants->max('compare_price');
-                            $discount     = $comparePrice && $comparePrice > $minPrice ? round((1 - $minPrice / $comparePrice) * 100) : 0;
+                            // Flash sale: xét TẤT CẢ biến thể, không riêng biến thể mặc định
+                            // → set sale ở bất kỳ biến thể nào cũng phải hiện badge ở trang danh sách
+                            $isFlash = $p->variants->contains(fn($v) => $v->is_sale_active);
+
+                            // Giá hiển thị: current_price của từng biến thể đã tự tính sẵn sale (nếu có)
+                            $minPrice = $p->variants->min(fn($v) => $v->current_price ?? $v->price) ?? 0;
+                            $maxPrice = $p->variants->max(fn($v) => $v->current_price ?? $v->price) ?? 0;
+
+                            // Giá gốc để gạch ngang: lấy theo biến thể đang có giá thấp nhất
+                            // (nếu biến thể đó đang sale thì giá gốc = price trước giảm)
+                            $cheapestVariant = $p->variants->sortBy(fn($v) => $v->current_price ?? $v->price)->first();
+                            $comparePrice = $cheapestVariant?->is_sale_active
+                                ? $cheapestVariant->price
+                                : $p->variants->max('compare_price');
+
+                            $discount = $comparePrice && $comparePrice > $minPrice
+                                ? round((1 - $minPrice / $comparePrice) * 100)
+                                : 0;
                         @endphp
 
                         <div class="product-card reveal">
@@ -568,7 +580,7 @@
                                     id:         {{ $p->id }},
                                     name:       '{{ addslashes($p->name) }}',
                                     variant:    'Mặc định',
-                                    price:      {{ $minPrice }},
+                                    price:      {{ $defVariant?->current_price ?? $defVariant?->price ?? $minPrice }},
                                     img:        '{{ $p->thumbnail ? asset('storage/' . $p->thumbnail) : '' }}'
                                 })">
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"

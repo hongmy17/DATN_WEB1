@@ -65,11 +65,9 @@
             {{-- GALLERY --}}
             <div class="gallery">
                 <div class="gallery__main">
-                    @if ($discount)
-                        <div class="gallery__badges">
-                            <span class="badge-discount">-{{ $discount }}%</span>
-                        </div>
-                    @endif
+                    <div class="gallery__badges" id="galleryBadges" style="{{ $discount ? '' : 'display:none' }}">
+                        <span class="badge-discount" id="galleryDiscountBadge">-{{ $discount }}%</span>
+                    </div>
 
 
                     <button class="gallery__wish" id="wishBtn" data-wish-id="{{ $product->id }}"
@@ -874,12 +872,24 @@
 
                 const compareEl = document.getElementById('comparePrice');
                 const saveEl    = document.getElementById('saveBadge');
+                const galleryBadges = document.getElementById('galleryBadges');
+                const galleryDiscountEl = document.getElementById('galleryDiscountBadge');
                 if (v.compare && v.compare > displayPrice) {
                     if (compareEl) { compareEl.textContent = v.compare.toLocaleString('vi-VN') + '₫'; compareEl.style.display = ''; }
                     if (saveEl)    { saveEl.textContent = 'Tiết kiệm ' + (v.compare - displayPrice).toLocaleString('vi-VN') + '₫'; saveEl.style.display = ''; }
+
+                    // Đồng bộ badge giảm giá góc ảnh với biến thể đang chọn
+                    const pct = Math.round((1 - displayPrice / v.compare) * 100);
+                    if (pct >= 5 && galleryBadges && galleryDiscountEl) {
+                        galleryDiscountEl.textContent = '-' + pct + '%';
+                        galleryBadges.style.display = '';
+                    } else if (galleryBadges) {
+                        galleryBadges.style.display = 'none';
+                    }
                 } else {
                     if (compareEl) compareEl.style.display = 'none';
                     if (saveEl)    saveEl.style.display = 'none';
+                    if (galleryBadges) galleryBadges.style.display = 'none';
                 }
 
                 // Tồn kho
