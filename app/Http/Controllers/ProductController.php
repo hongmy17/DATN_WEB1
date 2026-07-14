@@ -114,25 +114,35 @@ class ProductController extends Controller
     // ─── API gợi ý tìm kiếm ──────────────────────────────────
     public function suggest(Request $request)
     {
-        $q = $request->input('q', '');
-        if (strlen($q) < 2) {
+        $q = trim((string) $request->input('q', ''));
+        if (mb_strlen($q) < 2) {
             return response()->json([]);
         }
 
-        $safeKeyword = addcslashes($keyword, '%_');
+        // FIX: trước đây gọi addcslashes($keyword, '%_') nhưng $keyword
+        // chưa từng được khai báo ở đâu cả → PHP ném "Undefined variable"
+        // → Laravel biến warning này thành ErrorException → route trả về
+        // trang lỗi 500 (HTML) thay vì JSON → fetch() ở navbar parse lỗi
+        // → dropdown kẹt mãi ở "Đang tìm..." không bao giờ hiện kết quả.
+        $safeKeyword = addcslashes($q, '%_');
 
         $products = Product::visible()
-            ->where('name', 'like', '%' . $q . '%')
-            ->with(['variants'])
-            ->withMin('variants', 'price')
+            ->where('name', 'like', '%' . $safeKeyword . '%')
+            // Chỉ gợi ý sản phẩm còn ít nhất 1 biến thể đang bán,
+            // tránh gợi ý sản phẩm hết hàng/ẩn mà vẫn hiện giá 0đ
+            ->whereHas('variants', fn($q) => $q->active())
+            ->withMin(['variants as variants_min_price' => fn($q) => $q->active()], 'price')
+            ->orderByDesc('created_at')
             ->limit(6)
             ->get()
             ->map(fn($p) => [
-                'id'    => $p->id,
-                'name'  => $p->name,
-                'slug'  => $p->slug,
-                'price' => $p->variants_min_price,
-                'img'   => $p->thumbnail ? asset('storage/' . $p->thumbnail) : '',
+                // FIX: đổi 'img' → 'thumbnail' và bỏ 'slug' lấy 'url' đầy đủ,
+                // khớp đúng field mà JS render() bên app.blade.php đang đọc
+                // (trước đó JS luôn nhận undefined nên ảnh trống, link lỗi).
+                'name'      => $p->name,
+                'price'     => (float) $p->variants_min_price,
+                'thumbnail' => $p->thumbnail ? asset('storage/' . $p->thumbnail) : null,
+                'url'       => route('products.show', $p->slug),
             ]);
 
         return response()->json($products);
