@@ -109,9 +109,9 @@
                     @php $payMethods = [
     ['value' => 'cod',     'label' => 'Thanh toán khi nhận hàng (COD)', 'sub' => 'Trả tiền mặt khi nhận hàng',        'icon' => 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'],
     ['value' => 'vnpay',   'label' => 'VNPay',                          'sub' => 'Thanh toán qua cổng VNPay',          'icon' => 'M1 4h22v16H1zM1 10h22'],
-    ['value' => 'momo',    'label' => 'Ví MoMo',                        'sub' => 'Thanh toán qua ví điện tử MoMo',     'icon' => 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14l-4-4h3V8h2v4h3z'],
-    ['value' => 'bank',    'label' => 'Chuyển khoản ngân hàng',         'sub' => 'Chuyển khoản qua QR hoặc tài khoản', 'icon' => 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10'],
-    ['value' => 'zalopay', 'label' => 'ZaloPay',                        'sub' => 'Thanh toán qua ví ZaloPay',          'icon' => 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'],
+//     ['value' => 'momo',    'label' => 'Ví MoMo',                        'sub' => 'Thanh toán qua ví điện tử MoMo',     'icon' => 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14l-4-4h3V8h2v4h3z'],
+//     ['value' => 'bank',    'label' => 'Chuyển khoản ngân hàng',         'sub' => 'Chuyển khoản qua QR hoặc tài khoản', 'icon' => 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10'],
+//     ['value' => 'zalopay', 'label' => 'ZaloPay',                        'sub' => 'Thanh toán qua ví ZaloPay',          'icon' => 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'],
 ]; @endphp
 
                     @foreach ($payMethods as $i => $m)
@@ -140,8 +140,10 @@
 
                 <div id="summaryItems">
                     {{-- render by JS --}}
+                    
                 </div>
-
+                
+                
                 <div class="summary-divider"></div>
 
                 <div id="couponSection">
@@ -163,10 +165,7 @@
                             </div>
                         </div>
                     @endif
-                    <div class="coupon-row">
-                        <input type="text" class="coupon-input" id="couponCode" placeholder="Nhập mã giảm giá">
-                        <button class="btn btn-outline btn-sm" onclick="applyCoupon()">Áp dụng</button>
-                    </div>
+                    
                     <div class="coupon-row" id="couponInputRow">
                         <input type="text" class="coupon-input" id="couponCode" placeholder="Mã giảm giá">
                         <button class="btn btn-outline btn-sm" onclick="applyCoupon()">Áp dụng</button>
@@ -253,7 +252,10 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         <span class="summary-item-qty">${i.qty}</span>
       </div>
-      <span class="summary-item-name">${i.name}</span>
+      <div class="summary-item-info">
+        <span class="summary-item-name">${i.name}</span>
+        ${i.variant && i.variant !== 'Mặc định' ? `<span class="summary-item-variant">${i.variant}</span>` : ''}
+      </div>
       <span class="summary-item-price">${fmtPrice(i.price*i.qty)}</span>
     </div>
   `).join('');
@@ -357,19 +359,16 @@
             let addrPayload = {};
             if (addrType.startsWith('saved_')) {
                 addrPayload.address_id = parseInt(addrType.replace('saved_', ''));
+            } else if (addrType === 'new') {
+                // Chưa lưu địa chỉ mới → chặn đặt hàng, yêu cầu bấm "Lưu địa chỉ" trước
+                Toast.show('Vui lòng bấm "Lưu địa chỉ" trước khi đặt hàng', 'error');
+                resetBtn(btn);
+                return;
             } else {
-                addrPayload.receiver_name  = document.getElementById('new_receiver_name')?.value;
-                addrPayload.receiver_phone = document.getElementById('new_receiver_phone')?.value;
-                addrPayload.province       = document.getElementById('new_province')?.value;
-                addrPayload.district       = document.getElementById('new_district')?.value;
-                addrPayload.ward           = document.getElementById('new_ward')?.value;
-                addrPayload.address_detail = document.getElementById('new_address_detail')?.value;
-                if (!addrPayload.receiver_name || !addrPayload.receiver_phone ||
-                    !addrPayload.province || !addrPayload.district || !addrPayload.ward) {
-                    Toast.show('Vui lòng điền đầy đủ thông tin địa chỉ', 'error');
-                    resetBtn(btn);
-                    return;
-                }
+                // Không chọn địa chỉ nào cả
+                Toast.show('Vui lòng chọn hoặc thêm địa chỉ giao hàng', 'error');
+                resetBtn(btn);
+                return;
             }
 
             fetch('{{ route('checkout.store') }}', {

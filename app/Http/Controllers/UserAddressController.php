@@ -63,6 +63,16 @@ class UserAddressController extends Controller
             $address->setAsDefault();
         }
 
+        // Nếu request gọi bằng AJAX (Accept: application/json) → trả JSON, không redirect
+        // Trang "dia-chi" submit form thường nên KHÔNG rơi vào nhánh này, không bị ảnh hưởng
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Thêm địa chỉ thành công!',
+                'address' => $address,
+            ]);
+        }
+
         $redirectTo = request()->input('redirect_to', route('addresses.index'));
         return redirect($redirectTo)->with('success', 'Thêm địa chỉ thành công!');
     }

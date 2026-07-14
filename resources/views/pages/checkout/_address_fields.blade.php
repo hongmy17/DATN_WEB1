@@ -56,7 +56,7 @@
     </style>
 
     <div class="addr-form-card">
-                <form action="{{ route('addresses.store') }}" method="POST">
+                <form action="{{ route('addresses.store') }}" method="POST" id="newAddressForm">
                     @csrf
 
                     <div class="form-row-2">
@@ -283,3 +283,89 @@
             }
         })();
     </script>
+    <script>
+(function() {
+    const form = document.getElementById('newAddressForm');
+    if (!form) return;
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = form.querySelector('button[type="submit"]');
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.textContent = 'Đang lưu...';
+
+        fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || CSRF
+                },
+                body: new FormData(form)
+            })
+            .then(r => r.json().then(data => ({ status: r.status, data })))
+            .then(({ status, data }) => {
+                if (status === 422) {
+                    const msgs = data.errors ? Object.values(data.errors).flat().join('\n') : 'Dữ liệu không hợp lệ';
+                    Toast.show(msgs, 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    return;
+                }
+                if (!data.success) {
+                    Toast.show(data.message || 'Có lỗi xảy ra', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    return;
+                }
+
+                const addr = data.address;
+
+                // Bỏ chọn tất cả các địa chỉ khác
+                document.querySelectorAll('.addr-option').forEach(e => e.classList.remove('selected'));
+
+                // Nếu địa chỉ mới được đặt làm mặc định → gỡ badge "Mặc định" khỏi các địa chỉ cũ
+                if (addr.is_default) {
+                    document.querySelectorAll('#savedAddresses .addr-option .badge-success').forEach(b => b.remove());
+                }
+
+                // Tạo địa chỉ mới, chèn vào trước lựa chọn "Dùng địa chỉ mới"
+                const newOption = document.createElement('label');
+                newOption.className = 'addr-option selected';
+                newOption.innerHTML = `
+                    <input type="radio" name="address_type" value="saved_${addr.id}" checked
+                        onchange="document.querySelectorAll('.addr-option').forEach(e=>e.classList.remove('selected'));this.closest('.addr-option').classList.add('selected');document.getElementById('newAddrForm').style.display='none'">
+                    <div>
+                        <div class="addr-option-name">${addr.receiver_name} — ${addr.receiver_phone}</div>
+                        <div class="addr-option-detail">${addr.address_detail}, ${addr.ward}, ${addr.district}, ${addr.province}</div>
+                    </div>
+                    ${addr.is_default ? '<span class="badge badge-success" style="margin-left:auto;flex-shrink:0">Mặc định</span>' : ''}
+                `;
+                const newAddrOption = document.getElementById('newAddrOption');
+                if (newAddrOption) {
+                    newAddrOption.parentNode.insertBefore(newOption, newAddrOption);
+                    // Bỏ chọn radio "Dùng địa chỉ mới"
+                    const newRadio = newAddrOption.querySelector('input[type="radio"]');
+                    if (newRadio) newRadio.checked = false;
+                } else {
+                    // Trường hợp chưa từng có địa chỉ nào (không có #savedAddresses) → reload để đồng bộ layout
+                    window.location.reload();
+                    return;
+                }
+
+                // Ẩn form nhập tay, reset lại để lần sau nhập mới sạch sẽ
+                document.getElementById('newAddrForm').style.display = 'none';
+                form.reset();
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+
+                Toast.show('Đã lưu và chọn địa chỉ mới!', 'success');
+            })
+            .catch(() => {
+                Toast.show('Lỗi kết nối, thử lại sau', 'error');
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            });
+    });
+})();
+</script>
