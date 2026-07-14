@@ -376,6 +376,7 @@
                         4 => 'Đã hủy',
                         5 => 'Chờ thanh toán',
                         6 => 'Chờ xác nhận hủy',
+                        7 => 'Đã hoàn tiền,',
                     ];
                     $statusClass = [
                         0 => 'status-pending',
@@ -385,6 +386,7 @@
                         4 => 'status-cancelled',
                         5 => 'status-pending',
                         6 => 'status-cancelled',
+                        7 => 'status-delivered',
                     ];
                 @endphp
 
@@ -658,6 +660,21 @@
                 </div>
 
                 {{-- ── NÚT HÀNH ĐỘNG ───────────────────────── --}}
+                @if ((int) $order->order_status === \App\Models\Order::STATUS_COMPLETED && !$order->refundRequest)
+                    <a href="{{ route('refunds.create', $order) }}" class="btn btn-outline">
+                        Yêu cầu hoàn tiền
+                    </a>
+                @elseif ($order->refundRequest)
+                    <div
+                        style="margin-top:12px;padding:12px 16px;background:var(--bg-alt);border-radius:var(--r-md);font-size:13px">
+                        <strong>Trạng thái hoàn tiền:</strong> {{ $order->refundRequest->statusLabel() }}
+                        @if ($order->refundRequest->status === \App\Models\RefundRequest::STATUS_REJECTED)
+                            <div style="color:var(--red);margin-top:4px">
+                                Lý do từ chối: {{ $order->refundRequest->reject_reason }}
+                            </div>
+                        @endif
+                    </div>
+                @endif
                 @if ($currentStatus === \App\Models\Order::STATUS_PENDING)
                     <div style="display:flex;justify-content:flex-end;margin-top:4px">
                         <button type="button" onclick="openCancelModal()" class="btn btn-ghost"

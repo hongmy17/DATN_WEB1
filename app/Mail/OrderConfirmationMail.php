@@ -28,6 +28,8 @@ class OrderConfirmationMail extends Mailable implements \Illuminate\Contracts\Qu
 
   public Order $order;
 
+  public int $tries = 3;     // FIX: thử lại tối đa 3 lần nếu gửi thất bại
+  public int $backoff = 10;    // FIX: đợi 10 giây giữa mỗi lần thử lại (để kết nối cũ chắc chắn được dọn sạch)
   public function __construct(Order $order)
   {
     // FIX: eager-load quan hệ cần dùng trong view + PDF NGAY TẠI ĐÂY.

@@ -7,6 +7,7 @@ use App\Http\Controllers\CartItemController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\RefundController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
@@ -148,6 +149,8 @@ Route::middleware('auth')->group(function () {
     })->name('orders.index');
     Route::get('/don-hang/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::post('/don-hang/{order}/huy', [OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::get('/don-hang/{order}/hoan-tien', [RefundController::class, 'create'])->name('refunds.create');
+    Route::post('/don-hang/{order}/hoan-tien', [RefundController::class, 'store'])->name('refunds.store');
 
     Route::post('/coupon/apply', [CouponController::class, 'apply'])->name('coupon.apply');
     Route::post('/coupon/remove', [CouponController::class, 'remove'])->name('coupon.remove');

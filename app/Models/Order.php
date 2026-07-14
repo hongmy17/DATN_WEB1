@@ -35,6 +35,7 @@ class Order extends Model
     const STATUS_CANCELLED        = 4;
     const STATUS_AWAITING_PAYMENT = 5;  // Chờ thanh toán VNPay
     const STATUS_CANCEL_REQUESTED = 6;  // Khách yêu cầu hủy, chờ admin xác nhận
+    const STATUS_REFUNDED = 7; // Đã hoàn tiền (kết quả cuối của quy trình refund)
     const PAYMENT_TIMEOUT_MINUTES = 15;
 
     /**
@@ -124,6 +125,7 @@ class Order extends Model
                 ? 'Thanh toán quá hạn'
                 : 'Chờ thanh toán',
             6 => 'Chờ xác nhận hủy',
+            7 => 'Đã hoàn tiền',
             default => 'Không xác định',
         };
     }
@@ -153,4 +155,9 @@ class Order extends Model
     {
         return $this->hasOne(Payment::class);
     }
+
+    public function refundRequest()
+{
+    return $this->hasOne(RefundRequest::class);
+}
 }
