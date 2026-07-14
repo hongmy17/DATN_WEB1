@@ -145,7 +145,7 @@ class CartItemController extends Controller
             'id'           => $product?->id,
             'name'         => $product?->name ?? 'Sản phẩm',
             'variant'      => $variantLabel ?: '',
-            'price'        => (int) ($variant?->price ?? 0),
+            'price'        => (int) ($variant?->current_price ?? 0),
             'qty'          => $item->quantity,
             'img'          => $variant?->display_image ?? '',
         ];

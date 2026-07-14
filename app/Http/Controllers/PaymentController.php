@@ -9,6 +9,8 @@ use App\Services\VNPayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Mail\OrderConfirmationMail;
+use Illuminate\Support\Facades\Mail;
 
 class PaymentController extends Controller
 {
@@ -164,32 +166,34 @@ class PaymentController extends Controller
     private function handleSuccess(Order $order, array $data): void
     {
         DB::transaction(function () use ($order, $data) {
-            // Cập nhật trạng thái đơn hàng: Chờ thanh toán → Đã xác nhận
-            // (thanh toán online xong thì bỏ qua bước "chờ xác nhận" thủ công
-            // như COD, coi như admin đã được đảm bảo có tiền, tiến thẳng vào xử lý)
-            if ((int) $order->order_status === Order::STATUS_AWAITING_PAYMENT) {
-                $order->update(['order_status' => Order::STATUS_CONFIRMED]);
+            // Lưu lại: đây có phải LẦN ĐẦU đơn được xác nhận không?
+            // (quan trọng để không gửi mail 2 lần — giải thích bên dưới)
+            $isFirstTimeConfirmed = (int) $order->order_status === Order::STATUS_AWAITING_PAYMENT;
 
-                // Trừ tồn kho
+            if ($isFirstTimeConfirmed) {
+                $order->update(['order_status' => Order::STATUS_CONFIRMED]);
                 $order->load('items');
             }
 
-            // Ghi / cập nhật bảng payments
             $rawTxnNo = $data['vnp_TransactionNo'] ?? null;
             Payment::updateOrCreate(
                 ['order_id' => $order->id, 'payment_gateway' => 'VNPay'],
                 [
                     'transaction_code' => ($rawTxnNo && $rawTxnNo !== '0') ? $rawTxnNo : null,
                     'amount'           => $order->total_amount,
-                    'status'           => 1, // thành công
+                    'status'           => 1,
                     'gateway_response' => $data,
                     'paid_at'          => now(),
                 ]
             );
 
-            // FIX: giỏ hàng chỉ được xóa khi thanh toán VNPay thành công thật sự
             if ($order->user_id) {
                 \App\Models\CartItem::where('user_id', $order->user_id)->delete();
+            }
+
+            // FIX: gửi mail xác nhận cho đơn VNPay ngay sau khi thanh toán thành công
+            if ($isFirstTimeConfirmed && $order->user && $order->user->email) {
+                Mail::to($order->user->email)->send(new OrderConfirmationMail($order));
             }
         });
     }
