@@ -160,4 +160,29 @@ class Order extends Model
 {
     return $this->hasOne(RefundRequest::class);
 }
+
+    /**
+     * Scope: chỉ những đơn CHẮC CHẮN đã có tiền thật ("doanh thu thực thu").
+     * - COD: chỉ tính khi đã "Hoàn thành" (giao xong, thu tiền tận tay).
+     * - Thanh toán online (VNPay...): tính từ "Đã xác nhận" trở lên, vì
+     *   PaymentController chỉ chuyển sang STATUS_CONFIRMED SAU KHI thanh toán
+     *   thành công thật sự (xem PaymentController::handleSuccess) — tại thời
+     *   điểm đó tiền đã chắc chắn về, không cần đợi giao hàng xong như COD.
+     */
+    public function scopeRevenue($query)
+    {
+        return $query->where(function ($q) {
+            $q->where(function ($cod) {
+                $cod->where('payment_method', 'cod')
+                    ->where('order_status', self::STATUS_COMPLETED);
+            })->orWhere(function ($online) {
+                $online->where('payment_method', '!=', 'cod')
+                    ->whereIn('order_status', [
+                        self::STATUS_CONFIRMED,
+                        self::STATUS_SHIPPING,
+                        self::STATUS_COMPLETED,
+                    ]);
+            });
+        });
+    }
 }

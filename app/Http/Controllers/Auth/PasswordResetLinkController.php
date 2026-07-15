@@ -16,13 +16,11 @@ class PasswordResetLinkController extends Controller
      */
     public function create(): View
     {
-        return view('auth.forgot-password');
+        return view('pages.auth.forgot');
     }
 
     /**
      * Handle an incoming password reset link request.
-     *
-     * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
@@ -30,16 +28,15 @@ class PasswordResetLinkController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        Password::sendResetLink($request->only('email'));
 
-        return $status == Password::RESET_LINK_SENT
-                    ? back()->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+        // FIX: dự án không có file lang (__($status) sẽ hiện chữ thô kiểu "passwords.sent"),
+        // nên hardcode tiếng Việt trực tiếp — đồng bộ với cách các message khác trong dự án.
+        //
+        // FIX bảo mật: LUÔN hiện đúng 1 câu chung này bất kể email có tồn tại hay không.
+        // Không kiểm tra $status để phân nhánh báo lỗi khác nhau — nếu không sẽ để lộ
+        // được email nào có đăng ký tài khoản hay không (dò email hàng loạt), khác gì
+        // với cách đăng nhập cố tình không tiết lộ email có tồn tại hay không.
+        return back()->with('success', 'Nếu email này có tồn tại trong hệ thống, chúng tôi đã gửi link đặt lại mật khẩu. Vui lòng kiểm tra hộp thư (và cả mục Spam).');
     }
-}
+}   

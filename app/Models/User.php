@@ -83,4 +83,12 @@ class User extends Authenticatable implements FilamentUser, HasName
     {
         return $this->hasMany(Review::class);
     }
+
+    // FIX: mặc định Laravel gửi email đặt lại mật khẩu bằng tiếng Anh, không có
+    // thương hiệu gì ("Reset Password Notification"...). Đổi sang notification
+    // tiếng Việt riêng cho Nexus Store.
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
+    }
 }

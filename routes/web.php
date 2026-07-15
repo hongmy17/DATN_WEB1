@@ -130,7 +130,21 @@ Route::middleware('guest')->group(function () {
     Route::post('/dang-nhap', [AuthenticatedSessionController::class, 'store']);
     Route::get('/dang-ky', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('/dang-ky', [RegisteredUserController::class, 'store'])->name('register.store');
-    Route::get('/quen-mat-khau', fn() => view('pages.auth.forgot'))->name('password.request');
+
+    // FIX: route cũ chỉ render 1 view demo tĩnh (pages.auth.forgot), toàn bộ JS trong
+    // đó chỉ giả vờ thành công (Toast.show(...)) — KHÔNG gửi email, KHÔNG đổi mật khẩu
+    // thật trong DB. Giờ trỏ đúng vào PasswordResetLinkController/NewPasswordController
+    // (đã có sẵn từ Breeze, dùng cơ chế token bảo mật chuẩn của Laravel) + view mới
+    // được style lại đúng theme của site.
+    Route::get('/quen-mat-khau', [\App\Http\Controllers\Auth\PasswordResetLinkController::class, 'create'])
+        ->name('password.request');
+    Route::post('/quen-mat-khau', [\App\Http\Controllers\Auth\PasswordResetLinkController::class, 'store'])
+        ->name('password.email');
+    Route::get('/dat-lai-mat-khau/{token}', [\App\Http\Controllers\Auth\NewPasswordController::class, 'create'])
+        ->name('password.reset');
+    Route::post('/dat-lai-mat-khau', [\App\Http\Controllers\Auth\NewPasswordController::class, 'store'])
+        ->name('password.store');
+
     Route::get('/auth/redirect/{provider}', [SocialAuthController::class, 'redirect'])->name('social.redirect');
     Route::get('/auth/callback/{provider}', [SocialAuthController::class, 'callback'])->name('social.callback');
 });

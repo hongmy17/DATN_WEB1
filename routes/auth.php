@@ -12,19 +12,9 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
-
-
-    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
-        ->name('password.request');
-
-    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
-        ->name('password.email');
-
-    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
-        ->name('password.reset');
-
-    Route::post('reset-password', [NewPasswordController::class, 'store'])
-        ->name('password.store');
+    // password.request / password.email / password.reset / password.store
+    // được định nghĩa lại ở routes/web.php với URL tiếng Việt (/quen-mat-khau,
+    // /dat-lai-mat-khau) cho khớp phần còn lại của site — xem ghi chú ở đó.
 });
 
 Route::middleware('auth')->group(function () {
@@ -46,6 +36,6 @@ Route::middleware('auth')->group(function () {
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 
-    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
-        ->name('logout');
-});
+    // logout đã định nghĩa ở web.php (/dang-xuat) — không khai báo lại ở đây
+    // để tránh trùng tên route 'logout' (route đăng ký sau sẽ ghi đè route trước).
+}); 

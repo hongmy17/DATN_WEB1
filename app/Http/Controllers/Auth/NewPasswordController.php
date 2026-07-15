@@ -21,25 +21,35 @@ class NewPasswordController extends Controller
      */
     public function create(Request $request): View
     {
-        return view('auth.reset-password', ['request' => $request]);
+        return view('pages.auth.reset', ['request' => $request]);
     }
 
     /**
      * Handle an incoming new password request.
-     *
-     * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            // FIX: trước đây dùng Rules\Password::defaults() (mặc định chỉ yêu cầu tối
+            // thiểu 8 ký tự) — YẾU HƠN quy tắc mật khẩu lúc đăng ký (RegisterRequest),
+            // khiến người dùng có thể đặt lại thành mật khẩu yếu hơn cả lúc tạo tài
+            // khoản. Đồng bộ lại cho đúng 1 chuẩn duy nhất trong toàn hệ thống.
+            'password' => [
+                'required', 'confirmed',
+                Rules\Password::min(8)->letters()->mixedCase()->numbers()->uncompromised(),
+            ],
+        ], [
+            'password.required' => 'Vui lòng nhập mật khẩu mới.',
+            'password.confirmed' => 'Xác nhận mật khẩu không khớp.',
+            'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự.',
+            'password.letters' => 'Mật khẩu phải chứa ít nhất 1 chữ cái.',
+            'password.mixed_case' => 'Mật khẩu phải có cả chữ hoa và chữ thường.',
+            'password.numbers' => 'Mật khẩu phải chứa ít nhất 1 chữ số.',
+            'password.uncompromised' => 'Mật khẩu này đã từng xuất hiện trong các vụ rò rỉ dữ liệu, vui lòng chọn mật khẩu khác.',
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user) use ($request) {
@@ -52,12 +62,18 @@ class NewPasswordController extends Controller
             }
         );
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
-        return $status == Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+        // FIX: hardcode tiếng Việt — dự án không có file lang, __($status) sẽ hiện
+        // chữ thô kiểu "passwords.token" thay vì câu tiếng Việt tử tế.
+        if ($status == Password::PASSWORD_RESET) {
+            return redirect()->route('login')->with('success', 'Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.');
+        }
+
+        $message = match ($status) {
+            Password::INVALID_TOKEN => 'Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu gửi lại.',
+            Password::INVALID_USER  => 'Không tìm thấy tài khoản với email này.',
+            default => 'Có lỗi xảy ra, vui lòng thử lại.',
+        };
+
+        return back()->withInput($request->only('email'))->withErrors(['email' => $message]);
     }
 }
