@@ -502,9 +502,9 @@
                     @forelse($products as $p)
                         @php
                             // Variant mặc định — chỉ dùng để add-to-cart nhanh & ảnh, KHÔNG dùng để tính flash sale
-                            $defaultV   = $p->variants->firstWhere('is_default', true) ?? $p->variants->first();
+                            $defaultV = $p->variants->firstWhere('is_default', true) ?? $p->variants->first();
                             $defVariant = $defaultV;
-                            $thumbnail  = $p->thumbnail ? asset('storage/' . $p->thumbnail) : null;
+                            $thumbnail = $p->thumbnail ? asset('storage/' . $p->thumbnail) : null;
 
                             // Flash sale: xét TẤT CẢ biến thể, không riêng biến thể mặc định
                             // → set sale ở bất kỳ biến thể nào cũng phải hiện badge ở trang danh sách
@@ -521,9 +521,10 @@
                                 ? $cheapestVariant->price
                                 : $p->variants->max('compare_price');
 
-                            $discount = $comparePrice && $comparePrice > $minPrice
-                                ? round((1 - $minPrice / $comparePrice) * 100)
-                                : 0;
+                            $discount =
+                                $comparePrice && $comparePrice > $minPrice
+                                    ? round((1 - $minPrice / $comparePrice) * 100)
+                                    : 0;
                         @endphp
 
                         <div class="product-card reveal">
@@ -534,7 +535,10 @@
                                     <div class="product-card__badges">
                                         @if ($isFlash)
                                             <span class="badge badge-flash">
-                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                                <svg width="10" height="10" viewBox="0 0 24 24"
+                                                    fill="currentColor">
+                                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                                                </svg>
                                                 Flash Sale
                                             </span>
                                         @elseif ($discount >= 5)
@@ -551,8 +555,8 @@
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                                         stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
                                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06
-                                             a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78
-                                             1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                                 a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78
+                                                 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                                     </svg>
                                 </button>
 
@@ -580,7 +584,7 @@
                                     id:         {{ $p->id }},
                                     name:       '{{ addslashes($p->name) }}',
                                     variant:    'Mặc định',
-                                    price:      {{ $defVariant?->current_price ?? $defVariant?->price ?? $minPrice }},
+                                    price:      {{ $defVariant?->current_price ?? ($defVariant?->price ?? $minPrice) }},
                                     img:        '{{ $p->thumbnail ? asset('storage/' . $p->thumbnail) : '' }}'
                                 })">
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -606,17 +610,25 @@
                                 </div>
 
                                 {{-- Rating (5 sao cố định khi chưa có review thật) --}}
+                                @php
+                                    $avgRating = round($p->reviews_avg_rating ?? 0, 1);
+                                    $reviewCount = $p->reviews_count ?? 0;
+                                @endphp
                                 <div class="product-card__rating">
                                     <div class="product-card__stars">
                                         @for ($s = 1; $s <= 5; $s++)
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="#F59E0B"
-                                                stroke="#F59E0B" stroke-width="1">
+                                            @php $filled = $s <= round($avgRating); @endphp
+                                            <svg width="12" height="12" viewBox="0 0 24 24"
+                                                fill="{{ $filled ? '#F59E0B' : '#E5E3DE' }}"
+                                                stroke="{{ $filled ? '#F59E0B' : '#E5E3DE' }}" stroke-width="1">
                                                 <polygon
                                                     points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                             </svg>
                                         @endfor
                                     </div>
-                                    <span class="product-card__count">5.0</span>
+                                    <span class="product-card__count">
+                                        {{ $reviewCount > 0 ? number_format($avgRating, 1) . ' (' . $reviewCount . ')' : 'Chưa có đánh giá' }}
+                                    </span>
                                 </div>
 
                                 <div class="product-card__price">

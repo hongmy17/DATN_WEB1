@@ -35,6 +35,8 @@ class ProductController extends Controller
             ->with(['variants' => fn($q) => $q->active()->orderBy('price')])
             ->withMin(['variants as variants_min_price' => fn($q) => $q->active()], 'price')
             ->withMax(['variants as variants_max_price' => fn($q) => $q->active()], 'price')
+            ->withAvg(['reviews as reviews_avg_rating' => fn($q) => $q->visible()], 'rating')
+            ->withCount(['reviews as reviews_count' => fn($q) => $q->visible()])
             ->whereHas('variants', fn($q) => $q->active());
 
         if (! empty($selectedCategories)) {

@@ -97,16 +97,9 @@ Route::get('/san-pham/{slug}/danh-gia', [ReviewController::class, 'load'])
 Route::get('/gio-hang', fn() => view('pages.cart.index'))->name('cart.index');
 Route::get('/thanh-toan', [CheckoutController::class, 'index'])->name('checkout.index');
 
-// Khuyến mãi: truyền sản phẩm có giảm giá thật
-Route::get('/khuyen-mai', function () {
-    $saleProducts = \App\Models\Product::visible()
-        ->with(['variants' => fn($q) => $q->active()->orderBy('price'), 'category'])
-        ->whereHas('variants', fn($q) => $q->active()->where('compare_price', '>', 0))
-        ->latest()
-        ->limit(8)
-        ->get();
-    return view('pages.other.promotions', compact('saleProducts'));
-})->name('promotions');
+use App\Http\Controllers\PromotionController;
+
+Route::get('/khuyen-mai', [PromotionController::class, 'index'])->name('promotions.index');
 
 Route::get('/yeu-thich', fn() => view('pages.other.wishlist'))->name('wishlist');
 Route::get('/lien-he', fn() => view('pages.other.contact'))->name('contact');
