@@ -151,26 +151,60 @@ class ProductVariant extends Model
     // ─── Price / image accessors ───────────────────────────────
 
     /**
-     * MỚI: giá khuyến mãi đang còn hiệu lực hay không (theo sale_starts_at/sale_ends_at).
-     * Nếu không đặt ngày bắt đầu/kết thúc thì coi như luôn hiệu lực khi có sale_price.
+     * MỚI: trạng thái flash sale — nguồn sự thật DUY NHẤT cho cả admin lẫn client,
+     * tránh mỗi nơi tự so sánh sale_starts_at/sale_ends_at một kiểu khác nhau.
+     * - 'none'     : chưa đặt giá khuyến mãi
+     * - 'upcoming' : đã lên lịch nhưng chưa tới giờ bắt đầu
+     * - 'active'   : đang trong khoảng bắt đầu → kết thúc (đây là lúc hiển thị sale cho khách)
+     * - 'expired'  : đã qua giờ kết thúc nhưng dữ liệu vẫn còn lưu trong DB
      */
-    public function getIsSaleActiveAttribute(): bool
+    public function getSaleStatusAttribute(): string
     {
         if (! $this->sale_price) {
-            return false;
+            return 'none';
         }
 
         $now = now();
 
         if ($this->sale_starts_at && $now->lt($this->sale_starts_at)) {
-            return false;
+            return 'upcoming';
         }
 
         if ($this->sale_ends_at && $now->gt($this->sale_ends_at)) {
-            return false;
+            return 'expired';
         }
 
-        return true;
+        return 'active';
+    }
+
+    public function getSaleStatusLabelAttribute(): string
+    {
+        return match ($this->sale_status) {
+            'active'   => 'Đang diễn ra',
+            'upcoming' => 'Sắp diễn ra',
+            'expired'  => 'Đã kết thúc',
+            default    => '—',
+        };
+    }
+
+    public function getSaleStatusColorAttribute(): string
+    {
+        return match ($this->sale_status) {
+            'active'   => 'success',
+            'upcoming' => 'warning',
+            'expired'  => 'gray',
+            default    => 'gray',
+        };
+    }
+
+    /**
+     * MỚI: giá khuyến mãi đang còn hiệu lực hay không.
+     * Chỉ còn là 1 lớp alias mỏng của sale_status để code cũ dùng $variant->is_sale_active
+     * không phải sửa lại — nhưng logic thật sự nằm duy nhất ở getSaleStatusAttribute().
+     */
+    public function getIsSaleActiveAttribute(): bool
+    {
+        return $this->sale_status === 'active';
     }
 
     /**

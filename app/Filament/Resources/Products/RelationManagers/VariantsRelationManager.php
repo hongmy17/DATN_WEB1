@@ -118,14 +118,34 @@ class VariantsRelationManager extends RelationManager
             // ── Flash sale ────────────────────────────────────────────────────
             Section::make('Khuyến mãi tạm thời (Flash sale)')
                 ->icon('heroicon-o-bolt')
-                ->description('Bỏ trống nếu biến thể này không chạy khuyến mãi theo thời gian')
+                ->description('Flash sale bắt buộc phải có hạn — bỏ trống nếu biến thể này không chạy khuyến mãi')
                 ->collapsible()
                 ->collapsed(fn($record) => blank($record?->sale_price))
                 ->schema([
+                    // Badge trạng thái — để admin không phải tự nhìn 2 cột ngày giờ rồi đoán
+                    Placeholder::make('sale_status_badge')
+                        ->hiddenLabel()
+                        ->visible(fn($record) => filled($record?->sale_price))
+                        ->content(function ($record) {
+                            $styles = [
+                                'active'   => ['bg' => '#dcfce7', 'fg' => '#166534'],
+                                'upcoming' => ['bg' => '#fef3c7', 'fg' => '#92400e'],
+                                'expired'  => ['bg' => '#f3f4f6', 'fg' => '#6b7280'],
+                            ];
+                            $s = $styles[$record->sale_status] ?? $styles['expired'];
+
+                            return new \Illuminate\Support\HtmlString(
+                                '<span style="display:inline-block;background:' . $s['bg'] . ';color:' . $s['fg']
+                                    . ';padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600">'
+                                    . e($record->sale_status_label) . '</span>'
+                            );
+                        }),
+
                     TextInput::make('sale_price')
                         ->label('Giá khuyến mãi (₫)')
                         ->numeric()
                         ->prefix('₫')
+                        ->minValue(0)
                         ->nullable()
                         ->live()
                         ->helperText('Giá tạm thời áp dụng trong khoảng thời gian bên dưới. Để trống nếu không có.')
@@ -140,17 +160,59 @@ class VariantsRelationManager extends RelationManager
                             },
                         ]),
 
+                    // Chọn nhanh thời lượng — tự điền "Kết thúc khuyến mãi" bên dưới,
+                    // admin vẫn chỉnh tay lại được sau khi chọn nếu cần.
+                    Select::make('sale_duration_preset')
+                        ->label('Thời lượng nhanh')
+                        ->options([
+                            1   => '1 giờ',
+                            3   => '3 giờ',
+                            6   => '6 giờ',
+                            12  => '12 giờ',
+                            24  => '1 ngày',
+                            72  => '3 ngày',
+                            168 => '7 ngày',
+                        ])
+                        ->placeholder('— Chọn nhanh hoặc tự nhập ngày bên dưới —')
+                        ->visible(fn(callable $get) => filled($get('sale_price')))
+                        ->dehydrated(false)
+                        ->live()
+                        ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                            if (! $state) {
+                                return;
+                            }
+                            $start = $get('sale_starts_at')
+                                ? \Illuminate\Support\Carbon::parse($get('sale_starts_at'))
+                                : now();
+
+                            if (! $get('sale_starts_at')) {
+                                $set('sale_starts_at', $start);
+                            }
+                            $set('sale_ends_at', $start->copy()->addHours((int) $state));
+                        })
+                        ->helperText('Chỉ là công cụ điền nhanh, không lưu riêng — kết quả nằm ở 2 ô ngày giờ bên dưới.'),
+
                     Grid::make(2)->schema([
                         DateTimePicker::make('sale_starts_at')
                             ->label('Bắt đầu khuyến mãi')
                             ->nullable()
-                            ->native(false),
+                            ->native(false)
+                            ->seconds(false)
+                            ->displayFormat('d/m/Y H:i')
+                            ->default(now())
+                            ->helperText('Để trống = bắt đầu ngay khi lưu.'),
 
                         DateTimePicker::make('sale_ends_at')
                             ->label('Kết thúc khuyến mãi')
-                            ->nullable()
                             ->native(false)
+                            ->seconds(false)
+                            ->displayFormat('d/m/Y H:i')
                             ->afterOrEqual('sale_starts_at')
+                            // Flash sale bắt buộc có hạn: đã nhập sale_price thì phải chọn ngày kết thúc
+                            ->required(fn(callable $get) => filled($get('sale_price')))
+                            ->validationMessages([
+                                'required' => 'Đã đặt giá khuyến mãi thì bắt buộc chọn ngày kết thúc (flash sale luôn có hạn).',
+                            ])
                             ->rules([
                                 fn(callable $get) => function (string $attribute, $value, $fail) use ($get) {
                                     if ($value && $get('sale_price') && now()->greaterThan($value)) {
@@ -368,6 +430,15 @@ class VariantsRelationManager extends RelationManager
                     // ── FIX: null → xám thay vì đỏ, chỉ đỏ khi thực sự có giảm giá ──
                     ->color(fn($state) => $state ? 'danger' : 'gray')
                     ->formatStateUsing(fn($state) => $state ? "-{$state}%" : '—')
+                    ->placeholder('—'),
+
+                // MỚI: trạng thái flash sale rõ ràng — admin không cần tự đoán
+                // từ 2 cột ngày giờ nữa (Đang diễn ra / Sắp diễn ra / Đã kết thúc)
+                TextColumn::make('sale_status')
+                    ->label('Flash sale')
+                    ->badge()
+                    ->getStateUsing(fn($record) => $record->sale_status !== 'none' ? $record->sale_status_label : null)
+                    ->color(fn($record) => $record->sale_status_color)
                     ->placeholder('—'),
 
                 TextColumn::make('stock_quantity')
