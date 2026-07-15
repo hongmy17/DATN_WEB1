@@ -551,12 +551,12 @@
                                 <button class="product-card__wish" data-wish-id="{{ $p->id }}"
                                     data-wish-name="{{ addslashes($p->name) }}" data-wish-price="{{ $minPrice }}"
                                     data-wish-slug="{{ $p->slug }}" data-wish-img="{{ $p->thumbnail ?? '' }}"
-                                    aria-label="Yêu thích">
+                                    data-wish-variant-id="{{ $p->variants->first()?->id ?? '' }}" aria-label="Yêu thích">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                                         stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
                                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06
-                                                 a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78
-                                                 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                                         a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78
+                                                         1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                                     </svg>
                                 </button>
 
@@ -630,7 +630,11 @@
                                         {{ $reviewCount > 0 ? number_format($avgRating, 1) . ' (' . $reviewCount . ')' : 'Chưa có đánh giá' }}
                                     </span>
                                 </div>
-
+                                @if (($p->sold_count ?? 0) > 0)
+                                    <div style="font-size:11px;color:var(--ink-muted);margin-bottom:2px">
+                                        Đã bán {{ number_format($p->sold_count) }}
+                                    </div>
+                                @endif
                                 <div class="product-card__price">
                                     <span class="product-card__price-current">
                                         {{ number_format($minPrice, 0, ',', '.') }}₫

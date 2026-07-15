@@ -72,6 +72,14 @@ class ProductsTable
                     ->sortable()                     // ← sortable được vì là column DB
                     ->placeholder('Chưa có biến thể'),
 
+                TextColumn::make('sold_count')
+                    ->label('Đã bán (30 ngày)')
+                    ->getStateUsing(fn($record) => \App\Models\Product::soldCountsMap()[$record->id] ?? 0)
+                    ->numeric()
+                    ->alignEnd()
+                    ->badge()
+                    ->color('success')
+                    ->sortable(false), // không sort được vì đây là giá trị tính toán, không phải cột thật trong DB
                 ToggleColumn::make('status')
                     ->label('Hiển thị')
                     ->updateStateUsing(function ($record, $state) {

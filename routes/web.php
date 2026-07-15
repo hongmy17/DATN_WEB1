@@ -60,10 +60,41 @@ Route::get('/', function () {
     // Shuffle để không hiện theo thứ tự danh mục
     $featuredProducts = $featuredProducts->shuffle()->take(8);
 
-    // Sản phẩm nổi bật nhất = sản phẩm có giá cao nhất
-    $topProduct = $featuredProducts
-        ->sortByDesc(fn($p) => optional($p->variants->first())->price ?? 0)
-        ->first();
+    // Gắn lượt bán 30 ngày gần nhất vào từng sản phẩm (dùng chung 1 nguồn với
+    // Top sản phẩm bán chạy / cột "Đã bán" — xem Product::soldCountsMap())
+    \App\Models\Product::attachSoldCounts($featuredProducts);
+
+    // FIX: Sản phẩm nổi bật (card đen) = sản phẩm BÁN CHẠY NHẤT thật sự,
+    // không phải giá cao nhất như trước. Nếu chưa có đơn nào (sold_count đều
+    // bằng 0 — ví dụ mới cài đặt/chưa có dữ liệu bán hàng), fallback về sản
+    // phẩm giá cao nhất để card không bị trống.
+    $topProduct = $featuredProducts->sum('sold_count') > 0
+        ? $featuredProducts->sortByDesc('sold_count')->first()
+        : $featuredProducts->sortByDesc(fn($p) => optional($p->variants->first())->price ?? 0)->first();
+
+    // FIX: Sản phẩm Flash Sale (card cam) = sản phẩm đang có biến thể giảm
+    // giá % SÂU NHẤT trong số các biến thể đang thật sự trong thời gian sale
+    // (is_sale_active), không phải chữ "Giảm đến 40%" viết cứng như trước.
+    $flashSaleProduct = null;
+    $flashSaleDiscountPercent = 0;
+
+    $saleCandidates = \App\Models\Product::visible()
+        ->whereHas('variants', fn($q) => $q->active()->whereNotNull('sale_price'))
+        ->with(['category', 'variants' => fn($q) => $q->active()->whereNotNull('sale_price')])
+        ->get();
+
+    foreach ($saleCandidates as $sp) {
+        foreach ($sp->variants as $v) {
+            if (!$v->is_sale_active || (float) $v->price <= 0) {
+                continue;
+            }
+            $percent = round((1 - ((float) $v->sale_price / (float) $v->price)) * 100);
+            if ($percent > $flashSaleDiscountPercent) {
+                $flashSaleDiscountPercent = $percent;
+                $flashSaleProduct = $sp;
+            }
+        }
+    }
 
     // Reviews thật từ DB (rating >= 4), fallback về mẫu phù hợp web phụ kiện
     $reviews = \App\Models\Review::with('user')
@@ -84,7 +115,7 @@ Route::get('/', function () {
             ->whereIn('category_id', $childIds)
             ->count();
     });
-    return view('pages.home', compact('categories', 'featuredProducts', 'topProduct', 'reviews', 'tabCategories'));
+    return view('pages.home', compact('categories', 'featuredProducts', 'topProduct', 'flashSaleProduct', 'flashSaleDiscountPercent', 'reviews', 'tabCategories'));
 })->name('home');
 
 Route::get('/san-pham/suggest', [ProductController::class, 'suggest'])->name('products.suggest');

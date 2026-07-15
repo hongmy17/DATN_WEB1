@@ -182,8 +182,8 @@
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"
                 stroke-linecap="round" style="color:var(--border); margin:0 auto 16px; display:block">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06
-                                                     a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78
-                                                     1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                                         a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78
+                                                         1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
             <p style="font-size:16px; font-weight:600; margin-bottom:8px">Chưa có sản phẩm yêu thích</p>
             <p style="font-size:14px; color:var(--ink-3); margin-bottom:24px">
@@ -268,8 +268,11 @@
 
             {{-- Nút hover --}}
             <div class="wcard__hover">
-              <button class="btn btn-ghost"
-                onclick="Cart.add({id:${p.id},name:'${name.replace(/'/g, "\\'")}',price:${p.price||0},img:'${p.img||''}',variant:''});Wishlist.updateUI()">
+             <button class="btn btn-ghost"
+                onclick="${p.variant_id
+                    ? `Cart.add({id:${p.id},variant_id:${p.variant_id},name:'${name.replace(/'/g, "\\'")}',price:${p.price||0},img:'${p.img||''}'});Wishlist.updateUI()`
+                    : `Toast.show('Vui lòng chọn phân loại trên trang sản phẩm', 'info');window.location.href='${url}'`
+                }">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round">
                   <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>

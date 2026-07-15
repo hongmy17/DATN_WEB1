@@ -6,9 +6,22 @@
 
                 {{-- Cột 1: Brand --}}
                 <div>
-                    <div
-                        style="font-family:var(--font-display);font-size:22px;font-weight:700;color:#fff;margin-bottom:12px">
-                        Nexus<span style="color:#E30019">.</span>
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                        <svg width="30" height="30" viewBox="0 0 34 34" fill="none">
+                            <rect width="34" height="34" rx="8" fill="#2563EB" />
+                            <circle cx="17" cy="10" r="2.6" fill="#fff" />
+                            <circle cx="10" cy="22" r="2.6" fill="#fff" />
+                            <circle cx="24" cy="22" r="2.6" fill="#fff" />
+                            <line x1="17" y1="10" x2="10" y2="22" stroke="#fff"
+                                stroke-width="1.6" stroke-linecap="round" />
+                            <line x1="17" y1="10" x2="24" y2="22" stroke="#fff"
+                                stroke-width="1.6" stroke-linecap="round" />
+                            <line x1="10" y1="22" x2="24" y2="22" stroke="#fff"
+                                stroke-width="1.6" stroke-linecap="round" />
+                        </svg>
+                        <div style="font-family:var(--font-display);font-size:22px;font-weight:700;color:#fff">
+                            Nexus<span style="color:#F59E0B">.</span>
+                        </div>
                     </div>
                     <p
                         style="font-size:13.5px;color:rgba(255,255,255,.5);line-height:1.8;margin-bottom:20px;max-width:280px">
@@ -46,7 +59,7 @@
                       border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;
                       justify-content:center;color:rgba(255,255,255,.5);
                       transition:.2s;text-decoration:none"
-                                onmouseover="this.style.background='#E30019';this.style.color='#fff';this.style.borderColor='#E30019'"
+                                onmouseover="this.style.background='#2563EB';this.style.color='#fff';this.style.borderColor='#2563EB'"
                                 onmouseout="this.style.background='rgba(255,255,255,.07)';this.style.color='rgba(255,255,255,.5)';this.style.borderColor='rgba(255,255,255,.1)'">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
                                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -80,32 +93,38 @@
                       color:#fff;margin-bottom:16px">
                         Hỗ trợ</div>
                     <a href="{{ route('contact') }}"
-                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;">
+                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;transition:.2s"
+                        onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">
                         Liên hệ
                     </a>
 
                     <a href="{{ route('policy', 'doi-tra') }}"
-                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;">
+                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;transition:.2s"
+                        onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">
                         Chính sách đổi trả
                     </a>
 
                     <a href="{{ route('policy', 'bao-hanh') }}"
-                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;">
+                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;transition:.2s"
+                        onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">
                         Chính sách bảo hành
                     </a>
 
                     <a href="{{ route('policy', 'mua-hang') }}"
-                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;">
+                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;transition:.2s"
+                        onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">
                         Hướng dẫn mua hàng
                     </a>
 
                     <a href="{{ route('policy', 'van-chuyen') }}"
-                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;">
+                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;transition:.2s"
+                        onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">
                         Chính sách vận chuyển
                     </a>
 
                     <a href="{{ route('policy', 'bao-mat') }}"
-                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;">
+                        style="display:block;font-size:13.5px;color:rgba(255,255,255,.5);margin-bottom:10px;text-decoration:none;transition:.2s"
+                        onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.5)'">
                         Chính sách bảo mật
                     </a>
                 </div>
@@ -126,7 +145,7 @@
                           color:#fff;font-size:13px;font-family:var(--font-body);
                           outline:none;transition:.2s">
                         <button onclick="Toast.show('Đăng ký thành công!','success')"
-                            style="padding:10px 14px;background:#E30019;color:#fff;border:none;
+                            style="padding:10px 14px;background:#2563EB;color:#fff;border:none;
                            border-radius:8px;cursor:pointer;transition:.2s;display:flex;align-items:center">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round">
@@ -138,10 +157,10 @@
 
                     {{-- Hotline --}}
                     <div
-                        style="padding:14px;background:rgba(227,0,25,.12);
-                      border:1px solid rgba(227,0,25,.2);border-radius:8px">
+                        style="padding:14px;background:rgba(37,99,235,.12);
+                      border:1px solid rgba(37,99,235,.2);border-radius:8px">
                         <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#E30019"
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563EB"
                                 stroke-width="2" stroke-linecap="round">
                                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07
                          A19.5 19.5 0 0 1 4.07 12a19.79 19.79 0 0 1-3.07-8.67
@@ -152,7 +171,7 @@
                             </svg>
                             <span style="font-size:11px;color:rgba(255,255,255,.5)">Hotline hỗ trợ</span>
                         </div>
-                        <div style="font-size:20px;font-weight:700;color:#E30019;letter-spacing:.5px">
+                        <div style="font-size:20px;font-weight:700;color:#2563EB;letter-spacing:.5px">
                             1800 9999
                         </div>
                         <div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:2px">

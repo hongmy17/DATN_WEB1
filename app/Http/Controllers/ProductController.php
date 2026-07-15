@@ -100,6 +100,10 @@ class ProductController extends Controller
         $priceMin   = (int) $request->input('price_min', 0);
         $priceMax   = (int) $request->input('price_max', $sliderMax);
 
+        $products->getCollection()->transform(function ($p) {
+            $p->sold_count = \App\Models\Product::soldCountsMap()[$p->id] ?? 0;
+            return $p;
+        });
         return view('pages.product.index', compact(
             'products',
             'categories',
@@ -161,6 +165,7 @@ class ProductController extends Controller
                     ->with('attributeValues.attribute'),
             ])
             ->firstOrFail();
+        $product->sold_count = \App\Models\Product::soldCountsMap()[$product->id] ?? 0;
 
         // Sản phẩm liên quan
         $relatedProducts = Product::visible()

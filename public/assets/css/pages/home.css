@@ -187,7 +187,7 @@
         .cat-tile {
             background: var(--bg-alt);
             border: 1px solid var(--border-soft);
-            border-radius: var(--r-xl);
+            border-radius: var(--r-md);
             padding: 24px 16px;
             text-align: center;
             cursor: pointer;
@@ -214,7 +214,7 @@
             width: 48px;
             height: 48px;
             border-radius: var(--r-md);
-            background: var(--surface);
+            background: var(--accent-light);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -241,62 +241,111 @@
         }
 
         .promo-card {
-            border-radius: var(--r-2xl);
-            padding: 36px 40px;
+            border-radius: var(--r-lg);
             position: relative;
             overflow: hidden;
             display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
+            align-items: stretch;
             min-height: 220px;
             cursor: pointer;
+            border-left: 4px solid rgba(255,255,255,.9);
             transition: var(--t);
         }
 
         .promo-card:hover {
-            transform: scale(1.01);
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 12px 30px rgba(0,0,0,.14);
         }
 
         .promo-card--dark {
-            background: var(--ink);
+            background: var(--dark);
+            border-left-color: var(--accent);
+        }
+        .promo-card--dark::before {
+            content: '';
+            position: absolute;
+            width: 260px; height: 260px;
+            border-radius: 50%;
+            background: rgba(37,99,235,.14);
+            right: -80px; top: -80px;
+            pointer-events: none;
         }
 
         .promo-card--accent {
-            background: var(--accent);
+            background: linear-gradient(135deg, #F59E0B 0%, #FB923C 100%);
+            border-left-color: var(--dark);
+        }
+        .promo-card--accent::before {
+            content: '';
+            position: absolute;
+            width: 220px; height: 220px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.1);
+            right: -60px; bottom: -80px;
+            pointer-events: none;
         }
 
+        .promo-card__body {
+            flex: 1;
+            min-width: 0;
+            padding: 32px 28px 32px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .promo-card__media {
+            width: 44%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 24px 16px 0;
+            position: relative;
+            z-index: 1;
+        }
+        .promo-card__media img {
+            max-width: 100%;
+            max-height: 90%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 16px 24px rgba(0,0,0,.28));
+        }
+        .promo-card__media svg { opacity: .5; }
+
         .promo-card__eyebrow {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: .08em;
-            opacity: .6;
-            margin-bottom: 8px;
+            letter-spacing: .12em;
+            opacity: .85;
+            margin-bottom: 10px;
             color: #fff;
         }
 
         .promo-card__title {
             font-family: var(--font-display);
-            font-size: 24px;
-            font-weight: 700;
+            font-size: 28px;
+            font-weight: 800;
             color: #fff;
-            line-height: 1.2;
-            margin-bottom: 16px;
+            line-height: 1.15;
+            letter-spacing: -.3px;
+            margin-bottom: 20px;
         }
 
-        .promo-card__orb {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, .07);
+        .promo-card__cta-white {
+            background: rgba(255,255,255,.22);
+            color: #fff;
+            border: none;
+            transition: var(--t);
         }
-
-        .promo-card__product {
-            position: absolute;
-            right: -10px;
-            top: -10px;
-            color: rgba(255, 255, 255, .06);
+        .promo-card__cta-white:hover {
+            background: rgba(255,255,255,.32);
+            transform: translateY(-2px);
         }
+        .promo-card .btn-accent:hover { transform: translateY(-2px); }
 
         /* ── FEATURED PRODUCTS ────────────────── */
         .tabs-nav {
@@ -556,4 +605,7 @@
             .grid-4 {
                 grid-template-columns: repeat(2, 1fr);
             }
+
+            .promo-card__body { padding: 22px 18px; }
+            .promo-card__media { width: 34%; padding: 12px; }
         }

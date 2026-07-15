@@ -21,7 +21,7 @@ class AttributeSeeder extends Seeder
             ['value' => 'Xanh Lá',  'color_code' => '#4CAF50', 'sort_order' => 5],
             ['value' => 'Kem',       'color_code' => '#F5E6CA', 'sort_order' => 6],
             ['value' => 'Bạc',       'color_code' => '#C0C0C0', 'sort_order' => 7],
-            ['value' => 'Đỏ',        'color_code' => '#E30019', 'sort_order' => 8],
+            ['value' => 'Đỏ',        'color_code' => '#2563EB', 'sort_order' => 8],
         ];
         foreach ($colors as $c) {
             AttributeValue::create(array_merge(['attribute_id' => $color->id], $c));

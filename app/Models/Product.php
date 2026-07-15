@@ -15,9 +15,16 @@ class Product extends Model
     const DELETED_AT = 'delete_at';
 
     protected $fillable = [
-        'code', 'base_sku', 'category_id', 'name', 'slug',
-        'short_description', 'description',
-        'thumbnail', 'status', 'created_by',
+        'code',
+        'base_sku',
+        'category_id',
+        'name',
+        'slug',
+        'short_description',
+        'description',
+        'thumbnail',
+        'status',
+        'created_by',
     ];
 
     protected $casts = [
@@ -150,5 +157,52 @@ class Product extends Model
     public function getReviewCountAttribute(): int
     {
         return $this->reviews()->visible()->count();
+    }
+
+    /**
+     * Bản đồ [product_id => tổng số lượng đã bán trong X ngày gần nhất].
+     * Dùng ĐÚNG quy tắc đếm với TopProductsWidget (COD tính khi Hoàn thành,
+     * online tính từ Đã xác nhận) để không lệch số liệu giữa các nơi.
+     * Cache lại 6 tiếng — không tính lại mỗi lần load trang.
+     */
+    public static function soldCountsMap(int $days = 30): array
+    {
+        return \Illuminate\Support\Facades\Cache::remember(
+            "product_sold_counts_{$days}d",
+            now()->addHours(6),
+            function () use ($days) {
+                return \Illuminate\Support\Facades\DB::table('order_items')
+                    ->join('orders', 'orders.id', '=', 'order_items.order_id')
+                    ->join('product_variants', 'product_variants.id', '=', 'order_items.variant_id')
+                    ->where('orders.created_at', '>=', now()->subDays($days))
+                    ->where(function ($q) {
+                        $q->where(function ($cod) {
+                            $cod->where('orders.payment_method', 'cod')
+                                ->where('orders.order_status', \App\Models\Order::STATUS_COMPLETED);
+                        })->orWhere(function ($online) {
+                            $online->where('orders.payment_method', '!=', 'cod')
+                                ->whereIn('orders.order_status', [
+                                    \App\Models\Order::STATUS_CONFIRMED,
+                                    \App\Models\Order::STATUS_SHIPPING,
+                                    \App\Models\Order::STATUS_COMPLETED,
+                                ]);
+                        });
+                    })
+                    ->select('product_variants.product_id', \Illuminate\Support\Facades\DB::raw('SUM(order_items.quantity) as total_qty'))
+                    ->groupBy('product_variants.product_id')
+                    ->pluck('total_qty', 'product_id')
+                    ->toArray();
+            }
+        );
+    }
+
+    /** Gắn thuộc tính sold_count vào 1 collection sản phẩm, đọc từ map đã cache — KHÔNG query thêm cho từng dòng. */
+    public static function attachSoldCounts($products, int $days = 30)
+    {
+        $map = self::soldCountsMap($days);
+        foreach ($products as $product) {
+            $product->sold_count = (int) ($map[$product->id] ?? 0);
+        }
+        return $products;
     }
 }

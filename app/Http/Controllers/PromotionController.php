@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Coupon;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
@@ -42,6 +43,21 @@ class PromotionController extends Controller
             ->latest()
             ->get();
 
-        return view('pages.other.promotions', compact('saleProducts'));
+        // Mã giảm giá đang hoạt động: status bật, còn hạn, còn lượt dùng
+        $coupons = Coupon::where('status', 1)
+            ->where(function ($q) use ($now) {
+                $q->whereNull('start_date')->orWhere('start_date', '<=', $now);
+            })
+            ->where(function ($q) use ($now) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', $now);
+            })
+            ->where(function ($q) {
+                $q->whereNull('max_usage')->orWhereColumn('used_count', '<', 'max_usage');
+            })
+            ->latest()
+            ->limit(6)
+            ->get();
+
+        return view('pages.other.promotions', compact('saleProducts', 'coupons'));
     }
 }

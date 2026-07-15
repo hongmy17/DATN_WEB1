@@ -1,139 +1,53 @@
-        .auth-wrap {
-            min-height: calc(100vh - 68px);
-            display: flex;
-        }
-
-        .auth-side {
-            width: 40%;
-            background: var(--ink);
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            padding: 56px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .auth-side__orb {
-            position: absolute;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(200, 82, 42, .3), transparent 70%);
-        }
-
-        .auth-side__content {
-            position: relative;
-            z-index: 1;
-        }
-
-        .auth-side__logo {
-            font-family: var(--font-display);
-            font-size: 24px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 48px;
-        }
-
-        .auth-side__logo span {
-            color: var(--accent);
-        }
-
-        .auth-side__feature {
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-            margin-bottom: 20px;
-        }
-
-        .auth-side__feature-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: var(--r-md);
-            background: rgba(255, 255, 255, .08);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            color: var(--accent);
-        }
-
-        .auth-side__feature-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #fff;
-            margin-bottom: 2px;
-        }
-
-        .auth-side__feature-sub {
-            font-size: 13px;
-            color: rgba(255, 255, 255, .5);
-        }
-
-        .auth-main {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 48px;
-            overflow-y: auto;
-        }
-
-        .auth-form-box {
-            width: 100%;
-            max-width: 420px;
-        }
-
-        .auth-form-title {
-            font-family: var(--font-display);
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--ink);
-            margin-bottom: 4px;
-        }
-
-        .auth-form-sub {
-            font-size: 14px;
-            color: var(--ink-3);
-            margin-bottom: 28px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }    
-.auth-wrap { min-height: calc(100vh - 68px); display:flex; }
-.auth-side {
-  width: 44%; background: var(--ink); display:flex; flex-direction:column;
-  justify-content:flex-end; padding: 56px; position:relative; overflow:hidden;
+/* ── AUTH LAYOUT (login / register) — card căn giữa, dải màu trên đầu ── */
+.auth-wrap {
+  min-height: calc(100vh - var(--nav-h));
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface); padding: 48px 16px;
 }
-.auth-side__orb {
-  position:absolute; border-radius:50%;
-  background: radial-gradient(circle, rgba(200,82,42,.35), transparent 70%);
+
+.auth-card {
+  width: 100%; max-width: 460px;
+  background: var(--bg-alt); border: 1px solid var(--border-soft);
+  border-top: 5px solid var(--accent);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md);
+  padding: 40px;
 }
-.auth-side__content { position:relative; z-index:1; }
-.auth-side__logo { font-family:var(--font-display); font-size:26px; font-weight:700; color:#fff; margin-bottom:56px; }
-.auth-side__logo span { color:var(--accent); }
-.auth-side__quote { font-family:var(--font-display); font-size:28px; font-weight:700; color:#fff; line-height:1.25; margin-bottom:14px; letter-spacing:-.3px; }
-.auth-side__sub { font-size:14px; color:rgba(255,255,255,.5); line-height:1.7; }
-.auth-main { flex:1; display:flex; align-items:center; justify-content:center; padding:60px 48px; }
-.auth-form-box { width:100%; max-width:400px; }
-.auth-form-title { font-family:var(--font-display); font-size:26px; font-weight:700; color:var(--ink); margin-bottom:4px; }
-.auth-form-sub { font-size:14px; color:var(--ink-3); margin-bottom:32px; }
-.social-login { display:flex; gap:10px; margin-bottom:24px; }
+
+.auth-logo {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-family: var(--font-display); font-size: 22px; font-weight: 700;
+  color: var(--ink); margin-bottom: 28px;
+}
+.auth-logo span { color: var(--accent); }
+
+.auth-form-title { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--ink); margin-bottom: 4px; text-align: center; }
+.auth-form-sub { font-size: 14px; color: var(--ink-3); margin-bottom: 28px; text-align: center; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.social-login { display: flex; gap: 10px; margin-bottom: 24px; }
 .social-btn {
-  flex:1; display:flex; align-items:center; justify-content:center; gap:8px;
-  height:42px; border:1.5px solid var(--border); border-radius:var(--r-md);
-  font-size:13px; font-weight:500; color:var(--ink-2); cursor:pointer;
-  background:var(--bg-alt); transition:var(--t);
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+  height: 42px; border: 1.5px solid var(--border); border-radius: var(--r-sm);
+  font-size: 13px; font-weight: 500; color: var(--ink-2); cursor: pointer;
+  background: var(--bg-alt); transition: var(--t);
 }
-.social-btn:hover { border-color:var(--ink); background:var(--surface); }
+.social-btn:hover { border-color: var(--ink); background: var(--surface); }
 
+@media (max-width: 480px) { .auth-card { padding: 28px 20px; } }
 
-.forgot-wrap { min-height:calc(100vh - 68px); display:flex; align-items:center; justify-content:center; padding:48px 16px; background:var(--surface); }
-.forgot-card { width:100%; max-width:440px; background:var(--bg-alt); border:1px solid var(--border-soft); border-radius:var(--r-2xl); padding:40px; box-shadow:var(--shadow-md); }
-.step-dots { display:flex; gap:6px; justify-content:center; margin-bottom:28px; }
-.step-dot-item { width:8px; height:8px; border-radius:99px; background:var(--border); transition:all .3s var(--ease-out); }
-.step-dot-item.active { width:24px; background:var(--accent); }
-.otp-inputs { display:flex; gap:8px; }
-.otp-input { flex:1; height:52px; text-align:center; font-size:22px; font-weight:700; font-family:var(--font-display); border:1.5px solid var(--border); border-radius:var(--r-md); background:var(--bg-alt); color:var(--ink); transition:var(--t); }
-.otp-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(200,82,42,.1); outline:none; }
+/* ── QUÊN MẬT KHẨU / ĐẶT LẠI MẬT KHẨU ───── */
+.forgot-wrap { min-height: calc(100vh - var(--nav-h)); display: flex; align-items: center; justify-content: center; padding: 48px 16px; background: var(--surface); }
+.forgot-card {
+  width: 100%; max-width: 440px;
+  background: var(--bg-alt); border: 1px solid var(--border-soft);
+  border-top: 5px solid var(--accent);
+  border-radius: var(--r-lg); padding: 40px; box-shadow: var(--shadow-md);
+}
+.step-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 28px; }
+.step-dot-item { width: 8px; height: 8px; border-radius: 99px; background: var(--border); transition: all .3s var(--ease-out); }
+.step-dot-item.active { width: 24px; background: var(--accent); }
+.otp-inputs { display: flex; gap: 8px; }
+.otp-input { flex: 1; height: 52px; text-align: center; font-size: 22px; font-weight: 700; font-family: var(--font-display); border: 1.5px solid var(--border); border-radius: var(--r-md); background: var(--bg-alt); color: var(--ink); transition: var(--t); }
+.otp-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb),.1); outline: none; }

@@ -101,7 +101,7 @@
 
         .timeline-dot.current {
             border-color: var(--accent);
-            box-shadow: 0 0 0 4px rgba(227, 0, 25, .12);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
         }
 
         .timeline-label {

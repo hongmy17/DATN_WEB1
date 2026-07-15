@@ -1,13 +1,13 @@
 /* ══════════════════════════════════════════
    Promotions Page CSS
-   Đồng bộ với design system: màu đỏ #E30019,
+   Đồng bộ với design system: màu đỏ #2563EB,
    không dùng font khác, không emoji
 ══════════════════════════════════════════ */
 
 /* ── HERO ──────────────────────────────── */
 .promo-hero {
-    background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1a1f2e 100%);
-    border-radius: var(--r-2xl);
+    background: linear-gradient(135deg, #0F172A 0%, #16213E 50%, #2563EB 100%);
+    border-radius: var(--r-lg);
     padding: 64px 48px;
     text-align: center;
     margin-bottom: 40px;
@@ -19,7 +19,7 @@
     position: absolute;
     border-radius: 50%;
     pointer-events: none;
-    background: radial-gradient(circle, rgba(227,0,25,.2) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(37,99,235,.2) 0%, transparent 70%);
 }
 .promo-hero__glow--1 {
     width: 500px; height: 500px;
@@ -37,9 +37,9 @@
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    background: rgba(227,0,25,.15);
-    border: 1px solid rgba(227,0,25,.3);
-    color: #E30019;
+    background: rgba(245,158,11,.15);
+    border: 1px solid rgba(245,158,11,.3);
+    color: #F59E0B;
     padding: 5px 14px;
     border-radius: 99px;
     font-size: 11px;
@@ -58,13 +58,13 @@
     letter-spacing: -1.5px;
     margin-bottom: 24px;
 }
-.promo-hero__title-red { color: #E30019; }
+.promo-hero__title-red { color: #F59E0B; }
 
 .promo-hero__btn {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: #E30019;
+    background: #F59E0B;
     color: #fff;
     padding: 14px 32px;
     border-radius: 8px;
@@ -75,9 +75,9 @@
     margin-top: 8px;
 }
 .promo-hero__btn:hover {
-    background: #C0001A;
+    background: #D97706;
     transform: translateY(-1px);
-    box-shadow: 0 8px 24px rgba(227,0,25,.35);
+    box-shadow: 0 8px 24px rgba(245,158,11,.35);
 }
 
 /* ── COUNTDOWN ─────────────────────────── */
@@ -119,6 +119,72 @@
     margin-bottom: 16px;
 }
 
+/* ── MÃ GIẢM GIÁ ───────────────────────── */
+.coupon-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 52px;
+}
+.coupon-card {
+    display: flex;
+    align-items: stretch;
+    background: var(--bg-alt);
+    border: 1.5px dashed var(--accent);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+}
+.coupon-card__value {
+    flex-shrink: 0;
+    width: 96px;
+    background: var(--accent-light);
+    color: var(--accent);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 20px;
+    text-align: center;
+    padding: 12px 8px;
+}
+.coupon-card__body {
+    flex: 1;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    min-width: 0;
+}
+.coupon-card__code {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--ink);
+    letter-spacing: .5px;
+}
+.coupon-card__cond {
+    font-size: 12px;
+    color: var(--ink-muted);
+}
+.coupon-card__copy {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-top: 2px;
+}
+.coupon-card__copy:hover { text-decoration: underline; }
+
 /* ── PROMO CARDS GRID ──────────────────── */
 .promo-grid {
     display: grid;
@@ -128,7 +194,7 @@
 }
 
 .promo-card {
-    border-radius: var(--r-xl);
+    border-radius: var(--r-lg);
     padding: 24px;
     min-height: 180px;
     display: flex;
@@ -156,7 +222,7 @@
 }
 
 /* Màu sắc đồng bộ với theme đỏ */
-.pc-1 { background: linear-gradient(135deg, #E30019 0%, #A3001A 100%); }
+.pc-1 { background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); }
 .pc-2 { background: linear-gradient(135deg, #1a1f2e 0%, #2d3748 100%); }
 .pc-3 { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
 .pc-4 { background: linear-gradient(135deg, #7c2d12 0%, #9a3412 100%); }
@@ -212,4 +278,10 @@
     .promo-hero__title { letter-spacing: -.5px; }
     .promo-countdown__item { min-width: 56px; padding: 10px 14px; }
     .promo-countdown__num  { font-size: 22px; }
+}
+@media(max-width: 900px) {
+    .coupon-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media(max-width: 600px) {
+    .coupon-grid { grid-template-columns: 1fr; }
 }

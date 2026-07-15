@@ -7,20 +7,21 @@ use App\Models\Payment;
 use App\Models\ProductVariant;
 use App\Services\VNPayService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Mail\OrderConfirmationMail;
-use Illuminate\Support\Facades\Mail;
+    use Illuminate\Support\Facades\Mail;
 
-class PaymentController extends Controller
-{
-    public function __construct(private VNPayService $vnpay) {}
+    class PaymentController extends Controller
+    {
+        public function __construct(private VNPayService $vnpay) {}
 
-    /* ═══════════════════════════════════════════════════════════
-       1. TẠO URL THANH TOÁN VNPAY
-       POST /thanh-toan/vnpay/create
-       Body: { order_id }
-    ═══════════════════════════════════════════════════════════ */
+        /* ═══════════════════════════════════════════════════════════
+        1. TẠO URL THANH TOÁN VNPAY
+        POST /thanh-toan/vnpay/create
+        Body: { order_id }
+        ═══════════════════════════════════════════════════════════ */
     /* ═══════════════════════════════════════════════════════════
        1. TẠO / TIẾP TỤC URL THANH TOÁN VNPAY
        POST /thanh-toan/vnpay/create
@@ -77,6 +78,22 @@ class PaymentController extends Controller
        GET /thanh-toan/vnpay/return
        VNPay redirect user về đây với kết quả
     ═══════════════════════════════════════════════════════════ */
+    public function result(Order $order)
+    {
+        abort_if($order->user_id !== Auth::id(), 403);
+
+        $order->load('payment');
+        $payment = $order->payment;
+
+        $status = match (true) {
+            $payment && (int) $payment->status === Payment::STATUS_SUCCESS => 'success',
+            $payment && (int) $payment->status === Payment::STATUS_FAILED  => 'failed',
+            (int) $order->order_status === Order::STATUS_AWAITING_PAYMENT  => 'pending',
+            default                                                        => 'success',
+        };
+
+        return view('pages.payment.result', compact('order', 'payment', 'status'));
+    }
     public function returnVNPay(Request $request)
     {
         $data = $request->all();
@@ -96,17 +113,12 @@ class PaymentController extends Controller
         }
 
         if ($responseCode === '00') {
-            // Thanh toán thành công — xử lý trong handleSuccess
             $this->handleSuccess($order, $data);
-            return redirect()->route('orders.index')
-                ->with('success', 'Thanh toán thành công! Đơn hàng NX-' . str_pad($order->id, 6, '0', STR_PAD_LEFT) . ' đã được xác nhận.')
-                ->with('clear_cart', true);
+            return redirect()->route('payment.result', $order)->with('clear_cart', true);
         }
 
-        // Thanh toán thất bại / bị hủy
         $this->handleFailed($order, $data);
-        return redirect()->route('orders.show', $order)
-            ->with('error', 'Thanh toán không thành công. Vui lòng thử lại.');
+        return redirect()->route('payment.result', $order);
     }
 
     /* ═══════════════════════════════════════════════════════════

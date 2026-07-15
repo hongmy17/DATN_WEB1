@@ -8,8 +8,17 @@
     <div class="forgot-wrap">
         <div class="forgot-card">
             <a href="{{ url('/') }}"
-                style="display:flex;align-items:center;justify-content:center;gap:4px;font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--ink);margin-bottom:28px">
-                Nexus<span style="color:var(--accent)">.</span>
+                style="display:flex;align-items:center;justify-content:center;gap:10px;font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--ink);margin-bottom:28px">
+                <svg width="28" height="28" viewBox="0 0 34 34" fill="none">
+                    <rect width="34" height="34" rx="8" fill="var(--accent)" />
+                    <circle cx="17" cy="10" r="2.6" fill="#fff" />
+                    <circle cx="10" cy="22" r="2.6" fill="#fff" />
+                    <circle cx="24" cy="22" r="2.6" fill="#fff" />
+                    <line x1="17" y1="10" x2="10" y2="22" stroke="#fff" stroke-width="1.6" stroke-linecap="round" />
+                    <line x1="17" y1="10" x2="24" y2="22" stroke="#fff" stroke-width="1.6" stroke-linecap="round" />
+                    <line x1="10" y1="22" x2="24" y2="22" stroke="#fff" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+                <span>Nexus<span style="color:var(--accent)"></span></span>
             </a>
 
             <h1 style="font-family:var(--font-display);font-size:22px;font-weight:700;margin-bottom:6px">Quên mật khẩu?</h1>

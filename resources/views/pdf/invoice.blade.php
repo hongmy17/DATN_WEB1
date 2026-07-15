@@ -47,7 +47,7 @@
         }
 
         .logo-dot {
-            color: #E30019;
+            color: #2563EB;
         }
 
         .company-info {
@@ -72,7 +72,7 @@
         .invoice-code {
             font-size: 14px;
             font-weight: bold;
-            color: #E30019;
+            color: #2563EB;
             margin-top: 4px;
         }
 
@@ -85,7 +85,7 @@
         /* ── DIVIDER ──────────────────────── */
         .divider {
             height: 2px;
-            background: #E30019;
+            background: #2563EB;
             margin: 20px 0;
         }
 
@@ -276,7 +276,7 @@
         }
 
         .summary-total .summary-value {
-            color: #E30019;
+            color: #2563EB;
         }
 
         /* ── NOTE ─────────────────────────── */
@@ -327,7 +327,7 @@
         <table class="header-table">
             <tr>
                 <td>
-                    <div class="logo">Nexus<span class="logo-dot">.</span></div>
+                    <div class="logo">Nexus<span class="logo-dot"></span></div>
                     <div class="company-info">
                         123 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh<br>
                         Email: support@nexusstore.vn<br>

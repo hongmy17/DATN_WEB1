@@ -6,6 +6,9 @@ use App\Models\Order;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Carbon;
+use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\RefundRequests\RefundRequestResource;
+use App\Models\RefundRequest;
 
 class OrderStatsOverview extends BaseWidget
 {
@@ -32,6 +35,8 @@ class OrderStatsOverview extends BaseWidget
             Order::STATUS_CANCEL_REQUESTED,
         ])->count();
 
+        $pendingRefunds = RefundRequest::where('status', RefundRequest::STATUS_PENDING)->count();
+
         // Sparkline doanh thu 7 ngày gần nhất cho thẻ "Doanh thu tháng này"
         $last7Days = collect(range(6, 0))->map(function ($daysAgo) {
             return Order::revenue()
@@ -41,8 +46,6 @@ class OrderStatsOverview extends BaseWidget
 
         return [
             Stat::make('Doanh thu hôm nay', number_format($revenueToday, 0, ',', '.') . '₫')
-                ->description('COD: đã giao xong · Online: đã thanh toán')
-                ->descriptionIcon('heroicon-m-currency-dollar')
                 ->color('success'),
 
             Stat::make('Doanh thu tháng này', number_format($revenueMonth, 0, ',', '.') . '₫')
@@ -51,14 +54,21 @@ class OrderStatsOverview extends BaseWidget
                 ->chartColor('success')
                 ->color('success'),
 
-            Stat::make('Đơn hàng mới hôm nay', $ordersToday)
-                ->descriptionIcon('heroicon-m-shopping-bag')
-                ->color('info'),
+            Stat::make('Đơn mới hôm nay', $ordersToday)
+                ->color('info')
+                ->url(OrderResource::getUrl('index')),
 
             Stat::make('Đơn cần xử lý', $needAttention)
-                ->description('Chờ xác nhận + chờ xác nhận hủy')
-                ->descriptionIcon('heroicon-m-exclamation-triangle')
-                ->color($needAttention > 0 ? 'warning' : 'success'),
+                ->description('Chờ xác nhận / Chờ xác nhận hủy')
+                ->color($needAttention > 0 ? 'warning' : 'success')
+                ->url(OrderResource::getUrl('index', ['quick' => 'pending'])),
+
+            Stat::make('Yêu cầu hoàn tiền', $pendingRefunds)
+                ->description('Đang chờ xử lý')
+                ->color($pendingRefunds > 0 ? 'danger' : 'success')
+                ->url(RefundRequestResource::getUrl('index', [
+                    'tableFilters' => ['status' => ['value' => RefundRequest::STATUS_PENDING]],
+                ])),
         ];
     }
 }

@@ -47,8 +47,8 @@ class OrdersTable
 
                 // FIX: Bỏ emoji trong trạng thái
                 SelectColumn::make('order_status')
-                ->label('Trạng thái đơn hàng')
-                 ->selectablePlaceholder(false)
+                    ->label('Trạng thái đơn hàng')
+                    ->selectablePlaceholder(false)
                     ->options([
                         0 => 'Chờ xác nhận',
                         1 => 'Đã xác nhận',
@@ -95,6 +95,7 @@ class OrdersTable
                 SelectFilter::make('order_status')
                     ->label('Trạng thái')
                     ->placeholder('Tất cả')
+                    ->multiple()
                     ->options([
                         0 => 'Chờ xác nhận',
                         1 => 'Đã xác nhận',

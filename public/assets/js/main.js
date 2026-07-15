@@ -314,6 +314,12 @@ function initNavbar() {
     Wishlist.updateUI();
     const path = location.pathname;
     document.querySelectorAll(".navbar__nav-link").forEach((a) => {
+        // FIX: link kiểu href="#" (nút mở dropdown, không dẫn tới trang thật) khi
+        // đưa qua new URL() sẽ tự lấy pathname của TRANG HIỆN TẠI — luôn trùng
+        // với path, nên trước đây bị coi là "đang ở trang này" một cách sai lệch
+        // (ví dụ "Hỗ trợ" luôn sáng dù đang ở bất kỳ trang nào). Bỏ qua các link
+        // này, chỉ so khớp link có URL thật.
+        if (a.getAttribute("href") === "#") return;
         try {
             if (new URL(a.href).pathname === path) a.classList.add("active");
         } catch (e) {}

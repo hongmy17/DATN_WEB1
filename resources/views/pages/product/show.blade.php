@@ -29,19 +29,19 @@
         foreach ($product->variants as $variant) {
             $key = $variant->attributeValues->pluck('id')->sort()->join('-');
             $variantMap[$key] = [
-                'id'            => $variant->id,
-                'price'         => $variant->price,
-                'current_price' => $variant->current_price,   // giá thực tế (đã tính sale)
-                'compare'       => $variant->compare_price,
-                'sale_price'    => $variant->sale_price,
-                'sale_active'   => $variant->is_sale_active,
-                'sale_ends_at'  => $variant->sale_ends_at?->timestamp, // unix timestamp cho JS countdown
-                'stock'         => $variant->stock_quantity ?? 0,
-                'manage_stock'  => $variant->manage_stock ?? true,
-                'sku'           => $variant->sku,
-                'is_default'    => $variant->is_default,
-                'image'         => $variant->image ? asset('storage/' . $variant->image) : null,
-                'label'         => $variant->attributeValues->pluck('value')->implode(' / '),
+                'id' => $variant->id,
+                'price' => $variant->price,
+                'current_price' => $variant->current_price, // giá thực tế (đã tính sale)
+                'compare' => $variant->compare_price,
+                'sale_price' => $variant->sale_price,
+                'sale_active' => $variant->is_sale_active,
+                'sale_ends_at' => $variant->sale_ends_at?->timestamp, // unix timestamp cho JS countdown
+                'stock' => $variant->stock_quantity ?? 0,
+                'manage_stock' => $variant->manage_stock ?? true,
+                'sku' => $variant->sku,
+                'is_default' => $variant->is_default,
+                'image' => $variant->image ? asset('storage/' . $variant->image) : null,
+                'label' => $variant->attributeValues->pluck('value')->implode(' / '),
             ];
         }
 
@@ -153,8 +153,8 @@
                     <div class="stars">
                         @for ($i = 1; $i <= 5; $i++)
                             @php $fill = $i <= round($reviewStats['avg'] ?? 0) ? '#F59E0B' : '#E5E3DE'; @endphp
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="{{ $fill }}" stroke="{{ $fill }}"
-                                stroke-width="1.5">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="{{ $fill }}"
+                                stroke="{{ $fill }}" stroke-width="1.5">
                                 <polygon
                                     points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                             </svg>
@@ -177,7 +177,9 @@
                     {{-- Flash sale badge --}}
                     @if ($defaultVariant?->is_sale_active)
                         <div class="flash-sale-badge" id="flashSaleBadge">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                            </svg>
                             FLASH SALE
                         </div>
                     @else
@@ -185,12 +187,15 @@
                     @endif
 
                     <div class="price-block__row">
-                        <span class="price-block__current" id="currentPrice">{{ number_format($currentPrice, 0, ',', '.') }}₫</span>
+                        <span class="price-block__current"
+                            id="currentPrice">{{ number_format($currentPrice, 0, ',', '.') }}₫</span>
 
                         {{-- Giá gốc (compare_price) --}}
                         @if ($comparePrice && $comparePrice > $currentPrice)
-                            <span class="price-block__old" id="comparePrice">{{ number_format($comparePrice, 0, ',', '.') }}₫</span>
-                            <span class="price-block__save" id="saveBadge">Tiết kiệm {{ number_format($comparePrice - $currentPrice, 0, ',', '.') }}₫</span>
+                            <span class="price-block__old"
+                                id="comparePrice">{{ number_format($comparePrice, 0, ',', '.') }}₫</span>
+                            <span class="price-block__save" id="saveBadge">Tiết kiệm
+                                {{ number_format($comparePrice - $currentPrice, 0, ',', '.') }}₫</span>
                         @else
                             <span class="price-block__old" id="comparePrice" style="display:none"></span>
                             <span class="price-block__save" id="saveBadge" style="display:none"></span>
@@ -198,7 +203,8 @@
 
                         {{-- Giá trước khi sale (chỉ hiện khi đang flash sale) --}}
                         @if ($defaultVariant?->is_sale_active)
-                            <span class="price-block__original" id="originalPrice">{{ number_format($defaultVariant->price, 0, ',', '.') }}₫</span>
+                            <span class="price-block__original"
+                                id="originalPrice">{{ number_format($defaultVariant->price, 0, ',', '.') }}₫</span>
                         @else
                             <span class="price-block__original" id="originalPrice" style="display:none"></span>
                         @endif
@@ -814,6 +820,7 @@
 
             // Đồng hồ đếm ngược
             let _countdownTimer = null;
+
             function startCountdown(endTs) {
                 if (_countdownTimer) clearInterval(_countdownTimer);
                 const wrap = document.getElementById('countdownWrap');
@@ -830,9 +837,9 @@
                     const h = Math.floor(diff / 3600000);
                     const m = Math.floor((diff % 3600000) / 60000);
                     const s = Math.floor((diff % 60000) / 1000);
-                    document.getElementById('cdHours').textContent   = String(h).padStart(2,'0');
-                    document.getElementById('cdMinutes').textContent = String(m).padStart(2,'0');
-                    document.getElementById('cdSeconds').textContent = String(s).padStart(2,'0');
+                    document.getElementById('cdHours').textContent = String(h).padStart(2, '0');
+                    document.getElementById('cdMinutes').textContent = String(m).padStart(2, '0');
+                    document.getElementById('cdSeconds').textContent = String(s).padStart(2, '0');
                 }
                 tick();
                 _countdownTimer = setInterval(tick, 1000);
@@ -850,13 +857,15 @@
                     displayPrice.toLocaleString('vi-VN') + '₫';
 
                 // Flash sale UI
-                const flashBadge   = document.getElementById('flashSaleBadge');
-                const origPriceEl  = document.getElementById('originalPrice');
+                const flashBadge = document.getElementById('flashSaleBadge');
+                const origPriceEl = document.getElementById('originalPrice');
                 const countdownWrap = document.getElementById('countdownWrap');
 
                 if (v.sale_active && v.sale_price) {
                     // Đang flash sale
-                    if (flashBadge) { flashBadge.style.display = ''; }
+                    if (flashBadge) {
+                        flashBadge.style.display = '';
+                    }
                     if (origPriceEl) {
                         origPriceEl.textContent = v.price.toLocaleString('vi-VN') + '₫';
                         origPriceEl.style.display = '';
@@ -864,19 +873,25 @@
                     startCountdown(v.sale_ends_at);
                 } else {
                     // Không có flash sale
-                    if (flashBadge)   flashBadge.style.display = 'none';
-                    if (origPriceEl)  origPriceEl.style.display = 'none';
+                    if (flashBadge) flashBadge.style.display = 'none';
+                    if (origPriceEl) origPriceEl.style.display = 'none';
                     if (countdownWrap) countdownWrap.style.display = 'none';
                     if (_countdownTimer) clearInterval(_countdownTimer);
                 }
 
                 const compareEl = document.getElementById('comparePrice');
-                const saveEl    = document.getElementById('saveBadge');
+                const saveEl = document.getElementById('saveBadge');
                 const galleryBadges = document.getElementById('galleryBadges');
                 const galleryDiscountEl = document.getElementById('galleryDiscountBadge');
                 if (v.compare && v.compare > displayPrice) {
-                    if (compareEl) { compareEl.textContent = v.compare.toLocaleString('vi-VN') + '₫'; compareEl.style.display = ''; }
-                    if (saveEl)    { saveEl.textContent = 'Tiết kiệm ' + (v.compare - displayPrice).toLocaleString('vi-VN') + '₫'; saveEl.style.display = ''; }
+                    if (compareEl) {
+                        compareEl.textContent = v.compare.toLocaleString('vi-VN') + '₫';
+                        compareEl.style.display = '';
+                    }
+                    if (saveEl) {
+                        saveEl.textContent = 'Tiết kiệm ' + (v.compare - displayPrice).toLocaleString('vi-VN') + '₫';
+                        saveEl.style.display = '';
+                    }
 
                     // Đồng bộ badge giảm giá góc ảnh với biến thể đang chọn
                     const pct = Math.round((1 - displayPrice / v.compare) * 100);
@@ -888,7 +903,7 @@
                     }
                 } else {
                     if (compareEl) compareEl.style.display = 'none';
-                    if (saveEl)    saveEl.style.display = 'none';
+                    if (saveEl) saveEl.style.display = 'none';
                     if (galleryBadges) galleryBadges.style.display = 'none';
                 }
 
@@ -998,32 +1013,12 @@
                 document.getElementById('tab-' + id).classList.add('active');
             }
 
-            let selectedStar = 0;
-
-            function selectStar(n) {
-                selectedStar = n;
-                document.querySelectorAll('#starPicker svg').forEach((s, i) => {
-                    const on = i < n;
-                    s.setAttribute('fill', on ? '#F59E0B' : '#E5E3DE');
-                    s.setAttribute('stroke', on ? '#F59E0B' : '#E5E3DE');
-                });
-            }
-
-            function submitReview() {
-                if (!selectedStar) {
-                    Toast.show('Vui lòng chọn số sao!', 'error');
-                    return;
-                }
-                Toast.show('Cảm ơn bạn đã đánh giá!', 'success');
-                selectStar(0);
-            }
-
             // Khởi tạo countdown cho variant mặc định
-        @if ($defaultVariant?->is_sale_active && $defaultVariant?->sale_ends_at)
-        startCountdown({{ $defaultVariant->sale_ends_at->timestamp }});
-        @endif
+            @if ($defaultVariant?->is_sale_active && $defaultVariant?->sale_ends_at)
+                startCountdown({{ $defaultVariant->sale_ends_at->timestamp }});
+            @endif
 
-        // Khởi tạo cart button (variant mặc định)
+            // Khởi tạo cart button (variant mặc định)
             (function() {
                 const btnCart = document.getElementById('btnAddCart');
                 const qtyInput = document.getElementById('qtyInput');

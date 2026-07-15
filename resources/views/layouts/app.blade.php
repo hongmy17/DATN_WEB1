@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Nexus Store — Công nghệ đỉnh cao')</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
     <style>
         /* ── Gợi ý tìm kiếm trực tiếp (autocomplete) ─────────────────────── */
@@ -54,7 +55,7 @@
 
         .navbar__search-item-price {
             font-size: 12px;
-            color: #d9432e;
+            color: #2563EB;
             margin-top: 2px;
         }
 
@@ -74,7 +75,19 @@
     <nav class="navbar" id="navbar">
         <div class="navbar__inner">
             <a href="{{ url('/') }}" class="navbar__logo">
-                Nexus<span class="navbar__logo-accent">.</span>
+                <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+                    <rect width="34" height="34" rx="8" fill="var(--accent)" />
+                    <circle cx="17" cy="10" r="2.6" fill="#fff" />
+                    <circle cx="10" cy="22" r="2.6" fill="#fff" />
+                    <circle cx="24" cy="22" r="2.6" fill="#fff" />
+                    <line x1="17" y1="10" x2="10" y2="22" stroke="#fff" stroke-width="1.6"
+                        stroke-linecap="round" />
+                    <line x1="17" y1="10" x2="24" y2="22" stroke="#fff" stroke-width="1.6"
+                        stroke-linecap="round" />
+                    <line x1="10" y1="22" x2="24" y2="22" stroke="#fff" stroke-width="1.6"
+                        stroke-linecap="round" />
+                </svg>
+                <span>Nexus<span class="navbar__logo-accent"></span></span>
             </a>
 
             <nav class="navbar__nav">
@@ -128,12 +141,11 @@
                 </div>
             </nav>
 
-            <form class="navbar__search-wrap" id="navSearchForm" action="{{ route('products.index') }}" method="GET"
-                role="search" style="position:relative">
-                <button type="submit" aria-label="Tìm kiếm"
-                    style="background:none;border:none;padding:0;display:flex;align-items:center;cursor:pointer">
-                    <svg class="navbar__search-btn" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <form class="navbar__search-wrap" id="navSearchForm" action="{{ route('products.index') }}"
+                method="GET" role="search" style="position:relative">
+                <button type="submit" aria-label="Tìm kiếm" class="navbar__search-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round">
                         <circle cx="11" cy="11" r="8" />
                         <line x1="21" y1="21" x2="16.65" y2="16.65" />
                     </svg>

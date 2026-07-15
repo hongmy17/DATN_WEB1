@@ -5,7 +5,7 @@
     <style>
         /* ── HERO v3 ─────────────────────────────── */
         .hero-v3 {
-            background: linear-gradient(135deg, #0d1117 0%, #161b22 40%, #1a1f2e 100%);
+            background: linear-gradient(135deg, #0F172A 0%, #16213E 50%, #2563EB 100%);
             padding: 60px 0 0;
             overflow: hidden;
             position: relative;
@@ -15,7 +15,7 @@
             position: absolute;
             border-radius: 50%;
             pointer-events: none;
-            background: radial-gradient(circle, rgba(227, 0, 25, .18) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(37, 99, 235, .18) 0%, transparent 70%);
         }
 
         .hero-v3__grid {
@@ -30,9 +30,9 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: rgba(227, 0, 25, .15);
-            border: 1px solid rgba(227, 0, 25, .3);
-            color: #E30019;
+            background: rgba(245, 158, 11, .15);
+            border: 1px solid rgba(245, 158, 11, .3);
+            color: #F59E0B;
             padding: 5px 14px;
             border-radius: 99px;
             font-size: 11px;
@@ -46,7 +46,7 @@
             width: 6px;
             height: 6px;
             border-radius: 50%;
-            background: #E30019;
+            background: #F59E0B;
             animation: pulse 2s ease-in-out infinite;
         }
 
@@ -75,7 +75,7 @@
         }
 
         .hero-v3__title-red {
-            color: #E30019;
+            color: #F59E0B;
         }
 
         .hero-v3__sub {
@@ -96,7 +96,7 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: #E30019;
+            background: #F59E0B;
             color: #fff;
             padding: 13px 28px;
             border-radius: 8px;
@@ -109,7 +109,7 @@
         }
 
         .hero-v3__btn-primary:hover {
-            background: #C0001A;
+            background: #D97706;
         }
 
         .hero-v3__btn-outline {
@@ -176,11 +176,11 @@
             width: 36px;
             height: 36px;
             border-radius: 8px;
-            background: rgba(227, 0, 25, .15);
+            background: rgba(37, 99, 235, .18);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #E30019;
+            color: #60A5FA;
             margin-bottom: 10px;
         }
 
@@ -198,7 +198,7 @@
 
         /* Promo strip */
         .promo-strip {
-            background: #E30019;
+            background: #F59E0B;
             padding: 10px 0;
             margin-top: 0;
         }
@@ -360,7 +360,7 @@
     </div>
 
     {{-- ── CATEGORIES ──────────────────────── --}}
-    <section class="section">
+    <section class="section" style="padding-top:36px">
         <div class="container">
             <div class="section-header section-header-center reveal" style="text-align:center">
                 <div class="section-eyebrow">Danh mục</div>
@@ -392,51 +392,73 @@
     <section class="section" style="padding-top:0">
         <div class="container">
             <div class="promo-grid">
-                {{-- FIX: SP nổi bật nhất từ DB --}}
+                {{-- Card đen: sản phẩm BÁN CHẠY NHẤT (30 ngày) --}}
                 @isset($topProduct)
                     <a href="{{ route('products.show', $topProduct->slug) }}" class="promo-card promo-card--dark"
                         style="text-decoration:none">
-                        <div class="promo-card__orb" style="width:300px;height:300px;top:-80px;right:-80px;"></div>
-                        <div class="promo-card__product">
+                        <div class="promo-card__body">
+                            <div class="promo-card__eyebrow">
+                                {{ ($topProduct->sold_count ?? 0) > 0 ? 'Bán chạy nhất' : $topProduct->category?->name ?? 'Nổi bật' }}
+                            </div>
+                            <h3 class="promo-card__title">{{ $topProduct->name }}</h3>
+                            <span class="btn btn-accent" style="width:fit-content">Mua ngay</span>
+                        </div>
+                        <div class="promo-card__media">
                             @if ($topProduct->thumbnail)
                                 <img src="{{ asset('storage/' . $topProduct->thumbnail) }}" alt="{{ $topProduct->name }}"
-                                    style="width:160px;height:160px;object-fit:contain;opacity:.85;margin:auto">
+                                    onerror="this.style.display='none'">
                             @else
-                                <svg width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width=".5" stroke-linecap="round" style="color:rgba(255,255,255,.3)">
+                                <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width=".5" stroke-linecap="round" style="color:rgba(255,255,255,.4)">
                                     <path
                                         d="{{ $topProduct->category?->icon_path ?? 'M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z' }}" />
                                 </svg>
                             @endif
                         </div>
-                        <div class="promo-card__eyebrow">{{ $topProduct->category?->name ?? 'Nổi bật' }}</div>
-                        <h3 class="promo-card__title">{{ $topProduct->name }}</h3>
-                        <span class="btn btn-accent btn-sm" style="width:fit-content">Mua ngay</span>
                     </a>
                 @else
                     <a href="{{ route('products.index') }}" class="promo-card promo-card--dark"
                         style="text-decoration:none">
-                        <div class="promo-card__orb" style="width:300px;height:300px;top:-80px;right:-80px;"></div>
-                        <div class="promo-card__eyebrow">Khám phá ngay</div>
-                        <h3 class="promo-card__title">Phụ kiện công nghệ<br>chính hãng giá tốt</h3>
-                        <span class="btn btn-accent btn-sm" style="width:fit-content">Xem sản phẩm</span>
+                        <div class="promo-card__body">
+                            <div class="promo-card__eyebrow">Khám phá ngay</div>
+                            <h3 class="promo-card__title">Phụ kiện công nghệ<br>chính hãng giá tốt</h3>
+                            <span class="btn btn-accent" style="width:fit-content">Xem sản phẩm</span>
+                        </div>
                     </a>
                 @endisset
 
-                <a href="{{ url('khuyen-mai') }}" class="promo-card promo-card--accent" style="text-decoration:none">
-                    <div class="promo-card__orb"
-                        style="width:280px;height:280px;top:-60px;right:-60px;background:rgba(255,255,255,.08);"></div>
-                    <div class="promo-card__product">
-                        <svg width="160" height="160" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width=".6" stroke-linecap="round">
-                            <path d="M12 18h.01M8 21h8a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1z" />
-                        </svg>
-                    </div>
-                    <div class="promo-card__eyebrow">Flash Sale hôm nay</div>
-                    <h3 class="promo-card__title">Giảm đến 40%<br>điện thoại flagship</h3>
-                    <span class="btn btn-sm"
-                        style="background:rgba(255,255,255,.2);color:#fff;width:fit-content;border:none">Xem ngay</span>
-                </a>
+                {{-- Card cam: sản phẩm FLASH SALE giảm % SÂU NHẤT đang thật sự active --}}
+                @isset($flashSaleProduct)
+                    <a href="{{ route('products.show', $flashSaleProduct->slug) }}" class="promo-card promo-card--accent"
+                        style="text-decoration:none">
+                        <div class="promo-card__body">
+                            <div class="promo-card__eyebrow">Flash Sale hôm nay</div>
+                            <h3 class="promo-card__title">Giảm
+                                {{ $flashSaleDiscountPercent }}%<br>{{ $flashSaleProduct->name }}</h3>
+                            <span class="btn promo-card__cta-white" style="width:fit-content">Xem ngay</span>
+                        </div>
+                        <div class="promo-card__media">
+                            @if ($flashSaleProduct->thumbnail)
+                                <img src="{{ asset('storage/' . $flashSaleProduct->thumbnail) }}"
+                                    alt="{{ $flashSaleProduct->name }}" onerror="this.style.display='none'">
+                            @else
+                                <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width=".5" stroke-linecap="round" style="color:rgba(255,255,255,.45)">
+                                    <path
+                                        d="{{ $flashSaleProduct->category?->icon_path ?? 'M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z' }}" />
+                                </svg>
+                            @endif
+                        </div>
+                    </a>
+                @else
+                    <a href="{{ url('khuyen-mai') }}" class="promo-card promo-card--accent" style="text-decoration:none">
+                        <div class="promo-card__body">
+                            <div class="promo-card__eyebrow">Flash Sale hôm nay</div>
+                            <h3 class="promo-card__title">Ưu đãi mỗi ngày<br>đừng bỏ lỡ</h3>
+                            <span class="btn promo-card__cta-white" style="width:fit-content">Xem ngay</span>
+                        </div>
+                    </a>
+                @endisset
             </div>
         </div>
     </section>
