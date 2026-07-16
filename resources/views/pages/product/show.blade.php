@@ -73,8 +73,8 @@
                     <button class="gallery__wish" id="wishBtn" data-wish-id="{{ $product->id }}"
                         data-wish-name="{{ addslashes($product->name) }}"
                         data-wish-price="{{ $defaultVariant?->price ?? 0 }}" data-wish-slug="{{ $product->slug }}"
-                        data-wish-img="{{ $defaultVariant?->image ?? ($primaryImage->image_url ?? '') }}"
-                        aria-label="Yêu thích">
+                        data-wish-img="{{ $defaultVariant?->image ? asset('storage/' . $defaultVariant->image) : ($primaryImage?->image_url ? asset('storage/' . $primaryImage->image_url) : '') }}"
+                        data-wish-variant-id="{{ $defaultVariant?->id ?? '' }}" aria-label="Yêu thích">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                             <path
@@ -162,6 +162,11 @@
                     </div>
                     <span class="pdp-rating__score">{{ number_format($reviewStats['avg'] ?? 0, 1) }}</span>
                     <span class="pdp-rating__count">{{ $reviewStats['total'] ?? 0 }} đánh giá</span>
+                    @if (($product->sold_count ?? 0) > 0)
+                        <div class="pdp-rating__sep"></div>
+                        <span style="font-size:13px;color:var(--ink-muted)">Đã bán
+                            {{ number_format($product->sold_count) }}</span>
+                    @endif
                     <div class="pdp-rating__sep"></div>
                     <div class="pdp-stock {{ $stockQty > 0 ? 'in-stock' : 'out-stock' }}" id="stockStatus">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -320,7 +325,7 @@
                         </svg>
                         Thêm vào giỏ
                     </button>
-                    <button class="btn-buy" onclick="Toast.show('Đang chuyển đến thanh toán...','info')">
+                    <button class="btn-buy" id="btnBuyNow">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round">
                             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
@@ -984,6 +989,33 @@
                         qty,
                     });
                 };
+
+                // FIX: nút "Mua ngay" trước đây chỉ hiện thông báo giả, không làm gì cả.
+                // Giờ thêm đúng sản phẩm/biến thể đang chọn vào giỏ, đợi thêm xong rồi
+                // mới chuyển sang trang thanh toán (không redirect sớm khi chưa thêm kịp).
+                const btnBuy = document.getElementById('btnBuyNow');
+                if (btnBuy) btnBuy.onclick = async () => {
+                    if (!inStock) {
+                        Toast.show('Sản phẩm đã hết hàng', 'error');
+                        return;
+                    }
+                    const qty = parseInt(qtyInput?.value || 1);
+                    if (v.manage_stock && qty > v.stock) {
+                        Toast.show('Số lượng vượt quá tồn kho (' + v.stock + ')', 'warning');
+                        return;
+                    }
+                    await Cart.add({
+                        variant_id: v.id,
+                        id: {{ $product->id }},
+                        name: '{{ addslashes($product->name) }}',
+                        variant: v.label || '',
+                        price: v.price,
+                        img: v.image ||
+                            '{{ $product->thumbnail ? asset('storage/' . $product->thumbnail) : '' }}',
+                        qty,
+                    });
+                    window.location.href = '{{ route('checkout.index') }}';
+                };
             }
 
             function changeQty(delta) {
@@ -999,11 +1031,6 @@
                     const wrap = document.getElementById('mainImgWrap');
                     wrap.innerHTML = `<img src="${imgSrc}" alt="" style="max-width:90%;max-height:90%;object-fit:contain">`;
                 }
-            }
-
-            function toggleWish() {
-                const btn = document.getElementById('wishBtn');
-                Wishlist.toggle(btn.dataset.wishId, btn.dataset.wishName, parseInt(btn.dataset.wishPrice), '');
             }
 
             function switchTab(id, btn) {
@@ -1052,6 +1079,30 @@
                         img: '{{ $product->thumbnail ? asset('storage/' . $product->thumbnail) : '' }}',
                         qty,
                     });
+                };
+
+                // FIX: đồng bộ Mua ngay cho biến thể mặc định (khi trang vừa tải, chưa đổi biến thể)
+                const btnBuy = document.getElementById('btnBuyNow');
+                if (btnBuy) btnBuy.onclick = async () => {
+                    if (!inStock) {
+                        Toast.show('Sản phẩm đã hết hàng', 'error');
+                        return;
+                    }
+                    const qty = parseInt(qtyInput?.value || 1);
+                    if (manage && qty > stock) {
+                        Toast.show('Số lượng vượt quá tồn kho (' + stock + ')', 'warning');
+                        return;
+                    }
+                    await Cart.add({
+                        variant_id: {{ $defaultVariant?->id ?? 0 }},
+                        id: {{ $product->id }},
+                        name: '{{ addslashes($product->name) }}',
+                        variant: '{{ addslashes($defaultVariant?->label ?? '') }}',
+                        price: {{ $currentPrice }},
+                        img: '{{ $product->thumbnail ? asset('storage/' . $product->thumbnail) : '' }}',
+                        qty,
+                    });
+                    window.location.href = '{{ route('checkout.index') }}';
                 };
             })();
 

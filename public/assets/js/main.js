@@ -207,7 +207,7 @@ const Wishlist = {
         localStorage.setItem("nx_wish", JSON.stringify(w));
         Wishlist.updateUI();
     },
-    toggle(id, name, price, img, slug) {
+    toggle(id, name, price, img, slug, variantId) {
         const w = Wishlist.get();
         const sid = String(id);
         const idx = w.findIndex((i) => String(i.id) === sid);
@@ -221,6 +221,7 @@ const Wishlist = {
                 price: price || 0,
                 img: img || "",
                 slug: slug || "",
+                variant_id: variantId || "", // FIX: lưu kèm biến thể mặc định để thêm giỏ được sau này
             });
             Toast.show("Đã thêm vào yêu thích", "success");
         }
@@ -297,6 +298,7 @@ function initWishlistButtons() {
             parseInt(btn.dataset.wishPrice || "0"),
             btn.dataset.wishImg || "",
             btn.dataset.wishSlug || "",
+            btn.dataset.wishVariantId || "",
         );
     });
 }

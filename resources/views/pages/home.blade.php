@@ -509,8 +509,9 @@
                             @endif
                             <button class="product-card__wish" data-wish-id="{{ $p->id }}"
                                 data-wish-name="{{ addslashes($p->name) }}" data-wish-price="{{ $minPrice }}"
-                                data-wish-slug="{{ $p->slug }}" data-wish-img="{{ $p->thumbnail ?? '' }}"
-                                aria-label="Yêu thích">
+                                data-wish-slug="{{ $p->slug }}"
+                                data-wish-img="{{ $p->thumbnail ? asset('storage/' . $p->thumbnail) : '' }}"
+                                data-wish-variant-id="{{ $defVar?->id ?? '' }}" aria-label="Yêu thích">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
                                     <path
@@ -534,7 +535,14 @@
                             </div>
                             <div class="product-card__actions">
                                 <button class="btn btn-ghost"
-                                    onclick="Cart.add({id:{{ $defVar?->id ?? $p->id }},name:'{{ addslashes($p->name) }}',price:{{ $minPrice }},img:'{{ $p->thumbnail ?? '' }}',slug:'{{ $p->slug }}'})">
+                                    onclick="Cart.add({
+                                    variant_id: {{ $defVar?->id ?? 0 }},
+                                    id:         {{ $p->id }},
+                                    name:       '{{ addslashes($p->name) }}',
+                                    price:      {{ $defVar?->current_price ?? $minPrice }},
+                                    img:        '{{ $p->thumbnail ? asset('storage/' . $p->thumbnail) : '' }}',
+                                    slug:       '{{ $p->slug }}'
+                                })">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                                         stroke="currentColor" stroke-width="2" stroke-linecap="round">
                                         <circle cx="9" cy="21" r="1" />
@@ -550,6 +558,11 @@
                             <div class="product-card__brand">{{ $p->category?->name ?? '' }}</div>
                             <div class="product-card__name"><a
                                     href="{{ route('products.show', $p->slug) }}">{{ $p->name }}</a></div>
+                            @if (($p->sold_count ?? 0) > 0)
+                                <div style="font-size:11px;color:var(--ink-muted);margin-bottom:2px">
+                                    Đã bán {{ number_format($p->sold_count) }}
+                                </div>
+                            @endif
                             <div class="product-card__price">
                                 <span
                                     class="product-card__price-current">{{ number_format($minPrice, 0, ',', '.') }}₫</span>

@@ -20,7 +20,7 @@
                                 stroke-width="1.6" stroke-linecap="round" />
                         </svg>
                         <div style="font-family:var(--font-display);font-size:22px;font-weight:700;color:#fff">
-                            Nexus<span style="color:#F59E0B">.</span>
+                            Nexus<span style="color:#F59E0B"></span>
                         </div>
                     </div>
                     <p

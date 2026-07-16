@@ -147,7 +147,12 @@ class CartItemController extends Controller
             'variant'      => $variantLabel ?: '',
             'price'        => (int) ($variant?->current_price ?? 0),
             'qty'          => $item->quantity,
-            'img'          => $variant?->display_image ?? '',
+            // FIX: 'display_image' không tồn tại trên model ProductVariant (chỉ có
+            // cột 'image') nên trước đây luôn trả về rỗng. Ưu tiên ảnh riêng của
+            // biến thể, nếu biến thể không có ảnh thì lấy ảnh đại diện của sản phẩm.
+            'img'          => $variant?->image
+                ? asset('storage/' . $variant->image)
+                : ($product?->thumbnail ? asset('storage/' . $product->thumbnail) : ''),
         ];
     }
 }

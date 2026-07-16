@@ -71,12 +71,19 @@
                             @foreach ($order->items as $item)
                                 <div class="order-item-row">
                                     <div class="order-item-img">
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="1" stroke-linecap="round">
-                                            <rect x="2" y="3" width="20" height="14" rx="2" />
-                                            <line x1="8" y1="21" x2="16" y2="21" />
-                                            <line x1="12" y1="17" x2="12" y2="21" />
-                                        </svg>
+                                        @if ($item->product_thumbnail)
+                                            <img src="{{ asset('storage/' . $item->product_thumbnail) }}"
+                                                alt="{{ $item->product_name }}"
+                                                style="width:100%;height:100%;object-fit:contain"
+                                                onerror="this.style.display='none'">
+                                        @else
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="1" stroke-linecap="round">
+                                                <rect x="2" y="3" width="20" height="14" rx="2" />
+                                                <line x1="8" y1="21" x2="16" y2="21" />
+                                                <line x1="12" y1="17" x2="12" y2="21" />
+                                            </svg>
+                                        @endif
                                     </div>
                                     <div>
                                         <div class="order-item-name">{{ $item->product_name }}</div>

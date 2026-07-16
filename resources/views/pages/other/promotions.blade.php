@@ -207,8 +207,9 @@
                         </div>
                         <button class="product-card__wish" data-wish-id="{{ $p->id }}"
                             data-wish-name="{{ addslashes($p->name) }}" data-wish-price="{{ $minPrice }}"
-                            data-wish-slug="{{ $p->slug }}" data-wish-img="{{ $p->thumbnail ?? '' }}"
-                            aria-label="Yêu thích">
+                            data-wish-slug="{{ $p->slug }}"
+                            data-wish-img="{{ $p->thumbnail ? asset('storage/' . $p->thumbnail) : '' }}"
+                            data-wish-variant-id="{{ $defVar?->id ?? '' }}" aria-label="Yêu thích">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="1.8" stroke-linecap="round">
                                 <path
@@ -231,7 +232,7 @@
                         </div>
                         <div class="product-card__actions">
                             <button class="btn btn-ghost"
-                                onclick="Cart.add({id:{{ $p->id }},variant_id:{{ $defVar?->id ?? 0 }},name:'{{ addslashes($p->name) }}',price:{{ $defVar?->current_price ?? ($defVar?->price ?? $minPrice) }},img:'{{ $p->thumbnail ?? '' }}',slug:'{{ $p->slug }}'})">
+                                onclick="Cart.add({id:{{ $p->id }},variant_id:{{ $defVar?->id ?? 0 }},name:'{{ addslashes($p->name) }}',price:{{ $defVar?->current_price ?? ($defVar?->price ?? $minPrice) }},img:'{{ $p->thumbnail ? asset('storage/' . $p->thumbnail) : '' }}',slug:'{{ $p->slug }}'})">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                                     stroke="currentColor" stroke-width="2" stroke-linecap="round">
                                     <circle cx="9" cy="21" r="1" />

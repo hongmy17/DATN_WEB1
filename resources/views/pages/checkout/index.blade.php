@@ -107,12 +107,22 @@
                     </div>
 
                     @php $payMethods = [
-    ['value' => 'cod',     'label' => 'Thanh toán khi nhận hàng (COD)', 'sub' => 'Trả tiền mặt khi nhận hàng',        'icon' => 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'],
-    ['value' => 'vnpay',   'label' => 'VNPay',                          'sub' => 'Thanh toán qua cổng VNPay',          'icon' => 'M1 4h22v16H1zM1 10h22'],
-//     ['value' => 'momo',    'label' => 'Ví MoMo',                        'sub' => 'Thanh toán qua ví điện tử MoMo',     'icon' => 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14l-4-4h3V8h2v4h3z'],
-//     ['value' => 'bank',    'label' => 'Chuyển khoản ngân hàng',         'sub' => 'Chuyển khoản qua QR hoặc tài khoản', 'icon' => 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10'],
-//     ['value' => 'zalopay', 'label' => 'ZaloPay',                        'sub' => 'Thanh toán qua ví ZaloPay',          'icon' => 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'],
-]; @endphp
+                            [
+                                'value' => 'cod',
+                                'label' => 'Thanh toán khi nhận hàng (COD)',
+                                'sub' => 'Trả tiền mặt khi nhận hàng',
+                                'icon' => 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+                            ],
+                            [
+                                'value' => 'vnpay',
+                                'label' => 'VNPay',
+                                'sub' => 'Thanh toán qua cổng VNPay',
+                                'icon' => 'M1 4h22v16H1zM1 10h22',
+                            ],
+                            //     ['value' => 'momo',    'label' => 'Ví MoMo',                        'sub' => 'Thanh toán qua ví điện tử MoMo',     'icon' => 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14l-4-4h3V8h2v4h3z'],
+                            //     ['value' => 'bank',    'label' => 'Chuyển khoản ngân hàng',         'sub' => 'Chuyển khoản qua QR hoặc tài khoản', 'icon' => 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10'],
+                            //     ['value' => 'zalopay', 'label' => 'ZaloPay',                        'sub' => 'Thanh toán qua ví ZaloPay',          'icon' => 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'],
+                    ]; @endphp
 
                     @foreach ($payMethods as $i => $m)
                         <label class="pay-option {{ $i === 0 ? 'selected' : '' }}">
@@ -140,10 +150,10 @@
 
                 <div id="summaryItems">
                     {{-- render by JS --}}
-                    
+
                 </div>
-                
-                
+
+
                 <div class="summary-divider"></div>
 
                 <div id="couponSection">
@@ -165,7 +175,7 @@
                             </div>
                         </div>
                     @endif
-                    
+
                     <div class="coupon-row" id="couponInputRow">
                         <input type="text" class="coupon-input" id="couponCode" placeholder="Mã giảm giá">
                         <button class="btn btn-outline btn-sm" onclick="applyCoupon()">Áp dụng</button>
@@ -249,7 +259,10 @@
             container.innerHTML = items.map(i => `
     <div class="summary-item-row">
       <div class="summary-item-img">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        ${i.img
+            ? `<img src="${i.img}" alt="${i.name}" style="width:100%;height:100%;object-fit:contain" onerror="this.style.display='none'">`
+            : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`
+        }
         <span class="summary-item-qty">${i.qty}</span>
       </div>
       <div class="summary-item-info">
@@ -381,7 +394,7 @@
                     body: JSON.stringify({
                         cart,
                         address_id: addrPayload.address_id,
-                        payment_method: payMethod, 
+                        payment_method: payMethod,
                         coupon_code: document.getElementById('couponCode')?.value || '',
                         note: document.getElementById('orderNote')?.value || '',
                     })
@@ -394,7 +407,8 @@
                     }
                     if (!r.ok && r.status === 422) {
                         return r.json().then(err => {
-                            const msgs = err.errors ? Object.values(err.errors).flat().join('\n') : (err.message || 'Dữ liệu không hợp lệ');
+                            const msgs = err.errors ? Object.values(err.errors).flat().join('\n') : (err
+                                .message || 'Dữ liệu không hợp lệ');
                             Toast.show(msgs, 'error');
                             throw new Error('validation');
                         });
@@ -403,7 +417,7 @@
                 })
                 .then(data => {
                     if (data.success) {
-                    console.log('Response:', data);
+                        console.log('Response:', data);
                         // Nếu là VNPay → redirect sang cổng thanh toán, không xóa giỏ ở đây
                         if (data.redirect === 'vnpay' && data.payment_url) {
                             Toast.show('Đang chuyển sang VNPay...', 'info');
