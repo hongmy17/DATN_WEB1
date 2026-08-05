@@ -1,59 +1,4 @@
-<style>
-        /* ===== Ô gõ-để-tìm cho Tỉnh/Thành phố & Phường/Xã ===== */
-        .addr-combo { position: relative; }
-        .addr-combo-panel {
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 0;
-            right: 0;
-            z-index: 30;
-            background: #fff;
-            border: 1px solid var(--border, #E3E3E3);
-            border-radius: 8px;
-            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
-            max-height: 240px;
-            overflow-y: auto;
-            display: none;
-        }
-        .addr-combo-panel.is-open { display: block; }
-        .addr-combo-panel::-webkit-scrollbar {
-            width: 8px;
-        }
-        .addr-combo-panel::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .addr-combo-panel::-webkit-scrollbar-thumb {
-            background: var(--border, #D8D3C6);
-            border-radius: 8px;
-        }
-        .addr-combo-panel::-webkit-scrollbar-thumb:hover {
-            background: var(--ink-2, #8A8A8A);
-        }
-        .addr-combo-panel {
-            scrollbar-width: thin;
-            scrollbar-color: var(--border, #D8D3C6) transparent;
-        }
-        .addr-combo-item {
-            padding: 9px 12px;
-            font-size: 14px;
-            color: var(--ink, #1A1A1A);
-            cursor: pointer;
-        }
-        .addr-combo-item:hover,
-        .addr-combo-item.is-active {
-            background: var(--accent-soft, #F2EDE4);
-        }
-        .addr-combo-empty {
-            padding: 12px;
-            font-size: 13px;
-            color: var(--ink-2, #8A8A8A);
-        }
-        .addr-combo-hint {
-            font-size: 12px;
-            color: var(--ink-2, #8A8A8A);
-            margin-top: 4px;
-        }
-    </style>
+
 
     <div class="addr-form-card">
                 <form action="{{ route('addresses.store') }}" method="POST" id="newAddressForm">
@@ -369,3 +314,61 @@
     });
 })();
 </script>
+
+
+<style>
+        /* ===== Ô gõ-để-tìm cho Tỉnh/Thành phố & Phường/Xã ===== */
+        .addr-combo { position: relative; }
+        .addr-combo-panel {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            z-index: 30;
+            background: #fff;
+            border: 1px solid var(--border, #E3E3E3);
+            border-radius: 8px;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+            max-height: 240px;
+            overflow-y: auto;
+            display: none;
+        }
+        .addr-combo-panel.is-open { display: block; }
+        .addr-combo-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+        .addr-combo-panel::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .addr-combo-panel::-webkit-scrollbar-thumb {
+            background: var(--border, #D8D3C6);
+            border-radius: 8px;
+        }
+        .addr-combo-panel::-webkit-scrollbar-thumb:hover {
+            background: var(--ink-2, #8A8A8A);
+        }
+        .addr-combo-panel {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border, #D8D3C6) transparent;
+        }
+        .addr-combo-item {
+            padding: 9px 12px;
+            font-size: 14px;
+            color: var(--ink, #1A1A1A);
+            cursor: pointer;
+        }
+        .addr-combo-item:hover,
+        .addr-combo-item.is-active {
+            background: var(--accent-soft, #F2EDE4);
+        }
+        .addr-combo-empty {
+            padding: 12px;
+            font-size: 13px;
+            color: var(--ink-2, #8A8A8A);
+        }
+        .addr-combo-hint {
+            font-size: 12px;
+            color: var(--ink-2, #8A8A8A);
+            margin-top: 4px;
+        }
+    </style>
