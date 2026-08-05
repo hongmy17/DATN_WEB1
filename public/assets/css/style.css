@@ -608,3 +608,62 @@ body.nav-open .navbar__nav .navbar__nav-link { font-size: 17px; padding: 12px 14
     grid-template-columns: 1fr 1fr !important;
   }
 }
+
+
+ /* ── Gợi ý tìm kiếm trực tiếp (autocomplete) ─────────────────────── */
+        .navbar__search-suggest {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #e8e6e1;
+            border-radius: 12px;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, .14);
+            max-height: 380px;
+            overflow-y: auto;
+            z-index: 60;
+        }
+
+        .navbar__search-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .navbar__search-item:hover,
+        .navbar__search-item.is-active {
+            background: #f6f5f2;
+        }
+
+        .navbar__search-item img {
+            width: 38px;
+            height: 38px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: #fafaf8;
+            flex-shrink: 0;
+        }
+
+        .navbar__search-item-name {
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        .navbar__search-item-price {
+            font-size: 12px;
+            color: #2563EB;
+            margin-top: 2px;
+        }
+
+        .navbar__search-empty,
+        .navbar__search-loading {
+            padding: 14px 12px;
+            font-size: 13px;
+            color: #999;
+            text-align: center;
+        }
