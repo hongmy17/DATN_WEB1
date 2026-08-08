@@ -41,6 +41,7 @@
                 'sku' => $variant->sku,
                 'is_default' => $variant->is_default,
                 'image' => $variant->image ? asset('storage/' . $variant->image) : null,
+                'attribute_value_ids' => $variant->attributeValues->pluck('id')->values()->toArray(),
                 'label' => $variant->attributeValues->pluck('value')->implode(' / '),
             ];
         }
@@ -103,6 +104,7 @@
                 <div class="gallery__thumbs">
                     @foreach ($images as $img)
                         <div class="gallery__thumb {{ $primaryImage && $img->id === $primaryImage->id ? 'active' : '' }}"
+                            data-attribute-value-id="{{ $img->attribute_value_id ?? '' }}"
                             onclick="selectThumb(this, '{{ asset('storage/' . $img->image_url) }}')"
                             title="Ảnh {{ $loop->iteration }}">
                             <img src="{{ asset('storage/' . $img->image_url) }}" alt="">
@@ -933,6 +935,8 @@
             style="max-width:90%;max-height:90%;object-fit:contain">`;
                     }
                 }
+                // Đồng bộ thư viện ảnh theo biến thể đang chọn
+                syncGallery(v);
                 // Qty max & tồn kho
                 const qtyInput = document.getElementById('qtyInput');
                 const btnCart = document.getElementById('btnAddCart');
@@ -1022,6 +1026,47 @@
                 let input = document.getElementById('qtyInput');
                 let max = parseInt(input.max) || 10;
                 input.value = Math.min(max, Math.max(1, (parseInt(input.value) || 1) + delta));
+            }
+
+            function syncGallery(variant) {
+                if (!variant) return;
+
+                const attributeValueIds = variant.attribute_value_ids || [];
+                const thumbs = document.querySelectorAll('.gallery__thumb');
+
+                let matchedThumb = null;
+
+                thumbs.forEach(thumb => {
+                    const imageAttributeId = thumb.dataset.attributeValueId;
+
+                    // Không ẩn thumbnail nào cả
+                    thumb.style.display = '';
+
+                    // Tìm ảnh thuộc màu đang chọn
+                    if (
+                        !matchedThumb &&
+                        imageAttributeId &&
+                        attributeValueIds.includes(Number(imageAttributeId))
+                    ) {
+                        matchedThumb = thumb;
+                    }
+                });
+
+                // Đánh dấu thumbnail đầu tiên thuộc màu đang chọn
+                if (matchedThumb) {
+                    thumbs.forEach(t => t.classList.remove('active'));
+                    matchedThumb.classList.add('active');
+
+                    const img = matchedThumb.querySelector('img');
+
+                    if (img) {
+                        const mainImg = document.getElementById('mainImg');
+
+                        if (mainImg) {
+                            mainImg.src = img.src;
+                        }
+                    }
+                }
             }
 
             function selectThumb(el, imgSrc) {

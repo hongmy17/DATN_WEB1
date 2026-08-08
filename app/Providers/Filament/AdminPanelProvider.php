@@ -28,6 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->sidebarWidth('220px')
             ->brandName('Nexus Admin')
             ->login()
             ->colors([
