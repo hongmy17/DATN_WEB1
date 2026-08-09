@@ -220,6 +220,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/thanh-toan/vnpay/create', [PaymentController::class, 'createVNPay'])->name('vnpay.create');
     Route::get('/thanh-toan/vnpay/return', [PaymentController::class, 'returnVNPay'])->name('vnpay.return');
+    Route::get('/thanh-toan/ket-qua/{order}', [PaymentController::class, 'result'])->name('payment.result');
 });
 
 // FIX: IPN NGOÀI auth — VNPay server không có session đăng nhập
@@ -229,4 +230,7 @@ Route::post('/thanh-toan/vnpay/ipn', [PaymentController::class, 'ipnVNPay'])
 
 Route::get('/admin-invoice/{order}', [\App\Http\Controllers\Admin\InvoiceController::class, 'download'])
     ->name('admin.invoice.download')
-    ->middleware('auth');
+    ->middleware([
+        'auth',
+        \App\Http\Middleware\RoleMiddleware::class,
+    ]);

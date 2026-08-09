@@ -919,7 +919,9 @@
                 const stockStatus = document.getElementById('stockStatus');
                 if (stockNote) stockNote.textContent = 'Còn ' + v.stock + ' sản phẩm';
                 if (stockStatus) {
-                    stockStatus.textContent = v.stock > 0 ? 'Còn hàng' : 'Hết hàng';
+                    stockStatus.textContent = !v.manage_stock || v.stock > 0 ?
+                        'Còn hàng' :
+                        'Hết hàng';
                     stockStatus.className = 'pdp-stock ' + (v.stock > 0 ? 'in-stock' : 'out-stock');
                 }
 

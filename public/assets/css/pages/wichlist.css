@@ -1,183 +1,309 @@
-.wish-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 28px;
-        }
+/* =========================================================
+   WISHLIST PAGE
+   ========================================================= */
 
-        .wish-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 18px;
-        }
+.wish-wrap {
+    padding: 40px 0 80px;
+}
 
-        .wish-empty {
-            text-align: center;
-            padding: 80px 24px;
-            color: var(--ink-3);
-        }
+/* =========================================================
+   HEADER
+   ========================================================= */
 
-        @media(max-width:900px) {
-            .wish-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
+.wish-head,
+.wish-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+}
 
-        @media(max-width:640px) {
-            .wish-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
+.wish-count {
+    font-size: 14px;
+    color: var(--ink-3);
+    margin-top: 4px;
+}
 
 
+/* =========================================================
+   WISHLIST GRID
+   ========================================================= */
 
-          .wish-wrap {
-            padding: 40px 0 80px;
-        }
+.wish-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+}
 
-        .wish-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 28px;
-        }
 
-        .wish-count {
-            font-size: 14px;
-            color: var(--ink-3);
-            margin-top: 4px;
-        }
+/* =========================================================
+   PRODUCT CARD
+   ========================================================= */
 
-        .wish-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-        }
+.wcard {
+    width: 100%;
+    min-width: 0;
+    background: #fff;
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: box-shadow .25s ease, transform .25s ease;
+    position: relative;
+}
 
-        .wish-empty {
-            text-align: center;
-            padding: 80px 24px;
-            color: var(--ink-3);
-        }
+.wcard:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .1);
+    transform: translateY(-2px);
+}
 
-        /* Card nhỏ gọn */
-        .wcard {
-            background: #fff;
-            border: 1px solid var(--border-soft);
-            border-radius: 12px;
-            overflow: hidden;
-            transition: .25s;
-            position: relative;
-        }
 
-        .wcard:hover {
-            box-shadow: 0 8px 24px rgba(0, 0, 0, .1);
-            transform: translateY(-2px);
-        }
+/* =========================================================
+   PRODUCT IMAGE AREA
+   ========================================================= */
 
-        .wcard__thumb {
-            position: relative;
-            aspect-ratio: 1;
-            background: var(--surface);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
+.wcard__thumb {
+    position: relative;
+    width: 100%;
+    height: 220px;
 
-        .wcard__img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            padding: 16px;
-        }
+    background: var(--surface);
 
-        .wcard__img-placeholder {
-            color: #ccc;
-        }
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-        .wcard__del {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            width: 28px;
-            height: 28px;
-            background: #fff;
-            border: 1px solid var(--border-soft);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: var(--ink-muted);
-            transition: .2s;
-            z-index: 2;
-        }
+    overflow: hidden;
+}
 
-        .wcard__del:hover {
-            background: var(--red-light);
-            color: var(--red);
-            border-color: var(--red);
-        }
 
-        .wcard__hover {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 8px;
-            display: flex;
-            gap: 6px;
-            background: linear-gradient(to top, rgba(240, 237, 232, .96) 50%, transparent);
-            opacity: 0;
-            transform: translateY(4px);
-            transition: .2s;
-        }
+/* =========================================================
+   PRODUCT IMAGE
+   ========================================================= */
 
-        .wcard:hover .wcard__hover {
-            opacity: 1;
-            transform: none;
-        }
+.wcard__img {
+    display: block;
 
-        .wcard__hover .btn {
-            flex: 1;
-            font-size: 12px;
-            height: 32px;
-            padding: 0 8px;
-            border-radius: 8px;
-        }
+    width: auto;
+    height: auto;
 
-        .wcard__body {
-            padding: 10px 12px 12px;
-        }
+    max-width: 82%;
+    max-height: 82%;
 
-        .wcard__name {
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--ink);
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            margin-bottom: 6px;
-            min-height: 36px;
-        }
+    object-fit: contain;
 
-        .wcard__price {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--ink);
-        }
+    padding: 0;
+    margin: 0;
 
-        @media(max-width:900px) {
-            .wish-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
+    transition: transform .25s ease;
+}
 
-        @media(max-width:640px) {
-            .wish-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
+.wcard:hover .wcard__img {
+    transform: scale(1.03);
+}
+
+
+/* =========================================================
+   IMAGE PLACEHOLDER
+   ========================================================= */
+
+.wcard__img-placeholder {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #ccc;
+}
+
+
+/* =========================================================
+   DELETE BUTTON
+   ========================================================= */
+
+.wcard__del {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+
+    width: 28px;
+    height: 28px;
+
+    background: #fff;
+    border: 1px solid var(--border-soft);
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+    color: var(--ink-muted);
+
+    transition: .2s;
+    z-index: 2;
+}
+
+.wcard__del:hover {
+    background: var(--red-light);
+    color: var(--red);
+    border-color: var(--red);
+}
+
+
+/* =========================================================
+   HOVER ACTIONS
+   ========================================================= */
+
+.wcard__hover {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+
+    padding: 8px;
+
+    display: flex;
+    gap: 6px;
+
+    background: linear-gradient(
+        to top,
+        rgba(240, 237, 232, .96) 50%,
+        transparent
+    );
+
+    opacity: 0;
+    transform: translateY(4px);
+
+    transition: opacity .2s ease, transform .2s ease;
+
+    z-index: 3;
+}
+
+.wcard:hover .wcard__hover {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.wcard__hover .btn {
+    flex: 1;
+
+    font-size: 12px;
+    height: 32px;
+    padding: 0 8px;
+
+    border-radius: 8px;
+}
+
+
+/* =========================================================
+   CARD CONTENT
+   ========================================================= */
+
+.wcard__body {
+    padding: 10px 12px 12px;
+}
+
+.wcard__name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+
+    line-height: 1.4;
+
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+
+    overflow: hidden;
+
+    margin-bottom: 6px;
+
+    min-height: 36px;
+}
+
+.wcard__price {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.wish-empty {
+    text-align: center;
+    padding: 80px 24px;
+    color: var(--ink-3);
+}
+
+
+/* =========================================================
+   RESPONSIVE - TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+    .wish-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .wcard__thumb {
+        height: 200px;
+    }
+}
+
+
+/* =========================================================
+   RESPONSIVE - MOBILE
+   ========================================================= */
+
+@media (max-width: 640px) {
+
+    .wish-wrap {
+        padding: 28px 0 60px;
+    }
+
+    .wish-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .wcard__thumb {
+        height: 170px;
+    }
+
+    .wcard__body {
+        padding: 9px 10px 10px;
+    }
+
+    .wcard__name {
+        font-size: 12px;
+    }
+
+    .wcard__price {
+        font-size: 14px;
+    }
+
+    .wcard__del {
+        width: 26px;
+        height: 26px;
+        top: 6px;
+        right: 6px;
+    }
+
+    .wcard__hover {
+        padding: 6px;
+    }
+
+    .wcard__hover .btn {
+        height: 30px;
+        font-size: 11px;
+        padding: 0 6px;
+    }
+}

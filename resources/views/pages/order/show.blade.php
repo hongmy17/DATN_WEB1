@@ -4,7 +4,7 @@
 @push('styles')
     <link rel="stylesheet" href="{{ asset('assets/css/pages/order.css') }}">
     <style>
-       
+
     </style>
 @endpush
 
@@ -101,7 +101,7 @@
                         4 => 'Đã hủy',
                         5 => 'Chờ thanh toán',
                         6 => 'Chờ xác nhận hủy',
-                        7 => 'Đã hoàn tiền,',
+                        7 => 'Đã hoàn tiền',
                     ];
                     $statusClass = [
                         0 => 'status-pending',
@@ -440,8 +440,7 @@
                                         <line x1="12" y1="16" x2="12.01" y2="16" />
                                     </svg>
                                     <p style="font-size:13px;color:var(--amber);line-height:1.6;margin:0">
-                                        Yêu cầu hủy sẽ được admin xem xét trong <strong>24 giờ</strong>. Kho sẽ được hoàn
-                                        lại sau khi admin xác nhận.
+                                        Đơn hàng sẽ được hủy ngay sau khi bạn xác nhận. Số lượng tồn kho sẽ được hoàn lại.
                                     </p>
                                 </div>
 
@@ -460,7 +459,7 @@
                                     <button type="submit" id="submitCancelBtn" disabled class="btn btn-danger btn-full"
                                         style="margin-top:20px;opacity:.5" onclick="this.style.opacity='1'"
                                         {{-- Kích hoạt style khi enabled --}}>
-                                        Xác nhận yêu cầu hủy
+                                        Xác nhận hủy đơn
                                     </button>
                                 </form>
                             </div>

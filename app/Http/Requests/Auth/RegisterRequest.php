@@ -32,7 +32,7 @@ class RegisterRequest extends FormRequest
             'phone' => [
                 'nullable',
                 'string',
-                'regex:/^(0[3|5|7|8|9])[0-9]{8}$/', // Số điện thoại Việt Nam
+                'regex:/^(0[35789])[0-9]{8}$/', // Số điện thoại Việt Nam
             ],
             'password' => [
                 'required',

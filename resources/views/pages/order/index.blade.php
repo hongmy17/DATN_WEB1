@@ -59,6 +59,8 @@
                                     3 => 'status-delivered',
                                     4 => 'status-cancelled',
                                     5 => $isExpired ? 'status-expired' : 'status-awaiting',
+                                    6 => 'status-cancelled',
+                                    7 => 'status-delivered',
                                 ];
                             @endphp
                             <span

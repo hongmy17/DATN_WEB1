@@ -55,8 +55,9 @@ class OrdersTable
                         2 => 'Đang giao',
                         3 => 'Hoàn thành',
                         4 => 'Đã hủy',
-                        5 => 'Chờ thanh toán VNPay',  // ← thêm
-                        6 => 'Chờ xác nhận hủy',      // ← thêm
+                        5 => 'Chờ thanh toán VNPay',
+                        6 => 'Chờ xác nhận hủy',
+                        7 => 'Đã hoàn tiền',
                     ]),
 
                 TextColumn::make('payment_method')
@@ -104,6 +105,7 @@ class OrdersTable
                         4 => 'Đã hủy',
                         5 => 'Chờ thanh toán (VNPay)',
                         6 => 'Chờ xác nhận hủy',
+                        7 => 'Đã hoàn tiền',
                     ]),
             ])
             ->recordActions([

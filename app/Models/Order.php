@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class Order extends Model
 {
@@ -87,27 +88,42 @@ class Order extends Model
         // nhật (xem PaymentController), KHÔNG được suy diễn từ
         // order_status kẻo ghi đè sai kết quả thật của cổng.
         static::updated(function (Order $order) {
-            if (! $order->wasChanged('order_status') || $order->payment_method !== 'cod') {
+
+            // Đơn thay đổi trạng thái → xóa cache số lượng đã bán
+            // để website tính lại ngay số lượng sản phẩm đã bán.
+            if ($order->wasChanged('order_status')) {
+                \Illuminate\Support\Facades\Cache::forget('product_sold_counts_30d');
+            }
+
+            // Chỉ đồng bộ Payment tự động đối với đơn COD.
+            if ($order->payment_method !== 'cod') {
                 return;
             }
 
+            // Lấy Payment tương ứng với Order.
             $payment = $order->payment;
+
+            // Nếu Order chưa có Payment thì không làm gì,
+            // tránh lỗi khi truy cập/update Payment không tồn tại.
             if (! $payment) {
                 return;
             }
 
+            // Xác định trạng thái Payment dựa trên trạng thái Order.
             $targetStatus = match ((int) $order->order_status) {
                 self::STATUS_COMPLETED => Payment::STATUS_SUCCESS,
                 self::STATUS_CANCELLED => Payment::STATUS_FAILED,
-                default                => Payment::STATUS_PENDING, // Chờ xác nhận / Đã xác nhận / Đang giao / Chờ xác nhận hủy
+                default => Payment::STATUS_PENDING,
             };
 
+            // Nếu Payment đã đúng trạng thái thì không cần update.
             if ((int) $payment->status === $targetStatus) {
-                return; // đã đúng trạng thái rồi, khỏi update tránh vòng lặp thừa
+                return;
             }
 
+            // Đồng bộ trạng thái Payment.
             $payment->update([
-                'status'  => $targetStatus,
+                'status' => $targetStatus,
                 'paid_at' => $targetStatus === Payment::STATUS_SUCCESS ? now() : null,
             ]);
         });
@@ -157,9 +173,9 @@ class Order extends Model
     }
 
     public function refundRequest()
-{
-    return $this->hasOne(RefundRequest::class);
-}
+    {
+        return $this->hasOne(RefundRequest::class);
+    }
 
     /**
      * Scope: chỉ những đơn CHẮC CHẮN đã có tiền thật ("doanh thu thực thu").

@@ -68,7 +68,7 @@ class ProductController extends Controller
 
         match ($request->sort) {
             'price_asc'  => $query->orderBy('variants_min_price', 'asc'),
-            'price_desc' => $query->orderBy('variants_min_price', 'desc'),
+            'price_desc' => $query->orderBy('variants_max_price', 'desc'),
             'newest'     => $query->orderBy('created_at', 'desc'),
             default      => $query->orderBy('created_at', 'desc'),
         };

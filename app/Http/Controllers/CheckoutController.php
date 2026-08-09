@@ -85,9 +85,11 @@ class CheckoutController extends Controller
                 $variantIds = $cart->pluck('variant_id')->toArray();
 
                 $variants = ProductVariant::with(['product', 'attributeValues.attribute'])
-                    ->whereIn('id', $variantIds)  // FIX: dùng id (variant_id) thay vì product_id
+                    ->whereIn('id', $variantIds)
+                    ->where('status', true)
+                    ->whereHas('product', fn($q) => $q->visible())
                     ->get()
-                    ->keyBy('id');               // FIX: keyBy 'id' (variant_id)
+                    ->keyBy('id');              // FIX: keyBy 'id' (variant_id)
 
                 // ── Bước 1: Kiểm tra kho + tính tổng tiền ─────────────────
                 $subtotal = 0;
@@ -100,6 +102,10 @@ class CheckoutController extends Controller
                         throw new \Exception(
                             'Sản phẩm trong giỏ hàng không tồn tại.'
                         );
+                    }
+
+                    if ((int) $variant->product_id !== (int) $item['id']) {
+                        throw new \Exception('Sản phẩm và biến thể không khớp.');
                     }
 
                     // Kiểm tra kho (chỉ với hàng quản lý kho)
@@ -201,7 +207,7 @@ class CheckoutController extends Controller
                 // Xóa coupon khỏi session
                 session()->forget(['coupon_code', 'coupon_id', 'discount_amount']);
 
-            
+
 
                 return $order;
             });
@@ -238,10 +244,10 @@ class CheckoutController extends Controller
             if ($order->payment_method === 'vnpay') {
                 $vnpay      = new VNPayService();
                 $paymentUrl = $vnpay->createPaymentUrl(
-                    orderId:   $order->id,
-                    amount:    $order->total_amount,
+                    orderId: $order->id,
+                    amount: $order->total_amount,
                     orderInfo: "Thanh toan don hang NX-" . str_pad($order->id, 6, '0', STR_PAD_LEFT),
-                    clientIp:  $request->ip(),
+                    clientIp: $request->ip(),
                 );
 
                 // Ghi payment pending
