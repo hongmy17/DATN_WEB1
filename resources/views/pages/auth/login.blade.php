@@ -32,9 +32,9 @@
                 </div>
             @endif
 
-            <div class="social-login">
+            <div class="social-login" style="display:block"> 
                 {{-- Google: có SocialAuthController thật → dùng link redirect --}}
-                <a href="{{ route('social.redirect', 'google') }}" class="social-btn">
+                <a href="{{ route('social.redirect', 'google') }}" class="social-btn" style="width:100%"> {{-- SỬA: ép chiều rộng 100% --}}
                     <svg width="16" height="16" viewBox="0 0 24 24">
                         <path fill="#4285F4"
                             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -47,13 +47,6 @@
                     </svg>
                     Google
                 </a>
-                {{-- Facebook: chưa cài → giữ thông báo --}}
-                <button class="social-btn" onclick="Toast.show('Facebook login chưa được cài đặt','info')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#1877F2">
-                        <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-                    </svg>
-                    Facebook
-                </button>
             </div>
 
             <div class="divider-text mb-24">hoặc đăng nhập bằng email</div>

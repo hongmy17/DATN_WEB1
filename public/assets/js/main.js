@@ -24,6 +24,7 @@ function cartApi(method, path, body) {
 
 /* ── CART ─────────────────────────────── */
 const Cart = {
+    _pending: new Set(),
     get() {
         try {
             return JSON.parse(localStorage.getItem("nx_cart") || "[]");
@@ -73,7 +74,7 @@ const Cart = {
             // → phần này vẫn phụ thuộc vào "price" client truyền vào, xem lưu ý bên dưới
             const c = Cart.get();
             const idx = Cart._idx(item.variant_id);
-            if (idx >= 0) c[idx].qty = Math.min(c[idx].qty + qty, 99);
+            if (idx >= 0) c[idx].qty = Math.min(c[idx].qty + qty);
             else c.push({ ...item, qty });
             Cart._save(c);
         }
@@ -106,9 +107,17 @@ const Cart = {
             await Cart.removeByVariantId(variantId);
             return;
         }
+
+        const key = String(variantId); // THÊM
+        if (Cart._pending.has(key)) return; // THÊM — đang có request y hệt chạy dở, bỏ qua lần gọi trùng
+        Cart._pending.add(key); // THÊM
+
         const c = Cart.get();
         const idx = Cart._idx(variantId);
-        if (idx < 0) return;
+        if (idx < 0) {
+            Cart._pending.delete(key); // THÊM
+            return;
+        }
         if (window.__authUser && c[idx].cart_item_id) {
             const res = await cartApi("PATCH", `/${c[idx].cart_item_id}`, {
                 quantity: qty,
@@ -121,11 +130,13 @@ const Cart = {
                     res.message || "Cập nhật thất bại, vui lòng thử lại.",
                     "error",
                 );
+                Cart._pending.delete(key); // THÊM
                 return;
             }
         }
         c[idx].qty = qty;
         Cart._save(c);
+        Cart._pending.delete(key); // THÊM
     },
 
     /* ── XOÁ TẤT CẢ ── */
@@ -175,6 +186,11 @@ const Cart = {
             variant: d.variant,
             price: d.price,
             qty: d.qty,
+
+            // Thông tin tồn kho dùng để kiểm tra trước checkout
+            stock: d.stock,
+            manage_stock: d.manage_stock,
+
             img: d.img,
         }));
     },

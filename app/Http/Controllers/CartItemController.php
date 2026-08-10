@@ -25,7 +25,7 @@ class CartItemController extends Controller
     {
         $request->validate([
             'variant_id' => 'required|integer|exists:product_variants,id',
-            'quantity'   => 'sometimes|integer|min:1|max:99',
+            'quantity'   => 'sometimes|integer|min:1|',
         ]);
 
         $variant = ProductVariant::findOrFail($request->variant_id);
@@ -54,7 +54,7 @@ class CartItemController extends Controller
             ->first();
 
         if ($item) {
-            $item->update(['quantity' => min($item->quantity + $qty, 99)]);
+            $item->update(['quantity' => $item->quantity + $qty]);
         } else {
             $item = CartItem::create([
                 'user_id'    => Auth::id(),
@@ -72,7 +72,7 @@ class CartItemController extends Controller
     public function update(Request $request, CartItem $cartItem)
     {
         abort_if($cartItem->user_id !== Auth::id(), 403);
-        $request->validate(['quantity' => 'required|integer|min:1|max:99']);
+        $request->validate(['quantity' => 'required|integer|min:1']);
 
         $qty     = (int) $request->quantity;
         $variant = $cartItem->variant;
@@ -110,13 +110,13 @@ class CartItemController extends Controller
         $request->validate([
             'items'              => 'required|array',
             'items.*.variant_id' => 'required|integer|exists:product_variants,id',
-            'items.*.quantity'   => 'required|integer|min:1|max:99',
+            'items.*.quantity'   => 'required|integer|min:1',
         ]);
 
         foreach ($request->items as $row) {
             CartItem::updateOrCreate(
                 ['user_id' => Auth::id(), 'variant_id' => $row['variant_id']],
-                ['quantity' => min((int) $row['quantity'], 99)]
+                ['quantity' => (int) $row['quantity']]
             );
         }
 
@@ -147,9 +147,11 @@ class CartItemController extends Controller
             'variant'      => $variantLabel ?: '',
             'price'        => (int) ($variant?->current_price ?? 0),
             'qty'          => $item->quantity,
-            // FIX: 'display_image' không tồn tại trên model ProductVariant (chỉ có
-            // cột 'image') nên trước đây luôn trả về rỗng. Ưu tiên ảnh riêng của
-            // biến thể, nếu biến thể không có ảnh thì lấy ảnh đại diện của sản phẩm.
+
+            // Dùng để kiểm tra tồn kho trước khi chuyển sang thanh toán
+            'stock'        => (int) ($variant?->stock_quantity ?? 0),
+            'manage_stock' => (bool) ($variant?->manage_stock ?? false),
+
             'img'          => $variant?->image
                 ? asset('storage/' . $variant->image)
                 : ($product?->thumbnail ? asset('storage/' . $product->thumbnail) : ''),

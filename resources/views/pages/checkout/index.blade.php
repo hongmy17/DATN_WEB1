@@ -106,7 +106,8 @@
                         Phương thức thanh toán
                     </div>
 
-                    @php $payMethods = [
+                    @php
+                        $payMethods = [
                             [
                                 'value' => 'cod',
                                 'label' => 'Thanh toán khi nhận hàng (COD)',
@@ -399,23 +400,52 @@
                         note: document.getElementById('orderNote')?.value || '',
                     })
                 })
-                .then(r => {
+                .then(async r => {
                     if (r.status === 401) {
                         Toast.show('Vui lòng đăng nhập để đặt hàng', 'error');
-                        setTimeout(() => window.location.href = '{{ route('login') }}', 1200);
+                        setTimeout(() => {
+                            window.location.href = '{{ route('login') }}';
+                        }, 1200);
+
                         throw new Error('unauthenticated');
                     }
-                    if (!r.ok && r.status === 422) {
-                        return r.json().then(err => {
-                            const msgs = err.errors ? Object.values(err.errors).flat().join('\n') : (err
-                                .message || 'Dữ liệu không hợp lệ');
-                            Toast.show(msgs, 'error');
-                            throw new Error('validation');
-                        });
+
+                    const data = await r.json();
+
+                    // Backend báo lỗi validate / tồn kho
+                    if (r.status === 422) {
+                        const msgs = data.errors ?
+                            Object.values(data.errors).flat().join('\n') :
+                            (data.message || 'Dữ liệu không hợp lệ');
+
+                        Toast.show(msgs, 'error');
+
+                        // DỪNG tại đây — tuyệt đối không chuyển trang
+                        resetBtn(btn);
+
+                        return null;
                     }
-                    return r.json();
+
+                    // Các lỗi HTTP khác
+                    if (!r.ok) {
+                        Toast.show(
+                            data.message || 'Có lỗi xảy ra, vui lòng thử lại',
+                            'error'
+                        );
+
+                        resetBtn(btn);
+
+                        return null;
+                    }
+
+                    return data;
                 })
                 .then(data => {
+                    // 422 / lỗi backend đã được xử lý ở phía trên
+                    if (!data) {
+                        return;
+                    }
+
                     if (data.success) {
                         console.log('Response:', data);
                         // Nếu là VNPay → redirect sang cổng thanh toán, không xóa giỏ ở đây
