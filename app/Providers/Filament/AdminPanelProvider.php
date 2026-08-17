@@ -36,7 +36,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->userMenuItems([
                 'view-site' => MenuItem::make()
-                    ->label('Về trang Trang chủ')
+                    ->label('Về trang chủ')
                     ->url(fn(): string => route('home'))
                     ->openUrlInNewTab(),
             ])
