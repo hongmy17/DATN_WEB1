@@ -11,13 +11,13 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Mail\OrderConfirmationMail;
-    use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Mail;
 
-    class PaymentController extends Controller
-    {
-        public function __construct(private VNPayService $vnpay) {}
+class PaymentController extends Controller
+{
+    public function __construct(private VNPayService $vnpay) {}
 
-        /* ═══════════════════════════════════════════════════════════
+    /* ═══════════════════════════════════════════════════════════
         1. TẠO URL THANH TOÁN VNPAY
         POST /thanh-toan/vnpay/create
         Body: { order_id }
@@ -183,7 +183,18 @@ use App\Mail\OrderConfirmationMail;
             $isFirstTimeConfirmed = (int) $order->order_status === Order::STATUS_AWAITING_PAYMENT;
 
             if ($isFirstTimeConfirmed) {
-                $order->update(['order_status' => Order::STATUS_CONFIRMED]);
+                // THAY ĐỔI QUAN TRỌNG: trước đây dòng này gán STATUS_CONFIRMED,
+                // tức là đơn VNPay tự nhảy sang "Đã xác nhận" mà admin không hề
+                // đụng vào — và với luồng tồn kho mới, điều đó sẽ TỰ TRỪ KHO,
+                // vi phạm yêu cầu "chỉ trừ kho khi admin xác nhận".
+                //
+                // Nay: khách đã trả tiền (payments.status = 1 ghi ở ngay bên
+                // dưới), nhưng đơn vẫn nằm ở "Chờ xác nhận" chờ admin duyệt —
+                // đúng như cách Shopee/Tiki vận hành.
+                //
+                // Doanh thu KHÔNG bị mất: Order::scopeRevenue() đã được đổi sang
+                // căn cứ vào bảng payments thay vì order_status.
+                $order->update(['order_status' => Order::STATUS_PENDING]);
                 $order->load('items');
             }
 

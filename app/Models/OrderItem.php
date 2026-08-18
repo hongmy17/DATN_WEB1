@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 
 class OrderItem extends Model
 {
@@ -22,53 +21,36 @@ class OrderItem extends Model
         'total_price',
     ];
 
-    // ─── Stock hooks ────────────────────────────────────────────
-    // MỚI: tự trừ kho khi tạo OrderItem, tự hoàn kho khi xóa OrderItem.
-    // Đặt ở Model (không phải Filament Resource) để logic này luôn
-    // chạy đúng dù đơn hàng được tạo từ admin, từ trang khách, hay API.
+    protected $casts = [
+        'quantity'      => 'integer',
+        'unit_price'    => 'float',
+        'compare_price' => 'float',
+        'total_price'   => 'float',
+    ];
 
-    protected static function booted(): void
-    {
-        static::creating(function (OrderItem $item) {
-            // Khóa row variant để tránh 2 đơn hàng cùng lúc trừ kho
-            // dẫn tới âm kho (race condition khi nhiều khách checkout cùng lúc).
-            $variant = ProductVariant::where('id', $item->variant_id)
-                ->lockForUpdate()
-                ->first();
+    /*
+    |--------------------------------------------------------------------------
+    | GHI CHÚ: hook trừ/hoàn tồn kho đã được GỠ BỎ khỏi model này
+    |--------------------------------------------------------------------------
+    | Trước đây ở đây có hai hook:
+    |   - creating() → trừ kho ngay khi dòng chi tiết đơn được tạo
+    |   - deleting() → hoàn kho khi dòng chi tiết đơn bị xóa
+    |
+    | Cách làm đó gắn tồn kho vào việc "dòng dữ liệu được tạo hay xóa", trong
+    | khi về mặt nghiệp vụ, tồn kho phải gắn vào TRẠNG THÁI ĐƠN HÀNG: hàng chỉ
+    | thực sự rời kho khi shop xác nhận sẽ bán, và chỉ quay lại kho khi đơn bị
+    | hủy hoặc khách trả hàng.
+    |
+    | Toàn bộ logic tồn kho nay nằm tập trung ở MỘT nơi duy nhất:
+    |     app/Models/Order.php  →  static::updating() trong booted()
+    |
+    | Việc kiểm tra "còn đủ hàng không" lúc khách đặt vẫn được giữ nguyên ở
+    | app/Http/Controllers/CheckoutController.php (Bước 1) — chỉ kiểm tra, không
+    | trừ kho.
+    */
 
-            if (! $variant) {
-                throw new \RuntimeException("Biến thể #{$item->variant_id} không tồn tại.");
-            }
+    // ─── Relationships ──────────────────────────────────────────────────────
 
-            // MỚI: nếu variant tắt quản lý kho (hàng đặt trước/dịch vụ)
-            // → không kiểm tra và không trừ kho.
-            if (! $variant->manage_stock) {
-                return;
-            }
-
-            if ($variant->stock_quantity < $item->quantity) {
-                throw new \RuntimeException(
-                    "SKU {$variant->sku} không đủ hàng (còn {$variant->stock_quantity}, cần {$item->quantity})."
-                );
-            }
-
-            $variant->decrement('stock_quantity', $item->quantity);
-        });
-
-        static::deleting(function (OrderItem $item) {
-            // Khi xóa 1 item khỏi đơn (hủy 1 phần / sửa đơn) → hoàn lại kho
-            // MỚI: bỏ qua nếu variant không quản lý kho
-            $variant = ProductVariant::find($item->variant_id);
-            if ($variant && ! $variant->manage_stock) {
-                return;
-            }
-
-            ProductVariant::where('id', $item->variant_id)
-                ->increment('stock_quantity', $item->quantity);
-        });
-    }
-
-    // Relationships
     public function order()
     {
         return $this->belongsTo(Order::class);
@@ -76,7 +58,13 @@ class OrderItem extends Model
 
     public function variant()
     {
-        return $this->belongsTo(ProductVariant::class, 'variant_id');
+        // withTrashed(): biến thể có thể đã bị xóa mềm sau khi đơn được đặt.
+        // Không có nó, chi tiết đơn hàng cũ sẽ hiện thiếu thông tin biến thể.
+        // (Các trường product_name / variant_description / unit_price đã được
+        // lưu snapshot ngay trong bảng order_items nên vẫn hiển thị đúng giá
+        // và tên tại thời điểm mua — relation này chỉ dùng khi cần dữ liệu
+        // sống của biến thể.)
+        return $this->belongsTo(ProductVariant::class, 'variant_id')->withTrashed();
     }
 
     public function review()
@@ -84,7 +72,7 @@ class OrderItem extends Model
         return $this->hasOne(Review::class);
     }
 
-    // Tính thành tiền
+    /** Thành tiền của dòng chi tiết đơn. */
     public function subTotal(): float
     {
         return $this->quantity * $this->unit_price;

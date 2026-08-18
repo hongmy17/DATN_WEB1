@@ -93,16 +93,7 @@
                     $isCancelReq = $currentStatus === 6;
                     $isCancelled = $currentStatus === 4;
 
-                    $statusLabel = [
-                        0 => 'Chờ xác nhận',
-                        1 => 'Đã xác nhận',
-                        2 => 'Đang giao',
-                        3 => 'Hoàn thành',
-                        4 => 'Đã hủy',
-                        5 => 'Chờ thanh toán',
-                        6 => 'Chờ xác nhận hủy',
-                        7 => 'Đã hoàn tiền',
-                    ];
+                    $statusLabel = \App\Models\Order::STATUS_LABELS;
                     $statusClass = [
                         0 => 'status-pending',
                         1 => 'status-confirmed',
@@ -400,7 +391,7 @@
                         @endif
                     </div>
                 @endif
-                @if ($currentStatus === \App\Models\Order::STATUS_PENDING)
+                @if (in_array($currentStatus, [\App\Models\Order::STATUS_PENDING, \App\Models\Order::STATUS_CONFIRMED]))
                     <div style="display:flex;justify-content:flex-end;margin-top:4px">
                         <button type="button" onclick="openCancelModal()" class="btn btn-ghost"
                             style="color:var(--red);border-color:var(--red)">
@@ -440,7 +431,12 @@
                                         <line x1="12" y1="16" x2="12.01" y2="16" />
                                     </svg>
                                     <p style="font-size:13px;color:var(--amber);line-height:1.6;margin:0">
-                                        Đơn hàng sẽ được hủy ngay sau khi bạn xác nhận. Số lượng tồn kho sẽ được hoàn lại.
+                                        @if ($currentStatus === \App\Models\Order::STATUS_PENDING)
+                                            Đơn hàng sẽ được hủy ngay sau khi bạn xác nhận.
+                                        @else
+                                            Đơn hàng đã được shop xác nhận nên yêu cầu hủy cần shop duyệt.
+                                            Chúng tôi sẽ phản hồi trong vòng 24 giờ.
+                                        @endif
                                     </p>
                                 </div>
 
@@ -459,7 +455,7 @@
                                     <button type="submit" id="submitCancelBtn" disabled class="btn btn-danger btn-full"
                                         style="margin-top:20px;opacity:.5" onclick="this.style.opacity='1'"
                                         {{-- Kích hoạt style khi enabled --}}>
-                                        Xác nhận hủy đơn
+                                        Gửi yêu cầu hủy đơn
                                     </button>
                                 </form>
                             </div>
