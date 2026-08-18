@@ -7,12 +7,21 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasName;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable implements FilamentUser, HasName
 {
-    use HasFactory, Notifiable;
+    // Xóa mềm bắt buộc với bảng này: orders.user_id khai báo
+    // onDelete('restrict'), nên xóa cứng một khách đã từng đặt hàng sẽ ném
+    // lỗi SQL. Ngoài ra reviews.user_id là cascadeOnDelete — xóa cứng một
+    // khách là mất luôn toàn bộ đánh giá của họ trên mọi sản phẩm.
+    //
+    // Tác dụng phụ có lợi: tài khoản đã xóa mềm không đăng nhập được nữa,
+    // vì Laravel tra cứu người dùng qua Model (đã có global scope lọc
+    // deleted_at IS NULL).
+    use HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'code',

@@ -3,9 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Review extends Model
 {
+    // Xóa mềm: admin gỡ đánh giá vi phạm nhưng vẫn giữ được bằng chứng,
+    // và khôi phục được nếu gỡ nhầm.
+    use SoftDeletes;
+
     protected $fillable = [
         'product_id',
         'user_id',

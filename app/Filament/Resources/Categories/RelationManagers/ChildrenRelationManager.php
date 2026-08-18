@@ -5,12 +5,15 @@ namespace App\Filament\Resources\Categories\RelationManagers;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
 
@@ -56,13 +59,19 @@ class ChildrenRelationManager extends RelationManager
                     ->badge()
                     ->color('warning'),
             ])
+            ->filters([
+                TrashedFilter::make()->label('Thùng rác'),
+            ])
             ->recordActions([
-                EditAction::make()->label('Sửa'),
+                EditAction::make()
+                    ->label('Sửa')
+                    ->visible(fn($record) => ! $record->trashed()),
 
                 // Cùng quy tắc với danh mục cha: còn sản phẩm thì ẩn nút xóa.
                 DeleteAction::make()
-                    ->label('Xóa')
-                    ->visible(fn($record) => (int) $record->products_count === 0)
+                    ->label('Chuyển vào thùng rác')
+                    ->visible(fn($record) => ! $record->trashed()
+                        && (int) $record->products_count === 0)
                     ->before(function ($record, $action) {
                         if ($record->products()->exists()) {
                             Notification::make()
@@ -71,6 +80,26 @@ class ChildrenRelationManager extends RelationManager
                                 ->danger()
                                 ->send();
                             $action->halt();
+                        }
+                    }),
+
+                RestoreAction::make()->label('Khôi phục'),
+
+                ForceDeleteAction::make()
+                    ->label('Xóa vĩnh viễn')
+                    ->requiresConfirmation()
+                    ->before(function ($record, ForceDeleteAction $action) {
+                        // withTrashed(): một danh mục con trông rỗng vẫn có thể
+                        // đang giữ sản phẩm trong thùng rác — xóa cứng khi đó sẽ
+                        // ném lỗi khóa ngoại (products.category_id là restrict).
+                        if ($record->products()->withTrashed()->exists()) {
+                            Notification::make()
+                                ->title('Không thể xóa vĩnh viễn')
+                                ->body('Danh mục con vẫn còn sản phẩm (kể cả sản phẩm trong thùng rác).')
+                                ->danger()
+                                ->persistent()
+                                ->send();
+                            $action->cancel();
                         }
                     }),
             ])

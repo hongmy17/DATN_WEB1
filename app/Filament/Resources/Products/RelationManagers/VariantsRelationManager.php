@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Filament\Resources\Products\RelationManagers;
+
 use Filament\Forms\Components\Radio;
 use App\Models\AttributeValue;
 use App\Models\ProductVariant;
@@ -10,6 +11,9 @@ use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
+use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\BulkAction;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
@@ -27,6 +31,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
@@ -253,76 +258,76 @@ class VariantsRelationManager extends RelationManager
                 ->schema([
                     // ── Thuộc tính ────────────────────────────────────────────────────
                     Select::make('attributeValues')
-                ->label('Thuộc tính (màu / size...)')
-                ->multiple()
-                ->options(function () {
-                    $product      = $this->getOwnerRecord();
-                    $attributeIds = $product->attributes()->pluck('attributes.id');
+                        ->label('Thuộc tính (màu / size...)')
+                        ->multiple()
+                        ->options(function () {
+                            $product      = $this->getOwnerRecord();
+                            $attributeIds = $product->attributes()->pluck('attributes.id');
 
-                    return AttributeValue::whereIn('attribute_id', $attributeIds)
-                        ->with('attribute')
-                        ->orderBy('attribute_id')
-                        ->orderBy('sort_order')
-                        ->get()
-                        ->mapWithKeys(fn($v) => [
-                            $v->id => $v->attribute->name . ': ' . $v->value,
-                        ]);
-                })
-                // ── FIX: dùng afterStateHydrated thay vì default() ─────────────
-                // ->default() chỉ chạy khi tạo mới (Create). Khi mở Edit modal,
-                // Filament fill form từ $record->toArray() — không bao gồm BelongsToMany
-                // → Select attributeValues hiển thị TRỐNG khi sửa biến thể.
-                // ->afterStateHydrated() chạy cho cả Create lẫn Edit, sau khi Filament
-                // fill xong, nên luôn đọc đúng giá trị hiện có từ DB.
-                ->afterStateHydrated(function ($component, $record) {
-                    if ($record) {
-                        $component->state(
-                            $record->attributeValues()->pluck('attribute_values.id')->toArray()
-                        );
-                    }
-                })
-                ->saveRelationshipsUsing(fn($record, $state) => $record->attributeValues()->sync($state ?? []))
-                ->live()
-                ->required(fn() => $this->getOwnerRecord()->attributes()->exists())
-                ->rules([
-                    function ($record) {
-                        return function (string $attribute, $value, $fail) use ($record) {
-                            if (empty($value)) {
-                                return;
-                            }
-
-                            // Không cho chọn 2 value cùng 1 attribute
-                            $selectedValues = AttributeValue::whereIn('id', $value)->get();
-                            foreach ($selectedValues->groupBy('attribute_id') as $attrId => $vals) {
-                                if ($vals->count() > 1) {
-                                    $fail('Không được chọn 2 giá trị của cùng thuộc tính "' . $vals->first()->attribute->name . '".');
-                                    return;
-                                }
-                            }
-
-                            // Không cho trùng tổ hợp
-                            $selectedIds = collect($value)->map(fn($id) => (int) $id)->sort()->values()->toArray();
-                            $product     = $this->getOwnerRecord();
-
-                            $duplicate = $product->variants()
-                                ->with('attributeValues')
-                                ->when($record, fn($q) => $q->where('id', '!=', $record->id))
+                            return AttributeValue::whereIn('attribute_id', $attributeIds)
+                                ->with('attribute')
+                                ->orderBy('attribute_id')
+                                ->orderBy('sort_order')
                                 ->get()
-                                ->first(function ($variant) use ($selectedIds) {
-                                    $existing = $variant->attributeValues
-                                        ->pluck('id')
-                                        ->map(fn($id) => (int) $id)
-                                        ->sort()->values()->toArray();
-                                    return $existing === $selectedIds;
-                                });
-
-                            if ($duplicate) {
-                                $fail('Tổ hợp thuộc tính này đã tồn tại ở SKU: ' . $duplicate->sku);
+                                ->mapWithKeys(fn($v) => [
+                                    $v->id => $v->attribute->name . ': ' . $v->value,
+                                ]);
+                        })
+                        // ── FIX: dùng afterStateHydrated thay vì default() ─────────────
+                        // ->default() chỉ chạy khi tạo mới (Create). Khi mở Edit modal,
+                        // Filament fill form từ $record->toArray() — không bao gồm BelongsToMany
+                        // → Select attributeValues hiển thị TRỐNG khi sửa biến thể.
+                        // ->afterStateHydrated() chạy cho cả Create lẫn Edit, sau khi Filament
+                        // fill xong, nên luôn đọc đúng giá trị hiện có từ DB.
+                        ->afterStateHydrated(function ($component, $record) {
+                            if ($record) {
+                                $component->state(
+                                    $record->attributeValues()->pluck('attribute_values.id')->toArray()
+                                );
                             }
-                        };
-                    },
-                ])
-                ->columnSpanFull(),
+                        })
+                        ->saveRelationshipsUsing(fn($record, $state) => $record->attributeValues()->sync($state ?? []))
+                        ->live()
+                        ->required(fn() => $this->getOwnerRecord()->attributes()->exists())
+                        ->rules([
+                            function ($record) {
+                                return function (string $attribute, $value, $fail) use ($record) {
+                                    if (empty($value)) {
+                                        return;
+                                    }
+
+                                    // Không cho chọn 2 value cùng 1 attribute
+                                    $selectedValues = AttributeValue::whereIn('id', $value)->get();
+                                    foreach ($selectedValues->groupBy('attribute_id') as $attrId => $vals) {
+                                        if ($vals->count() > 1) {
+                                            $fail('Không được chọn 2 giá trị của cùng thuộc tính "' . $vals->first()->attribute->name . '".');
+                                            return;
+                                        }
+                                    }
+
+                                    // Không cho trùng tổ hợp
+                                    $selectedIds = collect($value)->map(fn($id) => (int) $id)->sort()->values()->toArray();
+                                    $product     = $this->getOwnerRecord();
+
+                                    $duplicate = $product->variants()
+                                        ->with('attributeValues')
+                                        ->when($record, fn($q) => $q->where('id', '!=', $record->id))
+                                        ->get()
+                                        ->first(function ($variant) use ($selectedIds) {
+                                            $existing = $variant->attributeValues
+                                                ->pluck('id')
+                                                ->map(fn($id) => (int) $id)
+                                                ->sort()->values()->toArray();
+                                            return $existing === $selectedIds;
+                                        });
+
+                                    if ($duplicate) {
+                                        $fail('Tổ hợp thuộc tính này đã tồn tại ở SKU: ' . $duplicate->sku);
+                                    }
+                                };
+                            },
+                        ])
+                        ->columnSpanFull(),
 
                     // ── Ảnh ───────────────────────────────────────────────────
                     FileUpload::make('image')
@@ -467,7 +472,10 @@ class VariantsRelationManager extends RelationManager
                 ToggleColumn::make('status')
                     ->label('Bán'),
             ])
-            ->filters([])
+            ->filters([
+                // Cho phép xem/khôi phục biến thể đã ngừng bán
+                TrashedFilter::make()->label('Thùng rác'),
+            ])
             ->headerActions([
                 // ── Generate tự động ─────────────────────────────────────────
                 Action::make('generateVariants')
@@ -814,7 +822,17 @@ class VariantsRelationManager extends RelationManager
                                 // Query trực tiếp trên Builder không trigger booted() events.
                                 $variantIds = $variants->pluck('id');
                                 \App\Models\VariantAttributeValue::whereIn('variant_id', $variantIds)->delete();
-                                $product->variants()->delete(); // Builder::delete() — không trigger Model events
+
+                                // forceDelete() chứ KHÔNG phải delete().
+                                // Từ khi ProductVariant dùng SoftDeletes, delete()
+                                // chỉ gán deleted_at — trong khi hành động này đã
+                                // xóa sạch pivot thuộc tính và file ảnh ở trên, nên
+                                // biến thể "khôi phục" được sẽ là biến thể hỏng
+                                // (không thuộc tính, không ảnh).
+                                // Đây là thao tác "xóa sạch để tạo lại từ đầu" —
+                                // đúng bản chất là xóa cứng, và modal cũng đã ghi
+                                // rõ "không thể hoàn tác".
+                                $product->variants()->forceDelete();
 
                                 return $count;
                             });
@@ -845,6 +863,8 @@ class VariantsRelationManager extends RelationManager
                     ->mutateFormDataUsing(fn(array $data) => $this->applyColorLinkedImage($data)),
 
                 DeleteAction::make()
+                    ->label('Chuyển vào thùng rác')
+                    ->visible(fn($record) => ! $record->trashed())
                     ->before(function ($record, DeleteAction $action) {
                         $product = $record->product;
 
@@ -857,6 +877,37 @@ class VariantsRelationManager extends RelationManager
                             return;
                         }
 
+                        // QUAN TRỌNG: KHÔNG xóa file ảnh ở đây nữa.
+                        // Trước đây biến thể bị xóa cứng nên xóa luôn ảnh là hợp
+                        // lý. Nay là xóa MỀM — bản ghi còn khôi phục được, mà ảnh
+                        // thì đã mất, khôi phục xong sẽ thành biến thể vỡ ảnh.
+                        // Việc dọn file chuyển sang nút "Xóa vĩnh viễn" bên dưới.
+                    }),
+
+                RestoreAction::make()
+                    ->label('Khôi phục'),
+
+                ForceDeleteAction::make()
+                    ->label('Xóa vĩnh viễn')
+                    ->requiresConfirmation()
+                    ->modalHeading('Xóa vĩnh viễn biến thể')
+                    ->modalDescription('Biến thể và ảnh riêng của nó sẽ bị xóa khỏi hệ thống. KHÔNG THỂ hoàn tác.')
+                    ->before(function ($record, ForceDeleteAction $action) {
+                        // order_items.variant_id có ràng buộc khóa ngoại tới bảng
+                        // này. Xóa cứng một biến thể đã từng được bán sẽ ném lỗi
+                        // SQL và phá vỡ lịch sử đơn hàng.
+                        if (\App\Models\OrderItem::where('variant_id', $record->id)->exists()) {
+                            Notification::make()
+                                ->title('Không thể xóa vĩnh viễn')
+                                ->body('Biến thể này đã từng được đặt mua. Hãy giữ nó trong thùng rác.')
+                                ->danger()
+                                ->persistent()
+                                ->send();
+                            $action->cancel();
+                            return;
+                        }
+
+                        // Đến đây mới thực sự dọn file ảnh.
                         try {
                             if ($record->image) {
                                 Storage::disk('public')->delete($record->image);
@@ -984,7 +1035,8 @@ class VariantsRelationManager extends RelationManager
                         })
                         ->deselectRecordsAfterCompletion(),
 
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()->label('Chuyển vào thùng rác'),
+                    RestoreBulkAction::make()->label('Khôi phục'),
                 ]),
             ]);
     }

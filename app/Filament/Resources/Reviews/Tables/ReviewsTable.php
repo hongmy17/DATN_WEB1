@@ -6,6 +6,10 @@ use App\Models\ReviewReply;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\ForceDeleteBulkAction;
+use Filament\Actions\RestoreAction;
+use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Placeholder;
@@ -16,6 +20,7 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
 
@@ -88,6 +93,9 @@ class ReviewsTable
                         true: fn($q) => $q->whereNotNull('images')->where('images', '!=', '[]'),
                         false: fn($q) => $q->where(fn($q) => $q->whereNull('images')->orWhere('images', '[]')),
                     ),
+
+                TrashedFilter::make()
+                    ->label('Thùng rác'),
             ])
             ->recordActions([
                 // Xem + ẩn/hiện
@@ -135,7 +143,21 @@ class ReviewsTable
                             ->success()->send();
                     }),
 
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->label('Chuyển vào thùng rác')
+                    ->visible(fn($record) => ! $record->trashed()),
+
+                RestoreAction::make()
+                    ->label('Khôi phục'),
+
+                // Đánh giá không có bảng nào trỏ ngược tới nó bằng ràng buộc
+                // restrict (review_replies dùng cascadeOnDelete), nên xóa cứng
+                // an toàn về kỹ thuật — chỉ cần bước xác nhận rõ ràng.
+                ForceDeleteAction::make()
+                    ->label('Xóa vĩnh viễn')
+                    ->requiresConfirmation()
+                    ->modalHeading('Xóa vĩnh viễn đánh giá')
+                    ->modalDescription('Đánh giá và toàn bộ phản hồi kèm theo sẽ bị xóa khỏi database. KHÔNG THỂ hoàn tác.'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -157,7 +179,9 @@ class ReviewsTable
                             Notification::make()->title('Đã ẩn ' . $records->count() . ' đánh giá')->success()->send();
                         }),
 
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()->label('Chuyển vào thùng rác'),
+                    RestoreBulkAction::make()->label('Khôi phục'),
+                    ForceDeleteBulkAction::make()->label('Xóa vĩnh viễn'),
                 ]),
             ]);
     }

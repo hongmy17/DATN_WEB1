@@ -30,12 +30,13 @@ class CouponsTable
                 TextColumn::make('type')
                     ->label('Loại')
                     ->badge()
-                    ->formatStateUsing(fn ($state) => $state == 0 ? 'Theo %' : 'Cố định')
-                    ->color(fn ($state) => $state == 0 ? 'info' : 'warning'),
+                    ->formatStateUsing(fn($state) => $state == 0 ? 'Theo %' : 'Cố định')
+                    ->color(fn($state) => $state == 0 ? 'info' : 'warning'),
 
                 TextColumn::make('value')
                     ->label('Giá trị')
-                    ->formatStateUsing(fn ($state, $record) =>
+                    ->formatStateUsing(
+                        fn($state, $record) =>
                         $record->type == 0
                             ? $state . '%'
                             : number_format($state, 0, ',', '.') . '₫'
@@ -44,7 +45,8 @@ class CouponsTable
 
                 TextColumn::make('max_discount')
                     ->label('Giảm tối đa')
-                    ->formatStateUsing(fn ($state, $record) =>
+                    ->formatStateUsing(
+                        fn($state, $record) =>
                         $record->type == 0 && $state
                             ? number_format($state, 0, ',', '.') . '₫'
                             : '—'
@@ -59,7 +61,8 @@ class CouponsTable
                 TextColumn::make('used_count')
                     ->label('Đã dùng / Tối đa')
                     ->sortable()
-                    ->formatStateUsing(fn ($state, $record) =>
+                    ->formatStateUsing(
+                        fn($state, $record) =>
                         $record->max_usage
                             ? $state . ' / ' . $record->max_usage
                             : $state . ' / ∞'
@@ -74,7 +77,7 @@ class CouponsTable
                     ->label('Kết thúc')
                     ->dateTime('d/m/Y')
                     ->sortable()
-                    ->color(fn ($record) => Carbon::now()->gt($record->end_date) ? 'danger' : null),
+                    ->color(fn($record) => Carbon::now()->gt($record->end_date) ? 'danger' : null),
 
                 // Badge trạng thái thông minh: phân biệt Hoạt động / Hết hạn / Hết lượt / Vô hiệu
                 TextColumn::make('status')

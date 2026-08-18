@@ -2,7 +2,12 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\ForceDeleteBulkAction;
+use Filament\Actions\RestoreAction;
+use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\BulkAction;
@@ -12,6 +17,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -126,9 +132,69 @@ class ProductsTable
                         true: fn($query) => $query->whereHas('variants'),
                         false: fn($query) => $query->whereDoesntHave('variants'),
                     ),
+
+                // ─── BỘ LỌC THÙNG RÁC ───────────────────────────────────────
+                // TrashedFilter là bộ lọc dựng sẵn của Filament dành riêng cho
+                // model có SoftDeletes. Ba lựa chọn:
+                //   - (mặc định) chỉ sản phẩm đang hoạt động
+                //   - "Chỉ mục đã xóa" → xem thùng rác
+                //   - "Tất cả" → gộp cả hai
+                TrashedFilter::make()
+                    ->label('Thùng rác'),
             ])
             ->recordActions([
-                EditAction::make()->label('Sửa'),
+                EditAction::make()
+                    ->label('Sửa')
+                    // Không cho sửa sản phẩm đang nằm trong thùng rác —
+                    // phải khôi phục trước rồi mới sửa.
+                    ->visible(fn($record) => ! $record->trashed()),
+
+                // ─── XÓA MỀM ────────────────────────────────────────────────
+                // Trước đây bảng này KHÔNG có nút xóa: muốn xóa phải mở trang
+                // Sửa rồi mới thấy nút ở header. Nay đưa thẳng ra danh sách.
+                //
+                // Nút chỉ hiện khi sản phẩm ĐANG TẮT hiển thị. Lý do: không để
+                // sản phẩm biến mất đột ngột khỏi trang chủ trong lúc khách
+                // đang xem. Cùng triết lý với danh mục — ẩn nút thay vì cho bấm
+                // rồi mới báo lỗi.
+                DeleteAction::make()
+                    ->label('Chuyển vào thùng rác')
+                    ->modalDescription('Sản phẩm vẫn được giữ trong database và có thể khôi phục sau.')
+                    ->visible(fn($record) => ! $record->trashed() && ! $record->status),
+
+                // Khôi phục: đưa sản phẩm từ thùng rác trở lại hoạt động
+                // (chỉ đơn giản là gán deleted_at = NULL).
+                RestoreAction::make()
+                    ->label('Khôi phục'),
+
+                // Xóa vĩnh viễn: chạy DELETE thật, KHÔNG khôi phục được.
+                // Chỉ hiện với sản phẩm đã nằm trong thùng rác — tức là admin
+                // buộc phải xóa mềm trước, xóa cứng sau (quy tắc "hai lần bấm").
+                ForceDeleteAction::make()
+                    ->label('Xóa vĩnh viễn')
+                    ->requiresConfirmation()
+                    ->modalHeading('Xóa vĩnh viễn sản phẩm')
+                    ->modalDescription('Hành động này KHÔNG THỂ hoàn tác. Dữ liệu sẽ bị xóa khỏi database.')
+                    ->before(function ($record, ForceDeleteAction $action) {
+                        // Chặn xóa cứng nếu sản phẩm đã từng được đặt mua:
+                        // order_items trỏ tới product_variants của sản phẩm này
+                        // với ràng buộc khóa ngoại, xóa cứng sẽ ném lỗi SQL và
+                        // phá vỡ lịch sử đơn hàng.
+                        $hasOrders = \App\Models\OrderItem::whereIn(
+                            'variant_id',
+                            $record->variants()->withTrashed()->pluck('id')
+                        )->exists();
+
+                        if ($hasOrders) {
+                            Notification::make()
+                                ->title('Không thể xóa vĩnh viễn')
+                                ->body('Sản phẩm này đã từng được đặt mua. Xóa cứng sẽ phá vỡ lịch sử đơn hàng.')
+                                ->danger()
+                                ->persistent()
+                                ->send();
+                            $action->cancel();
+                        }
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -146,7 +212,9 @@ class ProductsTable
                         })
                         ->deselectRecordsAfterCompletion(),
 
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()->label('Chuyển vào thùng rác'),
+                    RestoreBulkAction::make()->label('Khôi phục'),
+                    ForceDeleteBulkAction::make()->label('Xóa vĩnh viễn'),
                 ]),
             ]);
     }

@@ -10,9 +10,9 @@ class Product extends Model
 {
     use SoftDeletes;
 
-    // ── FIX 1: đặt tên column xóa mềm đúng với schema DB ────────────
-    // Column trong DB là "delete_at", không phải "deleted_at"
-    const DELETED_AT = 'delete_at';
+    // Cột xóa mềm nay dùng tên chuẩn của Laravel là `deleted_at`
+    // (migration 2026_08_17_000001 đã đổi tên từ `delete_at` cũ),
+    // nên KHÔNG cần khai báo `const DELETED_AT` nữa.
 
     protected $fillable = [
         'code',
@@ -79,8 +79,7 @@ class Product extends Model
     public function scopeVisible(Builder $query): Builder
     {
         return $query->where('status', true);
-        // SoftDeletes global scope đã tự thêm: AND delete_at IS NULL
-        // Không cần ->whereNull('delete_at') thêm nữa.
+        // SoftDeletes global scope đã tự thêm: AND deleted_at IS NULL
     }
 
     /**

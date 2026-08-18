@@ -3,9 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Category extends Model
 {
+    // Xóa mềm: products.category_id khai báo onDelete('restrict'), nên xóa cứng
+    // một danh mục còn sản phẩm sẽ ném lỗi SQL. Ngoài ra, xóa nhầm một danh mục
+    // cha là mất cả nhánh cây danh mục — xóa mềm cho phép khôi phục.
+    use SoftDeletes;
+
     protected $fillable = ['name', 'slug', 'parent_id', 'description', 'sort_order'];
 
     public function parent()

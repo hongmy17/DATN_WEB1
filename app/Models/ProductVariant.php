@@ -4,9 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductVariant extends Model
 {
+    // Xóa mềm: order_items.variant_id trỏ tới bảng này. Xóa cứng một biến thể
+    // đã từng được đặt mua sẽ phá vỡ liên kết của đơn hàng cũ — và làm hỏng
+    // chức năng hoàn kho khi hủy đơn (xem Order::booted()).
+    use SoftDeletes;
+
     protected $fillable = [
         'product_id',
         'sku',
@@ -55,6 +61,15 @@ class ProductVariant extends Model
         static::deleted(function (ProductVariant $variant) {
             // Nếu xóa đúng variant đang là default, tự gán default cho 1 variant còn lại
             if ($variant->is_default) {
+                // Từ khi model dùng SoftDeletes, sự kiện `deleted` cũng chạy khi
+                // xóa MỀM — bản ghi vẫn còn trong bảng và vẫn giữ is_default = true.
+                // Nếu không hạ cờ này xuống, lúc Khôi phục sẽ có HAI biến thể cùng
+                // là mặc định. whereKey()->update() không kích hoạt lại event nên
+                // không gây vòng lặp.
+                static::withTrashed()->whereKey($variant->id)->update(['is_default' => false]);
+
+                // where() bên dưới đã tự loại biến thể trong thùng rác (global
+                // scope), nên chỉ chọn được biến thể đang hoạt động.
                 $next = static::where('product_id', $variant->product_id)->first();
                 $next?->update(['is_default' => true]);
             }
@@ -98,9 +113,10 @@ class ProductVariant extends Model
     /** Chỉ lấy variant còn hàng (bỏ qua nếu variant không quản lý kho) */
     public function scopeInStock(Builder $query): Builder
     {
-        return $query->where(fn ($q) => $q
-            ->where('manage_stock', false)
-            ->orWhere('stock_quantity', '>', 0)
+        return $query->where(
+            fn($q) => $q
+                ->where('manage_stock', false)
+                ->orWhere('stock_quantity', '>', 0)
         );
     }
 
@@ -271,8 +287,8 @@ class ProductVariant extends Model
         // FIX 3: sort theo [attribute_id, sort_order] để thứ tự nhất quán
         // (Màu sắc luôn đứng trước Dung lượng nếu attribute_id Màu < Dung lượng)
         return $this->attributeValues
-            ->sortBy(fn ($v) => [$v->attribute_id, $v->sort_order])
-            ->map(fn ($v) => $v->attribute->name . ': ' . $v->value)
+            ->sortBy(fn($v) => [$v->attribute_id, $v->sort_order])
+            ->map(fn($v) => $v->attribute->name . ': ' . $v->value)
             ->join(' / ');
     }
 }
