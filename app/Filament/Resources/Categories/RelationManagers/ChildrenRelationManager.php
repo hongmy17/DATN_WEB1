@@ -7,6 +7,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
@@ -26,9 +27,8 @@ class ChildrenRelationManager extends RelationManager
                 ->required()
                 ->maxLength(100)
                 ->live(debounce: 500)
-                ->afterStateUpdated(fn (string $operation, $state, callable $set) =>
-                    $operation === 'create' ? $set('slug', Str::slug($state)) : null
-                ),
+                ->afterStateUpdated(fn(string $operation, $state, callable $set) =>
+                $operation === 'create' ? $set('slug', Str::slug($state)) : null),
 
             TextInput::make('slug')
                 ->label('Slug')
@@ -57,8 +57,22 @@ class ChildrenRelationManager extends RelationManager
                     ->color('warning'),
             ])
             ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()->label('Sửa'),
+
+                // Cùng quy tắc với danh mục cha: còn sản phẩm thì ẩn nút xóa.
+                DeleteAction::make()
+                    ->label('Xóa')
+                    ->visible(fn($record) => (int) $record->products_count === 0)
+                    ->before(function ($record, $action) {
+                        if ($record->products()->exists()) {
+                            Notification::make()
+                                ->title('Không thể xóa!')
+                                ->body('Danh mục con đang có sản phẩm.')
+                                ->danger()
+                                ->send();
+                            $action->halt();
+                        }
+                    }),
             ])
             ->headerActions([
                 CreateAction::make()->label('Thêm danh mục con'),

@@ -7,7 +7,7 @@ use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -91,7 +91,7 @@ class ReviewsTable
             ])
             ->recordActions([
                 // Xem + ẩn/hiện
-                EditAction::make()->label('Chi tiết'),
+                ViewAction::make()->label('Chi tiết'),
 
                 // Reply của shop
                 Action::make('reply')

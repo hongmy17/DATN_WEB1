@@ -3,9 +3,9 @@
 namespace App\Filament\Resources\Reviews\Pages;
 
 use App\Filament\Resources\Reviews\ReviewResource;
-use Filament\Resources\Pages\EditRecord;
+use Filament\Resources\Pages\ViewRecord;
 
-class EditReview extends EditRecord
+class ViewReview extends ViewRecord
 {
     protected static string $resource = ReviewResource::class;
 }

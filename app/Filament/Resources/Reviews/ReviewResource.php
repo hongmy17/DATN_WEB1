@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Reviews;
 
-use App\Filament\Resources\Reviews\Pages\EditReview;
+use App\Filament\Resources\Reviews\Pages\ViewReview;
 use App\Filament\Resources\Reviews\Pages\ListReviews;
 use App\Filament\Resources\Reviews\Schemas\ReviewForm;
 use App\Filament\Resources\Reviews\Tables\ReviewsTable;
@@ -15,6 +15,9 @@ use UnitEnum;
 class ReviewResource extends Resource
 {
     protected static ?string $model = Review::class;
+
+    protected static ?string $modelLabel = 'Đánh giá';
+    protected static ?string $pluralModelLabel = 'Đánh giá';
     protected static ?string $navigationLabel = 'Đánh giá';
     protected static string | UnitEnum | null $navigationGroup = 'Nội dung';
     protected static ?int $navigationSort = 10;
@@ -33,7 +36,7 @@ class ReviewResource extends Resource
     {
         return [
             'index' => ListReviews::route('/'),
-            'edit'  => EditReview::route('/{record}/edit'),
+            'view' => ViewReview::route('/{record}'),
         ];
     }
 }
