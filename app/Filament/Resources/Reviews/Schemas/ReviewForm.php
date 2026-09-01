@@ -27,9 +27,7 @@ class ReviewForm
                 ->label('Nội dung')
                 ->content(fn($record) => $record?->comment ?? '(Không có nội dung)'),
 
-            Toggle::make('status')
-                ->label('Hiển thị')
-                ->helperText('Tắt để ẩn đánh giá này khỏi trang sản phẩm'),
+           
         ]);
     }
 }

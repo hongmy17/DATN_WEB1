@@ -83,7 +83,7 @@ class CustomAttributesRelationManager extends RelationManager
             ->headerActions([
                 // ── Tạo nhanh từ template danh mục ───────────────────────────
                 Action::make('quickGenerate')
-                    ->label('Tạo nhanh từ mẫu danh mục')
+                    ->label('Tạo nhanh từ mẫu thông số kỹ thuật')
                     ->icon('heroicon-o-bolt')
                     ->color('success')
                     ->requiresConfirmation()
@@ -96,16 +96,16 @@ class CustomAttributesRelationManager extends RelationManager
 
                         if (! $template) {
                             $cat = $product->category?->name ?? 'không xác định';
-                            return "Danh mục \"{$cat}\" chưa có mẫu. Vào Cấu hình → Mẫu thuộc tính để tạo.";
+                            return "Danh mục \"{$cat}\" chưa có mẫu. Vào Cấu hình → Thông số kỹ thuật để tạo.";
                         }
 
                         $existing   = $product->customAttributes()->pluck('name')
-                            ->map(fn ($n) => strtolower(trim($n)));
+                            ->map(fn($n) => strtolower(trim($n)));
                         $willCreate = $template->items
-                            ->filter(fn ($item) => ! $existing->contains(strtolower(trim($item->name))))
+                            ->filter(fn($item) => ! $existing->contains(strtolower(trim($item->name))))
                             ->pluck('name');
                         $willSkip   = $template->items
-                            ->filter(fn ($item) => $existing->contains(strtolower(trim($item->name))))
+                            ->filter(fn($item) => $existing->contains(strtolower(trim($item->name))))
                             ->pluck('name');
 
                         $msg = "Mẫu: {$template->name}\n";
@@ -127,13 +127,13 @@ class CustomAttributesRelationManager extends RelationManager
                         if (! $template) {
                             Notification::make()
                                 ->title('Chưa có mẫu cho danh mục này')
-                                ->body('Vào Cấu hình → Mẫu thuộc tính để tạo.')
+                                ->body('Vào Cấu hình → Thông số kỹ thuật để tạo.')
                                 ->warning()->send();
                             return;
                         }
 
                         $existing      = $product->customAttributes()->pluck('name')
-                            ->map(fn ($n) => strtolower(trim($n)));
+                            ->map(fn($n) => strtolower(trim($n)));
                         $maxSortOrder  = $product->customAttributes()->max('sort_order') ?? 0;
                         $created       = 0;
                         $skipped       = 0;

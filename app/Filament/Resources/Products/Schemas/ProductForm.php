@@ -139,7 +139,7 @@ class ProductForm
                             }
                             $template    = AttributeTemplate::where('category_id', $categoryId)->first();
                             if (! $template) {
-                                return 'Danh mục này chưa có mẫu thuộc tính. Chọn thủ công hoặc nhấn + để tạo mới.';
+                                return 'Danh mục này chưa có Thông số kỹ thuật. Chọn thủ công hoặc nhấn + để tạo mới.';
                             }
                             $itemCount = $template->items()->count();
                             return "Danh mục này có mẫu \"{$template->name}\" ({$itemCount} thông số). Chọn thuộc tính biến thể thủ công bên dưới.";
@@ -153,8 +153,8 @@ class ProductForm
                                     }
 
                                     $removed = array_diff(
-                                        $record->attributes()->pluck('attributes.id')->map(fn ($id) => (int) $id)->toArray(),
-                                        collect($value ?? [])->map(fn ($id) => (int) $id)->toArray()
+                                        $record->attributes()->pluck('attributes.id')->map(fn($id) => (int) $id)->toArray(),
+                                        collect($value ?? [])->map(fn($id) => (int) $id)->toArray()
                                     );
 
                                     if (empty($removed)) {
@@ -162,15 +162,17 @@ class ProductForm
                                     }
 
                                     $usedNames = Attribute::whereIn('id', $removed)
-                                        ->whereHas('attributeValues.variantAttributeValues', fn ($q) =>
-                                            $q->whereHas('variant', fn ($vq) => $vq->where('product_id', $record->id))
+                                        ->whereHas(
+                                            'attributeValues.variantAttributeValues',
+                                            fn($q) =>
+                                            $q->whereHas('variant', fn($vq) => $vq->where('product_id', $record->id))
                                         )
                                         ->pluck('name');
 
                                     if ($usedNames->isNotEmpty()) {
                                         $fail(
                                             'Không thể gỡ "' . $usedNames->join(', ') . '" — đang có biến thể sử dụng. '
-                                            . 'Xóa biến thể liên quan trước (tab "Biến thể" → "Xóa tất cả & tạo lại").'
+                                                . 'Xóa biến thể liên quan trước (tab "Biến thể" → "Xóa tất cả & tạo lại").'
                                         );
                                     }
                                 };
@@ -204,7 +206,7 @@ class ProductForm
 
                                     ColorPicker::make('color_code')
                                         ->label('Mã màu')
-                                        ->visible(fn (callable $get) => (int) $get('../../display_type') === 1),
+                                        ->visible(fn(callable $get) => (int) $get('../../display_type') === 1),
                                 ])
                                 ->columns(2)
                                 ->defaultItems(1)
@@ -246,8 +248,8 @@ class ProductForm
                             if (! $record) {
                                 return new \Illuminate\Support\HtmlString(
                                     '<div style="padding:10px 14px;background:var(--warning-50,#fefce8);border:1px solid var(--warning-200,#fde047);border-radius:8px;font-size:13px;color:#854d0e">'
-                                    . '💡 Lưu sản phẩm trước, sau đó thêm <b>ảnh</b> và <b>biến thể</b> để có thể bật hiển thị.'
-                                    . '</div>'
+                                        . '💡 Lưu sản phẩm trước, sau đó thêm <b>ảnh</b> và <b>biến thể</b> để có thể bật hiển thị.'
+                                        . '</div>'
                                 );
                             }
 
@@ -257,8 +259,8 @@ class ProductForm
                             if ($hasImages && $hasVariants) {
                                 return new \Illuminate\Support\HtmlString(
                                     '<div style="padding:10px 14px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;font-size:13px;color:#166534">'
-                                    . '✅ Sản phẩm đủ điều kiện hiển thị cho khách.'
-                                    . '</div>'
+                                        . '✅ Sản phẩm đủ điều kiện hiển thị cho khách.'
+                                        . '</div>'
                                 );
                             }
 
@@ -269,8 +271,8 @@ class ProductForm
 
                             return new \Illuminate\Support\HtmlString(
                                 '<div style="padding:10px 14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;font-size:13px;color:#9a3412">'
-                                . '⚠️ Còn thiếu: ' . $missing
-                                . '</div>'
+                                    . '⚠️ Còn thiếu: ' . $missing
+                                    . '</div>'
                             );
                         }),
 
@@ -344,9 +346,14 @@ class ProductForm
         $name = self::removeAccents($name);
 
         $specialWords = [
-            'pro' => 'P', 'max' => 'M', 'ultra' => 'U',
-            'plus' => 'P', 'mini' => 'M', 'air' => 'A',
-            'studio' => 'S', 'edge' => 'E',
+            'pro' => 'P',
+            'max' => 'M',
+            'ultra' => 'U',
+            'plus' => 'P',
+            'mini' => 'M',
+            'air' => 'A',
+            'studio' => 'S',
+            'edge' => 'E',
         ];
 
         $words  = preg_split('/[\s\-_]+/', $name);
@@ -372,8 +379,15 @@ class ProductForm
     private static function removeAccents(string $str): string
     {
         return preg_replace(
-            ['/[àáạảãâầấậẩẫăằắặẳẵ]/u', '/[èéẹẻẽêềếệểễ]/u', '/[ìíịỉĩ]/u',
-             '/[òóọỏõôồốộổỗơờớợởỡ]/u', '/[ùúụủũưừứựửữ]/u', '/[ỳýỵỷỹ]/u', '/đ/u'],
+            [
+                '/[àáạảãâầấậẩẫăằắặẳẵ]/u',
+                '/[èéẹẻẽêềếệểễ]/u',
+                '/[ìíịỉĩ]/u',
+                '/[òóọỏõôồốộổỗơờớợởỡ]/u',
+                '/[ùúụủũưừứựửữ]/u',
+                '/[ỳýỵỷỹ]/u',
+                '/đ/u'
+            ],
             ['a', 'e', 'i', 'o', 'u', 'y', 'd'],
             $str
         );

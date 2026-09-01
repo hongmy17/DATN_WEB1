@@ -40,7 +40,7 @@ class UserForm
 
                 TextInput::make('code')
                     ->label('Mã người dùng')
-                   
+
                     ->required()
                     ->placeholder('VD: USER000001 hoặc CUS-001')
                     ->default(function () {
@@ -57,7 +57,7 @@ class UserForm
 
                 TextInput::make('name')
                     ->label('Họ và tên')
-                   
+
                     ->required()
                     ->placeholder('VD: Nguyễn Văn A')
                     ->maxLength(255)
@@ -66,7 +66,7 @@ class UserForm
 
                 TextInput::make('email')
                     ->label('Email')
-                   
+
                     ->email()
                     ->required()
                     ->unique(ignoreRecord: true, table: User::class, column: 'email')
@@ -78,7 +78,7 @@ class UserForm
 
                 TextInput::make('phone')
                     ->label('Số điện thoại')
-                  
+
                     ->tel()
                     ->placeholder('VD: 0912345678')
                     ->regex('/^([0-9]{10,11})$/')
@@ -94,19 +94,6 @@ class UserForm
             ->icon('heroicon-o-key')
             ->columnSpan(1)
             ->schema([
-                TextInput::make('password')
-                    ->label('Mật khẩu')
-                    ->password()
-                    
-                    ->placeholder('VD: password123')
-                    ->minLength(6)
-                    ->validationMessages([
-                        'min' => 'Mật khẩu phải có ít nhất 6 ký tự.',
-                    ])
-                    ->maxLength(255)
-                    ->dehydrated(fn ($state) => filled($state))
-                    ->dehydrateStateUsing(fn ($state) => bcrypt($state)),
-
                 Select::make('role')
                     ->label('Vai trò')
                     ->prefix('👑')

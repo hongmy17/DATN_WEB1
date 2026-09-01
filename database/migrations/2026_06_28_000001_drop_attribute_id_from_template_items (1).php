@@ -7,13 +7,13 @@ use Illuminate\Support\Facades\Schema;
 /**
  * FIX: bỏ cột attribute_id khỏi attribute_template_items.
  *
- * Lý do: Mẫu thuộc tính (AttributeTemplate) chỉ dùng để auto-fill THÔNG SỐ
+ * Lý do: Thông số kỹ thuật (AttributeTemplate) chỉ dùng để auto-fill THÔNG SỐ
  * KỸ THUẬT (tab "Thuộc tính riêng" của sản phẩm — text hiển thị như RAM/ROM).
  * Thuộc tính dùng để TẠO BIẾN THỂ (Màu sắc/Size) đã được quản lý riêng ở
  * trang "Thuộc tính" (AttributeResource) — không liên quan, không cần map.
  *
  * Cột attribute_id từng được thêm để link 2 luồng này lại, nhưng gây nhầm
- * lẫn UX (form Mẫu thuộc tính bắt chọn "Thuộc tính toàn cục" trong khi
+ * lẫn UX (form Thông số kỹ thuật bắt chọn "Thuộc tính toàn cục" trong khi
  * admin chỉ muốn tạo mẫu thông số RAM/ROM cho danh mục iPhone).
  */
 return new class extends Migration

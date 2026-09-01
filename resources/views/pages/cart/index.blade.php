@@ -173,10 +173,10 @@
 
     <script>
         /* ════════════════════════════════════════
-                                                       RENDER GIỎ HÀNG
-                                                       - Dùng variant_id làm key trên data-vid
-                                                       - Event delegation: 1 listener cho tất cả nút
-                                                    ════════════════════════════════════════ */
+                                                           RENDER GIỎ HÀNG
+                                                           - Dùng variant_id làm key trên data-vid
+                                                           - Event delegation: 1 listener cho tất cả nút
+                                                        ════════════════════════════════════════ */
         function renderCart() {
             const items = Cart.get();
             const list = document.getElementById('cartList');
@@ -241,36 +241,62 @@
             document.getElementById('sumTotal').textContent = fmtPrice(sub);
         }
 
-        /* ── Event delegation — tất cả thao tác qua 1 listener ── */
-        document.getElementById('cartList').addEventListener('change', async function(e) {
-            const input = e.target.closest('.qty-ctrl__input');
-            if (!input) return;
-            const qty = parseInt(input.value);
-            const checkoutBtn = document.getElementById('checkoutBtn'); // THÊM
-            checkoutBtn.dataset.checking = '1'; // THÊM: khoá nút trong lúc đang lưu số lượng
-            if (qty > 0) {
-                await Cart.updateQty(input.dataset.vid, qty);
-            } else {
-                Toast.show('Số lượng tối thiểu là 1.', 'error');
+        /* ── Bấm nút +, -, và nút xoá ──────────────────────────────────────
+           Danh sách giỏ hàng được renderCart() vẽ lại mỗi lần thay đổi, nên các
+           nút bên trong là phần tử MỚI hoàn toàn. Gắn sự kiện trực tiếp lên từng
+           nút sẽ mất tác dụng ngay sau lần vẽ lại đầu tiên.
+
+           Vì vậy dùng event delegation: gắn MỘT listener lên #cartList (phần tử
+           luôn tồn tại), rồi dựa vào thuộc tính data-act của nút được bấm để biết
+           cần làm gì. Nút vẽ lại bao nhiêu lần cũng vẫn chạy đúng. */
+        document.getElementById('cartList').addEventListener('click', async function(e) {
+            const btn = e.target.closest('[data-act]');
+            if (!btn) return;
+
+            const vid = btn.dataset.vid;
+            const act = btn.dataset.act;
+
+            // Khoá nút đang bấm để tránh người dùng bấm dồn nhiều lần khi mạng chậm
+            btn.disabled = true;
+
+            try {
+                if (act === 'remove') {
+                    await Cart.removeByVariantId(vid);
+                } else {
+                    const item = Cart.get().find(i => String(i.variant_id) === String(vid));
+                    if (!item) return;
+
+                    const newQty = act === 'plus' ? item.qty + 1 : item.qty - 1;
+
+                    // Giảm xuống dưới 1 thì không xoá ngầm — nút trừ đã bị vô hiệu
+                    // hoá sẵn khi số lượng bằng 1, khách muốn bỏ sản phẩm thì bấm
+                    // nút X cho rõ ràng.
+                    if (newQty < 1) return;
+
+                    await Cart.updateQty(vid, newQty);
+                }
+            } finally {
+                btn.disabled = false;
+                renderCart();
             }
-            renderCart();
-            checkoutBtn.dataset.checking = '0'; // THÊM: mở khoá lại sau khi xong
         });
 
-        /* ── Thay đổi input số lượng ── */
+        /* ── Gõ trực tiếp vào ô số lượng ── */
         document.getElementById('cartList').addEventListener('change', async function(e) {
             const input = e.target.closest('.qty-ctrl__input');
             if (!input) return;
+
             const qty = parseInt(input.value);
-            // FIX: trước đây nhập 0/âm/không hợp lệ thì không làm gì cả — không lưu,
-            // không báo lỗi, ô input vẫn hiển thị số vừa gõ (trông như đã nhập được
-            // nhưng thực ra chưa lưu gì) — rất dễ gây hiểu nhầm cho người dùng.
+
+            // Nhập 0, số âm hoặc ký tự không hợp lệ thì báo rõ và trả ô về số cũ,
+            // thay vì im lặng không lưu gì trong khi ô vẫn hiện số vừa gõ.
             if (qty > 0) {
                 await Cart.updateQty(input.dataset.vid, qty);
             } else {
                 Toast.show('Số lượng tối thiểu là 1.', 'error');
             }
-            renderCart(); // luôn render lại để ô input trả về đúng số lượng đang lưu thực tế
+
+            renderCart(); // vẽ lại để ô input hiển thị đúng số lượng đang lưu thực tế
         });
 
         /* ── Modal xoá tất cả ── */

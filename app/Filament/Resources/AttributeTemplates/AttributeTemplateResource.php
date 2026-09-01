@@ -20,17 +20,27 @@ class AttributeTemplateResource extends Resource
 {
     protected static ?string $model = AttributeTemplate::class;
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
-    protected static ?string $navigationLabel = 'Mẫu thuộc tính';
-    protected static ?string $modelLabel = 'Mẫu thuộc tính';
-    protected static ?string $pluralModelLabel = 'Danh sách mẫu thuộc tính';
+    protected static ?string $navigationLabel = 'Thông số kỹ thuật';
+    protected static ?string $modelLabel = 'Thông số kỹ thuật';
+    protected static ?string $pluralModelLabel = 'Danh sách thông số kỹ thuật';
     protected static ?string $recordTitleAttribute = 'name';
     protected static UnitEnum|string|null $navigationGroup = 'Quản lý thuộc tính';
     protected static ?int $navigationSort = 1;
 
-    public static function form(Schema $schema): Schema { return AttributeTemplateForm::configure($schema); }
-    public static function table(Table $table): Table { return AttributeTemplatesTable::configure($table); }
-    public static function getRelations(): array { return [ItemsRelationManager::class]; }
-    public static function getPages(): array {
+    public static function form(Schema $schema): Schema
+    {
+        return AttributeTemplateForm::configure($schema);
+    }
+    public static function table(Table $table): Table
+    {
+        return AttributeTemplatesTable::configure($table);
+    }
+    public static function getRelations(): array
+    {
+        return [ItemsRelationManager::class];
+    }
+    public static function getPages(): array
+    {
         return [
             'index'  => ListAttributeTemplates::route('/'),
             'create' => CreateAttributeTemplate::route('/create'),

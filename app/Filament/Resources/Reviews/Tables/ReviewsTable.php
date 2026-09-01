@@ -36,7 +36,7 @@ class ReviewsTable
                     ->limit(30),
 
                 TextColumn::make('user.name')
-                    ->label('Người dùng')
+                    ->label('Người đánh giá')
                     ->searchable(),
 
                 TextColumn::make('rating')

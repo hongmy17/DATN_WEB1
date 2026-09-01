@@ -190,7 +190,7 @@
                     © 2026 Nexus Store. Bản quyền thuộc về nhóm DATN — FPT Polytechnic.
                 </p>
                 <div style="display:flex;gap:5px;align-items:center">
-                    @foreach (['VISA', 'MC', 'MOMO', 'ZLP', 'COD'] as $pay)
+                    @foreach (['VNPay', 'COD'] as $pay)
                         <span
                             style="padding:3px 9px;background:rgba(255,255,255,.07);
                        border:1px solid rgba(255,255,255,.1);border-radius:4px;
